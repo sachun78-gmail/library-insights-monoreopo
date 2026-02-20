@@ -1,0 +1,261 @@
+---
+// Book Detail Modal - shared component for book info and review display
+// Library section is integrated: GPS-based or region dropdown fallback
+import { regions as regionsData } from '../data/regions.js';
+---
+<div id="book-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 sm:pb-10 z-50 px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-2xl shadow-2xl ring-1 ring-charcoal/10 dark:ring-white/15 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
+    <button id="close-modal" class="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-charcoal/5 dark:bg-white/10 text-charcoal/60 hover:text-charcoal dark:text-white/60 dark:hover:text-white hover:bg-charcoal/10 dark:hover:bg-white/20 transition-colors z-10">
+      <span class="material-symbols-outlined text-lg sm:text-xl">close</span>
+    </button>
+
+    <!-- Book Info -->
+    <div class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <div class="flex flex-col sm:flex-row gap-3 sm:gap-6">
+        <img id="modal-book-image" src="" alt="" class="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg flex-shrink-0 mx-auto sm:mx-0" />
+        <div class="flex flex-col text-center sm:text-left">
+          <h2 id="modal-book-title" class="text-lg sm:text-2xl font-bold text-charcoal dark:text-white mb-1 sm:mb-2 pr-6 sm:pr-0"></h2>
+          <p id="modal-book-author" class="text-sm sm:text-base text-charcoal/60 dark:text-white/60 mb-1"></p>
+          <p id="modal-book-publisher" class="text-charcoal/40 dark:text-white/40 text-xs sm:text-sm mb-2 sm:mb-3"></p>
+          <div id="modal-book-tags" class="flex flex-wrap gap-2 justify-center sm:justify-start"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Insight Section -->
+    <div id="ai-insight-section" class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <!-- Button (initial state) -->
+      <button id="ai-insight-btn" class="w-full flex items-center justify-center gap-2 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20 border border-violet-300/30 dark:border-violet-500/30 hover:from-violet-500/20 hover:to-purple-500/20 dark:hover:from-violet-500/30 dark:hover:to-purple-500/30 transition-all group">
+        <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-lg sm:text-xl group-hover:scale-110 transition-transform">auto_awesome</span>
+        <span class="text-sm sm:text-base font-bold text-violet-700 dark:text-violet-300">AI 요약 & 핵심 Insight</span>
+        <span class="material-symbols-outlined text-violet-400 dark:text-violet-500 text-sm">chevron_right</span>
+      </button>
+
+      <!-- Login Prompt (shown for logged-out users) -->
+      <div id="ai-insight-login" class="hidden">
+        <div class="flex flex-col items-center gap-3 py-4 px-3 rounded-xl bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10">
+          <span class="material-symbols-outlined text-3xl text-charcoal/30 dark:text-white/30">lock</span>
+          <p class="text-sm text-charcoal/70 dark:text-white/70 text-center">AI 도서 분석은 로그인 후 이용할 수 있습니다.</p>
+          <button id="ai-insight-login-btn" class="px-5 py-2 bg-primary text-charcoal text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">
+            로그인하기
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="ai-insight-loading" class="hidden py-4 px-1">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="material-symbols-outlined text-violet-500 text-lg animate-pulse">auto_awesome</span>
+          <span id="ai-insight-loading-text" class="text-sm font-medium text-charcoal/70 dark:text-white/70">도서 정보 수집 중...</span>
+        </div>
+        <div class="w-full h-2 bg-charcoal/10 dark:bg-white/10 rounded-full overflow-hidden">
+          <div id="ai-insight-progress-bar" class="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+        </div>
+        <p id="ai-insight-progress-percent" class="text-right text-[10px] text-charcoal/40 dark:text-white/40 mt-1">0%</p>
+      </div>
+
+      <!-- Content -->
+      <div id="ai-insight-content" class="hidden space-y-3 mt-3">
+        <!-- 3줄 요약 -->
+        <div class="p-3 sm:p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200/50 dark:border-violet-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-base">summarize</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">3줄 요약</span>
+          </div>
+          <p id="ai-insight-summary" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <!-- 핵심 메시지 -->
+        <div class="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-base">lightbulb</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">핵심 메시지</span>
+          </div>
+          <p id="ai-insight-key-message" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <!-- 이런 사람에게 추천 -->
+        <div class="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200/50 dark:border-emerald-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-base">group</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">이런 사람에게 추천</span>
+          </div>
+          <p id="ai-insight-recommend" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <!-- 난이도 평가 -->
+        <div class="p-3 sm:p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-200/50 dark:border-sky-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-sky-600 dark:text-sky-400 text-base">speed</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">난이도 평가</span>
+          </div>
+          <p id="ai-insight-difficulty" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div id="ai-insight-error" class="hidden flex flex-col items-center gap-2 py-4">
+        <span class="material-symbols-outlined text-2xl text-charcoal/30 dark:text-white/30">error_outline</span>
+        <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">AI 분석 중 오류가 발생했습니다.</p>
+        <button id="ai-insight-retry-btn" class="px-4 py-1.5 bg-violet-500 text-white text-xs font-bold rounded-lg hover:bg-violet-600 transition-colors">다시 시도</button>
+      </div>
+    </div>
+
+    <!-- Book Description & Review Section -->
+    <div class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <div class="mb-3 sm:mb-4">
+        <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-2 sm:mb-3">
+          <span class="material-symbols-outlined text-primary text-lg sm:text-xl">rate_review</span>
+          도서 정보 및 리뷰
+        </h3>
+      </div>
+
+      <!-- Loading State -->
+      <div id="review-loading" class="hidden flex items-center justify-center py-6">
+        <div class="animate-spin rounded-full h-6 w-6 border-3 border-primary border-t-transparent"></div>
+        <span class="ml-2 text-sm text-charcoal/60 dark:text-white/60">정보를 불러오는 중...</span>
+      </div>
+
+      <!-- Review Content -->
+      <div id="review-content" class="hidden">
+        <!-- Data4Library 책소개 -->
+        <div id="data4lib-intro" class="hidden mb-4 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg">auto_stories</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">도서관 정보나루 책소개</span>
+          </div>
+          <p id="data4lib-description" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+
+        <!-- Blog Review -->
+        <div id="blog-review" class="hidden mb-4 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-[#03C75A] text-lg">forum</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">블로그 리뷰</span>
+          </div>
+          <h4 id="review-title" class="text-sm sm:text-base font-bold text-charcoal dark:text-white mb-2 line-clamp-2"></h4>
+          <p id="review-description" class="text-xs sm:text-sm text-charcoal/70 dark:text-white/70 leading-relaxed line-clamp-3 mb-3"></p>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-charcoal/50 dark:text-white/50">
+              <span class="material-symbols-outlined text-sm">person</span>
+              <span id="review-blogger"></span>
+              <span>·</span>
+              <span id="review-date"></span>
+            </div>
+            <a id="review-link" href="#" target="_blank" rel="noopener noreferrer"
+               class="text-xs text-[#03C75A] hover:underline flex items-center gap-1">
+              전체 보기
+              <span class="material-symbols-outlined text-sm">open_in_new</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Book Description (Naver) -->
+        <div id="book-description" class="mb-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-primary text-lg">description</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">책 소개</span>
+          </div>
+          <p class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed line-clamp-4"></p>
+        </div>
+
+        <!-- Price Info -->
+        <div id="book-price-info" class="hidden flex items-center gap-3 mb-4 p-2 sm:p-3 bg-charcoal/5 dark:bg-white/5 rounded-lg">
+          <span class="material-symbols-outlined text-primary text-lg">sell</span>
+          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <span id="book-price" class="text-charcoal/40 dark:text-white/40 line-through"></span>
+            <span id="book-discount" class="text-primary font-bold"></span>
+          </div>
+        </div>
+
+        <!-- Naver Review Link -->
+        <a id="naver-review-link" href="#" target="_blank" rel="noopener noreferrer"
+           class="flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 bg-[#03C75A] hover:bg-[#02b350] text-white font-bold rounded-lg transition-colors text-xs sm:text-sm">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z"/>
+          </svg>
+          네이버에서 더 많은 리뷰 보기
+        </a>
+      </div>
+
+      <!-- No Review State -->
+      <div id="review-empty" class="hidden text-center py-4">
+        <span class="material-symbols-outlined text-3xl text-charcoal/30 dark:text-white/30 mb-2">search_off</span>
+        <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">리뷰 정보를 찾을 수 없습니다.</p>
+      </div>
+    </div>
+
+    <!-- Integrated Library Section -->
+    <div id="library-section" class="p-3 sm:p-6">
+      <div class="mb-3 sm:mb-4">
+        <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-1 sm:mb-2">
+          <span class="material-symbols-outlined text-primary text-lg sm:text-xl">local_library</span>
+          도서 소장 도서관
+        </h3>
+        <p id="library-mode-desc" class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 flex items-center gap-1">
+          <span class="material-symbols-outlined text-xs sm:text-sm">info</span>
+          위치 정보를 확인하는 중...
+        </p>
+      </div>
+
+      <!-- GPS Mode View -->
+      <div id="library-gps-view" class="hidden">
+        <!-- GPS info is shown via library-mode-desc -->
+      </div>
+
+      <!-- Region Dropdown Mode View -->
+      <div id="library-region-view" class="hidden">
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
+          <div class="flex-1">
+            <label class="block text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 mb-1">지역</label>
+            <select id="modal-region-select" class="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-charcoal/20 dark:border-white/20 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="">지역 선택</option>
+              {regionsData.map((region) => (
+                <option value={region.code}>{region.name}</option>
+              ))}
+            </select>
+          </div>
+          <div class="flex-1">
+            <label class="block text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 mb-1">세부 지역</label>
+            <select id="modal-subregion-select" class="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-charcoal/20 dark:border-white/20 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              <option value="">세부 지역</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shared: Loading -->
+      <div id="library-loading" class="hidden flex flex-col items-center justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-2"></div>
+        <p id="library-loading-text" class="text-xs text-charcoal/50 dark:text-white/50">소장 도서관을 검색하는 중...</p>
+      </div>
+
+      <!-- Shared: Initial -->
+      <div id="library-initial" class="text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-primary/60 mb-2">my_location</span>
+        <p class="text-charcoal/60 dark:text-white/60 mb-3">위치 정보를 불러오는 중...</p>
+      </div>
+
+      <!-- Shared: Location Error with fallback button -->
+      <div id="library-location-error" class="hidden text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-charcoal/30 dark:text-white/30 mb-2">location_off</span>
+        <p class="text-charcoal/60 dark:text-white/60 mb-3">위치 정보를 가져올 수 없습니다.</p>
+        <div class="flex items-center justify-center gap-2">
+          <button id="retry-location-btn" class="px-4 py-2 bg-primary text-charcoal rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">refresh</span>다시 시도
+          </button>
+          <button id="switch-to-region-btn" class="px-4 py-2 bg-charcoal/10 dark:bg-white/10 text-charcoal dark:text-white rounded-lg text-sm font-bold hover:bg-charcoal/20 dark:hover:bg-white/20 transition-colors">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">list</span>지역 선택으로 전환
+          </button>
+        </div>
+      </div>
+
+      <!-- Shared: Empty -->
+      <div id="library-empty" class="hidden text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-charcoal/30 dark:text-white/30 mb-2">library_books</span>
+        <p class="text-charcoal/60 dark:text-white/60">소장 도서관이 없습니다.</p>
+      </div>
+
+      <!-- Shared: Library List & Count -->
+      <div id="library-list" class="space-y-3 max-h-[300px] overflow-y-auto"></div>
+      <div id="library-count" class="hidden mt-4 text-sm text-charcoal/60 dark:text-white/60 text-center"></div>
+    </div>
+  </div>
+</div>

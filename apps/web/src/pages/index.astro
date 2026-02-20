@@ -1,0 +1,1054 @@
+---
+console.log('This runs in your terminal, not the browser!');
+import Auth from '../components/Auth.astro';
+import Analytics from '../components/Analytics.astro';
+import BookDetailModal from '../components/BookDetailModal.astro';
+---
+<html lang="ko" class=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script is:inline>
+  (function(){
+    var t = localStorage.getItem('theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  })();
+</script>
+<title>LibraryInsights - South Korean Public Library Bestsellers</title>
+<meta name="description" content="한국 공공도서관 대출 데이터를 기반으로 베스트셀러와 추천 도서를 탐색하고, 지역별 도서관 보유 정보를 확인하세요."/>
+<link rel="canonical" href="https://library-insights.pages.dev/"/>
+<meta property="og:site_name" content="LibraryInsights"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="LibraryInsights - South Korean Public Library Bestsellers"/>
+<meta property="og:description" content="한국 공공도서관 대출 데이터를 기반으로 베스트셀러와 추천 도서를 탐색하고, 지역별 도서관 보유 정보를 확인하세요."/>
+<meta property="og:url" content="https://library-insights.pages.dev/"/>
+<meta property="og:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+<meta property="og:locale" content="ko_KR"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="LibraryInsights - South Korean Public Library Bestsellers"/>
+<meta name="twitter:description" content="한국 공공도서관 대출 데이터를 기반으로 베스트셀러와 추천 도서를 탐색하고, 지역별 도서관 보유 정보를 확인하세요."/>
+<meta name="twitter:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<Analytics />
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7431853210834432" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Noto Serif', serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Hide scrollbar */
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        /* Carousel scroll-snap */
+        .scroll-snap-x-mandatory {
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        .snap-start {
+            scroll-snap-align: start;
+        }
+    </style>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "LibraryInsights",
+        "url": "https://library-insights.pages.dev/",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://library-insights.pages.dev/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-charcoal dark:text-white transition-colors duration-300">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="border-b border-solid border-charcoal/10 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center justify-between max-w-[1200px] mx-auto w-full px-4 py-2 sm:py-4">
+<a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0">
+<span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
+<span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
+</a>
+<div class="flex items-center justify-end gap-2 sm:gap-8 ml-auto">
+<nav class="hidden md:flex items-center gap-3 sm:gap-9">
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+</nav>
+<button id="theme-toggle" class="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-label="다크모드 전환">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl dark:hidden">dark_mode</span>
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl hidden dark:inline">light_mode</span>
+</button>
+<button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
+</button>
+<!-- Sign In Button (shown when logged out) -->
+<button id="signin-btn" class="hidden md:flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
+<span class="truncate">Sign In</span>
+</button>
+<!-- Profile Button (shown when logged in) -->
+<div id="profile-container" class="hidden relative md:block md:hidden">
+<button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+<img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+<span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
+<span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
+</button>
+<!-- Dropdown Menu -->
+<div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
+<!-- Profile Header -->
+<div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
+<img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
+<p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
+</div>
+<!-- Menu Items -->
+<div class="py-2">
+<a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">person</span>
+마이 페이지
+</a>
+<button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">logout</span>
+로그아웃
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-[70] bg-black/60">
+  <div class="h-full w-[78%] max-w-xs bg-white dark:bg-charcoal-900 shadow-2xl">
+    <div class="flex items-center justify-end px-4 py-3">
+      <button id="mobile-menu-close" class="w-8 h-8 rounded-full border border-charcoal/10 dark:border-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-lg">close</span>
+      </button>
+    </div>
+    <div class="px-4 pb-4 border-b border-charcoal/10 dark:border-white/10">
+      <div class="flex items-center justify-center">
+        <div class="w-14 h-14 rounded-full bg-primary/90 text-charcoal flex items-center justify-center">
+          <span class="material-symbols-outlined text-2xl">person</span>
+        </div>
+      </div>
+      <div id="mobile-auth-logged-out" class="mt-4 flex items-center justify-between">
+        <button id="mobile-signup-btn" class="px-4 py-2 rounded-full bg-charcoal text-white text-xs font-bold">회원가입</button>
+        <button id="mobile-signin-btn" class="text-xs font-bold text-charcoal dark:text-white">로그인 &gt;</button>
+      </div>
+      <div id="mobile-auth-logged-in" class="hidden mt-4">
+        <div class="flex items-center gap-3">
+          <img id="mobile-profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border border-primary" />
+          <div class="min-w-0">
+            <p id="mobile-profile-name" class="text-sm font-semibold text-charcoal dark:text-white truncate"></p>
+            <a class="text-xs text-primary hover:underline" href="/mypage">마이페이지</a>
+          </div>
+        </div>
+        <button id="mobile-signout-btn" class="mt-3 w-full rounded-lg border border-charcoal/20 dark:border-white/20 py-2 text-xs font-bold text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5">로그아웃</button>
+      </div>
+    </div>
+    <div class="px-4 py-4 space-y-2">
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+      <button id="mobile-theme-toggle" class="flex items-center gap-2 w-full text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors pt-2 border-t border-charcoal/10 dark:border-white/10 mt-2">
+        <span class="material-symbols-outlined text-lg dark:hidden">dark_mode</span>
+        <span class="material-symbols-outlined text-lg hidden dark:inline">light_mode</span>
+        <span class="dark:hidden">다크모드</span>
+        <span class="hidden dark:inline">라이트모드</span>
+      </button>
+    </div>
+  </div>
+</div>
+</header>
+<main class="flex-1">
+<!-- Hero Section -->
+<div class="w-full min-h-[400px] sm:min-h-[560px] flex flex-col items-center justify-center gap-4 sm:gap-8 bg-cover bg-center bg-no-repeat p-4 sm:p-6 text-center" style='background-image: linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.7) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuBYphL6fjV9krQ1JGM3csl3zwca7LSMlbzod0_J4iLVUOxHQi1l9hCFfkxSN4EegAXwx5ZQ0FMgYP3NZQgAcusmxS4YtAIK7Z8KJiBb9opt6DSF9wSPEwmd5IPZh9m62fsnqsMi794YynTOnwF9VXke8wB2yXNcRGCrdKrVFxN7pOK0fehgORCxWoiIGpttcqyCvAnSuKrFRQOaqL34GZzY2uMKG8l1wjV0wv-QYSu1yPKmaCUc9xzyAyjTGQuOeygGLJZuRebMhvw");'>
+<div class="flex flex-col items-center gap-3 sm:gap-4 max-w-[800px] px-2">
+<h1 class="text-white text-lg xs:text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-[-0.033em] font-display whitespace-nowrap text-center">
+오늘 한국이 읽고 있는 책을 발견하세요
+</h1>
+<h2 class="text-white/90 text-[11px] xs:text-xs sm:text-base md:text-xl font-normal leading-normal whitespace-nowrap text-center">
+전국 공공도서관 네트워크의 실시간 인사이트. 트렌드를 탐색하고 대출 가능 여부를 확인하세요.
+</h2>
+</div>
+<form id="search-form" class="flex flex-col w-full max-w-[600px] px-2 gap-2 sm:gap-3">
+<div class="flex w-full items-stretch rounded-xl h-12 sm:h-14 shadow-2xl overflow-hidden">
+<div class="text-charcoal/50 flex bg-white items-center justify-center pl-3 sm:pl-4 border-r-0">
+<span class="material-symbols-outlined text-xl sm:text-2xl">search</span>
+</div>
+<input id="search-input" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-charcoal focus:outline-0 focus:ring-0 border-none bg-white h-full placeholder:text-charcoal/40 px-2 sm:px-4 text-sm sm:text-base font-normal leading-normal" placeholder="도서명을 입력하세요..." value=""/>
+<div class="flex items-center justify-center bg-white pr-1 sm:pr-2">
+<button type="submit" class="flex min-w-[60px] sm:min-w-[100px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 sm:h-10 px-3 sm:px-6 bg-primary text-charcoal text-xs sm:text-sm font-bold leading-normal tracking-[0.015em] hover:scale-[1.02] transition-transform">
+<span class="truncate">검색</span>
+</button>
+</div>
+</div>
+<label for="ai-mode-check" class="flex items-center justify-center gap-2 cursor-pointer select-none">
+<input type="checkbox" id="ai-mode-check" class="w-4 h-4 rounded border-white/40 text-primary focus:ring-primary/50 bg-white/20" />
+<span class="text-white/90 text-xs sm:text-sm font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+AI 추천: 내 주변 도서관 소장 도서만 보기
+</span>
+</label>
+</form>
+</div>
+<!-- Today's Recommended Book (Monthly Keyword Based) -->
+<div class="w-full flex justify-center py-6 sm:py-16">
+<div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-2 sm:px-4 lg:px-10">
+<div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
+    <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
+    <div class="mt-3 h-[90px] sm:h-[120px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
+      AdSense 728x90
+    </div>
+  </div>
+  <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
+    <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
+    <div class="mt-3 h-[90px] sm:h-[120px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
+      AdSense 728x90
+    </div>
+  </div>
+</div>
+<div class="flex items-center gap-2 sm:gap-3 pb-4 sm:pb-8">
+<div class="h-6 sm:h-8 w-1 bg-primary"></div>
+<h2 class="text-charcoal dark:text-white text-lg sm:text-2xl font-bold leading-tight tracking-[-0.015em] font-display">오늘의 추천 도서</h2>
+<span id="recommend-keyword-badge" class="hidden text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-medium"></span>
+</div>
+
+<!-- Loading State -->
+<div id="recommend-loading" class="flex flex-col lg:flex-row items-stretch justify-between gap-4 sm:gap-8 rounded-xl sm:rounded-2xl bg-white dark:bg-charcoal/60 p-3 sm:p-6 lg:p-10 shadow-xl border border-charcoal/5 dark:border-white/5">
+<div class="flex flex-[1.5] flex-col gap-3 sm:gap-6 justify-center">
+<div class="animate-pulse flex flex-col gap-4">
+<div class="h-4 bg-charcoal/10 dark:bg-white/10 rounded w-24"></div>
+<div class="h-8 bg-charcoal/10 dark:bg-white/10 rounded w-3/4"></div>
+<div class="h-4 bg-charcoal/10 dark:bg-white/10 rounded w-full"></div>
+<div class="h-4 bg-charcoal/10 dark:bg-white/10 rounded w-2/3"></div>
+</div>
+</div>
+<div class="flex-1 min-h-[150px] sm:min-h-[300px] bg-charcoal/10 dark:bg-white/10 rounded-lg sm:rounded-xl animate-pulse"></div>
+</div>
+
+<!-- Content (hidden initially) -->
+<div id="recommend-content" class="hidden flex flex-col lg:flex-row items-stretch justify-between gap-4 sm:gap-8 rounded-xl sm:rounded-2xl bg-white dark:bg-charcoal/60 p-3 sm:p-6 lg:p-10 shadow-xl border border-charcoal/5 dark:border-white/5">
+<div class="flex flex-[1.5] flex-col gap-3 sm:gap-6 justify-center">
+<div class="flex flex-col gap-2 sm:gap-4">
+<div class="flex items-center gap-1.5 sm:gap-2 text-primary font-bold text-[10px] sm:text-sm tracking-widest uppercase">
+<span class="material-symbols-outlined text-xs sm:text-sm">auto_awesome</span>
+<span id="recommend-label">월간 키워드 추천</span>
+</div>
+<h3 id="recommend-title" class="text-charcoal dark:text-white text-base sm:text-3xl lg:text-4xl font-black leading-tight font-display"></h3>
+<p id="recommend-author" class="text-charcoal/60 dark:text-white/60 text-xs sm:text-sm"></p>
+<p id="recommend-description" class="text-charcoal/70 dark:text-white/70 text-xs sm:text-base lg:text-lg font-normal leading-relaxed line-clamp-3"></p>
+</div>
+<div class="flex flex-wrap items-center gap-2 sm:gap-4">
+<button id="recommend-detail-btn" class="flex-1 sm:flex-none flex items-center justify-center rounded-lg h-8 sm:h-12 px-3 sm:px-6 bg-charcoal text-white dark:bg-white dark:text-charcoal text-xs sm:text-base font-bold transition-all hover:bg-charcoal/90 dark:hover:bg-white/90">
+<span class="material-symbols-outlined mr-1 sm:mr-2 text-sm sm:text-lg">info</span>
+상세보기
+</button>
+</div>
+</div>
+<div id="recommend-image" class="flex-1 min-h-[150px] sm:min-h-[300px] bg-center bg-no-repeat bg-contain rounded-lg sm:rounded-xl shadow-lg border-2 sm:border-4 border-white dark:border-charcoal/40 bg-gray-100 dark:bg-charcoal-700">
+</div>
+</div>
+
+<!-- Error State -->
+<div id="recommend-error" class="hidden flex flex-col items-center justify-center gap-4 rounded-xl sm:rounded-2xl bg-white dark:bg-charcoal/60 p-6 sm:p-10 shadow-xl border border-charcoal/5 dark:border-white/5 min-h-[200px]">
+<span class="material-symbols-outlined text-4xl text-charcoal/30 dark:text-white/30">menu_book</span>
+<p class="text-charcoal/60 dark:text-white/60 text-sm">추천 도서를 불러오는 중 오류가 발생했습니다.</p>
+<button id="recommend-retry-btn" class="px-4 py-2 bg-primary text-charcoal text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">
+다시 시도
+</button>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- New Arrivals Section -->
+<div class="w-full flex justify-center py-6 sm:py-12">
+<div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-2 sm:px-4 lg:px-10 min-w-0">
+<div class="flex items-center gap-2 sm:gap-3 pb-4 sm:pb-6">
+  <div class="h-6 sm:h-8 w-1 bg-primary"></div>
+  <h2 class="text-charcoal dark:text-white text-lg sm:text-2xl font-bold leading-tight tracking-[-0.015em] font-display">이번 주 신착 도서</h2>
+  <span id="new-arrivals-date-badge" class="hidden text-xs bg-primary/20 text-primary px-2 py-1 rounded-full font-medium"></span>
+</div>
+
+<!-- Loading State -->
+<div id="new-arrivals-loading" class="relative min-w-0 overflow-x-clip">
+  <div class="flex gap-3 sm:gap-4 overflow-x-hidden pb-2">
+    <div class="flex-shrink-0 w-[140px] sm:w-[160px] animate-pulse">
+      <div class="w-full h-[190px] sm:h-[220px] bg-charcoal/10 dark:bg-white/10 rounded-lg mb-2"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-full mb-1"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-2/3"></div>
+    </div>
+    <div class="flex-shrink-0 w-[140px] sm:w-[160px] animate-pulse">
+      <div class="w-full h-[190px] sm:h-[220px] bg-charcoal/10 dark:bg-white/10 rounded-lg mb-2"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-full mb-1"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-2/3"></div>
+    </div>
+    <div class="flex-shrink-0 w-[140px] sm:w-[160px] animate-pulse">
+      <div class="w-full h-[190px] sm:h-[220px] bg-charcoal/10 dark:bg-white/10 rounded-lg mb-2"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-full mb-1"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-2/3"></div>
+    </div>
+    <div class="flex-shrink-0 w-[140px] sm:w-[160px] animate-pulse hidden sm:block">
+      <div class="w-full h-[190px] sm:h-[220px] bg-charcoal/10 dark:bg-white/10 rounded-lg mb-2"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-full mb-1"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-2/3"></div>
+    </div>
+    <div class="flex-shrink-0 w-[140px] sm:w-[160px] animate-pulse hidden lg:block">
+      <div class="w-full h-[190px] sm:h-[220px] bg-charcoal/10 dark:bg-white/10 rounded-lg mb-2"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-full mb-1"></div>
+      <div class="h-3 bg-charcoal/10 dark:bg-white/10 rounded w-2/3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Content -->
+<div id="new-arrivals-content" class="hidden relative group/carousel min-w-0 overflow-x-clip">
+  <!-- Left Arrow (md+) -->
+  <button id="carousel-prev" class="hidden md:flex absolute left-4 top-[110px] -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full bg-white/80 dark:bg-charcoal/80 shadow-lg border border-charcoal/10 dark:border-white/10 hover:bg-white dark:hover:bg-charcoal hover:scale-110 transition-all text-charcoal dark:text-white disabled:opacity-0 disabled:pointer-events-none">
+    <span class="material-symbols-outlined text-xl">chevron_left</span>
+  </button>
+
+  <!-- Carousel Container -->
+  <div id="new-arrivals-list" class="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-2 scroll-snap-x-mandatory">
+    <!-- Cards will be inserted here with snap-start class -->
+  </div>
+
+  <!-- Right Arrow (md+) -->
+  <button id="carousel-next" class="hidden md:flex absolute right-4 top-[110px] -translate-y-1/2 z-10 w-10 h-10 items-center justify-center rounded-full bg-white/80 dark:bg-charcoal/80 shadow-lg border border-charcoal/10 dark:border-white/10 hover:bg-white dark:hover:bg-charcoal hover:scale-110 transition-all text-charcoal dark:text-white disabled:opacity-0 disabled:pointer-events-none">
+    <span class="material-symbols-outlined text-xl">chevron_right</span>
+  </button>
+
+  <!-- Dot Indicators -->
+  <div id="carousel-dots" class="flex justify-center gap-1.5 mt-3"></div>
+</div>
+
+<!-- Error State -->
+<div id="new-arrivals-error" class="hidden flex flex-col items-center justify-center gap-3 rounded-xl bg-white dark:bg-charcoal/60 p-6 shadow-xl border border-charcoal/5 dark:border-white/5 min-h-[150px]">
+  <span class="material-symbols-outlined text-3xl text-charcoal/30 dark:text-white/30">new_releases</span>
+  <p class="text-charcoal/60 dark:text-white/60 text-sm">신착 도서를 불러오는 중 오류가 발생했습니다.</p>
+  <button id="new-arrivals-retry-btn" class="px-4 py-2 bg-primary text-charcoal text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">
+    다시 시도
+  </button>
+</div>
+
+</div>
+</div>
+
+</main>
+<!-- Footer -->
+<footer class="bg-[#1a1a1a] text-white/70">
+<!-- Top Row: Links -->
+<div class="border-b border-white/10">
+<div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+<nav class="flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm">
+<button id="terms-btn" class="hover:text-white transition-colors">이용약관</button>
+<button id="privacy-btn" class="hover:text-white transition-colors">개인정보처리방침</button>
+<button id="sitemap-btn" class="hover:text-white transition-colors">사이트맵</button>
+</nav>
+<div class="relative">
+<select class="bg-transparent border border-white/20 rounded px-3 py-1.5 text-xs sm:text-sm text-white/70 focus:outline-none focus:border-white/40 cursor-pointer appearance-none pr-8">
+<option value="" class="bg-[#1a1a1a]">유관 사이트</option>
+<option value="https://www.nl.go.kr" class="bg-[#1a1a1a]">국립중앙도서관</option>
+<option value="https://www.data4library.kr" class="bg-[#1a1a1a]">도서관 정보나루</option>
+<option value="https://www.mcst.go.kr" class="bg-[#1a1a1a]">문화체육관광부</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Bottom Row: Logo & Copyright -->
+<div class="max-w-[1200px] mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+<!-- Logo -->
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
+<div class="w-6 h-6 bg-white rounded-full"></div>
+</div>
+<div class="flex flex-col text-xs sm:text-sm">
+<span class="text-white font-bold text-base sm:text-lg">LibraryInsights</span>
+<span class="text-white/50">도서관 정보 서비스</span>
+</div>
+</div>
+<!-- Contact Info -->
+<div class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
+<a href="tel:02-000-0000" class="flex items-center gap-1.5 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">call</span>
+02-000-0000
+</a>
+<a href="mailto:sachun78@gmail.com" class="flex items-center gap-1.5 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">mail</span>
+sachun78@gmail.com
+</a>
+</div>
+</div>
+<!-- Copyright -->
+<p class="text-xs sm:text-sm text-white/50">
+© 2026 LibraryInsights. Data provided by 도서관 정보나루. All rights reserved.
+</p>
+</div>
+</footer>
+</div>
+</div>
+
+<BookDetailModal />
+
+<!-- Terms of Service Modal -->
+<div id="terms-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">LibraryInsights 이용약관</h2>
+      <button id="close-terms-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+        <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+      <h3 class="font-bold text-charcoal dark:text-white mb-4">1. 목적</h3>
+      <p class="mb-3">본 약관은 LibraryInsights(이하 “서비스”)의 이용 조건과 절차, 운영자와 이용자의 권리·의무를 규정합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">2. 서비스 내용</h3>
+      <p class="mb-3">서비스는 공공도서관 대출 데이터를 기반으로 도서 검색, 추천, 인기/급상승 도서 정보 제공 등의 기능을 제공합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">3. 계정 및 이용자 의무</h3>
+      <p class="mb-3">이용자는 정확한 정보를 제공해야 하며, 계정 보안 책임은 이용자에게 있습니다. 타인의 권리를 침해하거나 불법적인 행위를 해서는 안 됩니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">4. 콘텐츠 및 지식재산권</h3>
+      <p class="mb-3">서비스 내 데이터 및 콘텐츠의 저작권은 각 권리자에게 있으며, 서비스는 합리적 범위 내에서 이를 표시합니다. 이용자는 무단 복제·배포를 할 수 없습니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">5. 광고 및 외부 링크</h3>
+      <p class="mb-3">서비스에는 제3자 광고(예: Google AdSense) 또는 외부 링크가 포함될 수 있습니다. 외부 사이트의 내용 및 개인정보 처리에 대해 운영자는 책임을 지지 않습니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">6. 서비스 제한 및 중단</h3>
+      <p class="mb-3">시스템 점검, 장애, 불가항력 사유로 서비스가 일시 중단될 수 있으며, 사전 공지가 가능한 경우 안내합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">7. 면책</h3>
+      <p class="mb-3">운영자는 서비스 이용과 관련된 직접·간접 손해에 대해 고의 또는 중대한 과실이 없는 한 책임을 지지 않습니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">8. 분쟁 해결</h3>
+      <p class="mb-3">본 약관은 대한민국 법령을 따르며, 분쟁 발생 시 관할 법원은 운영자 소재지 관할 법원으로 합니다.</p>
+
+      <p class="mt-6 text-xs text-charcoal/60 dark:text-white/60">시행일: 2026년 2월 7일</p>
+    </div>
+  </div>
+</div>
+
+<!-- Sitemap Modal -->
+<div id="sitemap-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-lg w-full relative">
+    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">사이트맵</h2>
+      <button id="close-sitemap-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+        <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6">
+      <nav class="space-y-4">
+        <div>
+          <a href="/" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">home</span>
+            홈
+          </a>
+          <p class="text-xs text-charcoal/60 dark:text-white/60 ml-8 mt-1">오늘의 추천 도서, 도서 검색</p>
+        </div>
+        <div>
+          <a href="/bestsellers" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">star</span>
+            인기 도서
+          </a>
+          <ul class="ml-8 mt-2 space-y-1 text-sm">
+            <li class="flex items-center gap-2 text-charcoal/70 dark:text-white/70">
+              <span class="material-symbols-outlined text-sm">trending_up</span>
+              인기 대출 도서
+            </li>
+            <li class="flex items-center gap-2 text-charcoal/70 dark:text-white/70">
+              <span class="material-symbols-outlined text-sm">local_fire_department</span>
+              대출 급상승 도서
+            </li>
+          </ul>
+        </div>
+        <div>
+          <a href="/search" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">search</span>
+            검색
+          </a>
+          <p class="text-xs text-charcoal/60 dark:text-white/60 ml-8 mt-1">도서 검색, 소장 도서관 조회</p>
+        </div>
+        <div>
+          <a href="/mybookshelf" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">collections_bookmark</span>
+            내 서재
+          </a>
+          <p class="text-xs text-charcoal/60 dark:text-white/60 ml-8 mt-1">찜한 도서 관리</p>
+        </div>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div id="privacy-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">개인정보처리방침</h2>
+      <button id="close-privacy-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+        <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+      <p class="mb-4">LibraryInsights는 개인정보 보호법 등 관련 법령을 준수하며 이용자의 개인정보를 안전하게 처리합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">1. 수집 항목</h3>
+      <p class="mb-3"><strong>필수:</strong> 이메일, 닉네임/프로필명<br/><strong>선택:</strong> 성별, 생년월일, 지역, 프로필 이미지 등<br/><strong>자동 수집:</strong> IP 주소, 쿠키, 접속 로그, 이용 기록, 기기/브라우저 정보</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">2. 이용 목적</h3>
+      <p class="mb-3">서비스 제공, 개인화된 추천, 계정 관리, 문의 응대, 보안 및 부정 이용 방지, 통계 분석을 위해 사용합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">3. 보유 및 이용 기간</h3>
+      <p class="mb-3">회원 탈퇴 시 지체 없이 파기하며, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">4. 제3자 제공</h3>
+      <p class="mb-3">원칙적으로 제3자 제공을 하지 않습니다. 단, 법령에 근거하거나 수사기관의 요청이 있는 경우 예외로 합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">5. 광고 및 쿠키</h3>
+      <p class="mb-3">서비스에는 Google AdSense 등 제3자 광고가 포함될 수 있으며, 광고 제공을 위해 쿠키가 사용될 수 있습니다. 이용자는 브라우저 설정을 통해 쿠키 저장을 거부하거나 삭제할 수 있습니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">6. 처리 위탁</h3>
+      <p class="mb-3">현재 개인정보 처리 위탁은 없습니다. 향후 위탁이 발생하는 경우 본 방침에 공개합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">7. 이용자 권리</h3>
+      <p class="mb-3">이용자는 개인정보 열람, 정정, 삭제, 처리정지, 동의 철회를 요청할 수 있습니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">8. 안전성 확보 조치</h3>
+      <p class="mb-3">접근 통제, 최소 권한 부여, 암호화 및 보안 점검 등 합리적인 안전조치를 적용합니다.</p>
+
+      <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">9. 개인정보 보호책임자</h3>
+      <p class="mb-3">운영자: LibraryInsights<br/>이메일: sachun78@gmail.com</p>
+
+      <p class="mt-6 text-xs text-charcoal/60 dark:text-white/60">시행일: 2026년 2월 7일</p>
+    </div>
+  </div>
+</div>
+
+<Auth />
+<script>
+  import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
+  import { initBookmarks, isBookmarked, toggleBookmark, getUserId, getBookmarkedIsbns } from '../scripts/bookmarks';
+
+  // Search form handler
+  const searchForm = document.getElementById('search-form');
+  const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+  const aiModeCheck = document.getElementById('ai-mode-check') as HTMLInputElement | null;
+
+  searchForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const keyword = searchInput?.value?.trim();
+    if (keyword) {
+      const modeStr = aiModeCheck?.checked ? '&mode=ai' : '';
+      window.location.href = `/search?q=${encodeURIComponent(keyword)}${modeStr}`;
+    }
+  });
+
+  // Initialize shared book modal (library search is handled internally)
+  initBookModal();
+
+  // Open book modal (delegates to shared module)
+  function openBookModal(book) {
+    if (!book) return;
+    sharedOpenModal(book);
+  }
+
+  // ========================================
+  // Monthly Keyword Recommendation
+  // ========================================
+  const recommendLoading = document.getElementById('recommend-loading');
+  const recommendContent = document.getElementById('recommend-content');
+  const recommendError = document.getElementById('recommend-error');
+  const recommendKeywordBadge = document.getElementById('recommend-keyword-badge');
+  const recommendTitle = document.getElementById('recommend-title');
+  const recommendAuthor = document.getElementById('recommend-author');
+  const recommendDescription2 = document.getElementById('recommend-description');
+  const recommendImage = document.getElementById('recommend-image');
+  const recommendDetailBtn = document.getElementById('recommend-detail-btn');
+  const recommendRetryBtn = document.getElementById('recommend-retry-btn');
+
+  let currentRecommendBook = null;
+
+  const bookPlaceholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='300' viewBox='0 0 200 300'%3E%3Crect fill='%23e2e8f0' width='200' height='300'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='48' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='60%25' font-family='Arial' font-size='14' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+  function renderRecommendation(data) {
+    currentRecommendBook = data.book;
+
+    const recommendLabel = document.getElementById('recommend-label');
+    if (data.source === 'personalized') {
+      if (recommendLabel) recommendLabel.textContent = '내 서재 기반 추천';
+      recommendKeywordBadge?.classList.add('hidden');
+    } else {
+      if (recommendLabel) recommendLabel.textContent = '월간 키워드 추천';
+      if (data.keyword && recommendKeywordBadge) {
+        recommendKeywordBadge.textContent = `#${data.keyword}`;
+        recommendKeywordBadge.classList.remove('hidden');
+      }
+    }
+
+    if (recommendTitle) {
+      recommendTitle.textContent = `"${data.book.bookname}"`;
+    }
+
+    if (recommendAuthor) {
+      const authorText = data.book.authors || '저자 미상';
+      const publisherText = data.book.publisher ? ` · ${data.book.publisher}` : '';
+      const yearText = data.book.publication_year ? ` (${data.book.publication_year})` : '';
+      recommendAuthor.textContent = authorText + publisherText + yearText;
+    }
+
+    if (recommendDescription2) {
+      if (data.book.description) {
+        recommendDescription2.textContent = data.book.description;
+      } else if (data.book.class_nm) {
+        recommendDescription2.textContent = `분류: ${data.book.class_nm}`;
+      } else {
+        recommendDescription2.textContent = data.source === 'personalized'
+          ? '내 서재를 기반으로 추천된 도서입니다.'
+          : `"${data.keyword}" 키워드로 추천된 도서입니다.`;
+      }
+    }
+
+    if (recommendImage) {
+      const imageUrl = data.book.bookImageURL || bookPlaceholder;
+      recommendImage.style.backgroundImage = `url("${imageUrl}")`;
+    }
+
+    recommendLoading?.classList.add('hidden');
+    recommendContent?.classList.remove('hidden');
+  }
+
+  async function fetchRecommendation(skipCache = false) {
+    // Determine personalized vs default
+    const userId = getUserId();
+    const userBookmarkedIsbns = userId ? getBookmarkedIsbns() : [];
+    const isPersonalized = userBookmarkedIsbns.length > 0;
+    const cacheKey = isPersonalized
+      ? 'dailyRecommend_personal_' + new Date().toISOString().split('T')[0]
+      : 'dailyRecommend_' + new Date().toISOString().split('T')[0];
+
+    // Check localStorage cache (today only)
+    if (!skipCache) {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const data = JSON.parse(cached);
+          if (data && data.book) {
+            renderRecommendation(data);
+            return;
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+
+    recommendLoading?.classList.remove('hidden');
+    recommendContent?.classList.add('hidden');
+    recommendError?.classList.add('hidden');
+    recommendKeywordBadge?.classList.add('hidden');
+
+    try {
+      let apiUrl: string;
+      if (isPersonalized) {
+        const isbns = userBookmarkedIsbns.slice(0, 10).join(';');
+        apiUrl = `/api/personalized-recommend?isbn13=${encodeURIComponent(isbns)}`;
+      } else {
+        apiUrl = '/api/monthly-recommend';
+      }
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      recommendLoading?.classList.add('hidden');
+
+      if ((data.error && !data.book) || !data.book) {
+        // Personalized failed and no book — fallback to monthly
+        if (isPersonalized) {
+          const fallbackRes = await fetch('/api/monthly-recommend');
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData && fallbackData.book) {
+            try {
+              Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('dailyRecommend_') && k !== cacheKey) localStorage.removeItem(k);
+              });
+              localStorage.setItem(cacheKey, JSON.stringify(fallbackData));
+            } catch { /* storage full */ }
+            renderRecommendation(fallbackData);
+            return;
+          }
+        }
+        recommendError?.classList.remove('hidden');
+        return;
+      }
+
+      // Save to localStorage (clean up old keys)
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('dailyRecommend_') && k !== cacheKey) localStorage.removeItem(k);
+        });
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch { /* storage full, ignore */ }
+
+      renderRecommendation(data);
+
+    } catch (error) {
+      console.error('Recommendation fetch error:', error);
+      recommendLoading?.classList.add('hidden');
+      recommendError?.classList.remove('hidden');
+    }
+  }
+
+  // Button handlers - open modal instead of navigating
+  recommendDetailBtn?.addEventListener('click', () => {
+    if (currentRecommendBook) {
+      openBookModal(currentRecommendBook);
+    }
+  });
+
+  recommendRetryBtn?.addEventListener('click', () => {
+    fetchRecommendation(true);
+  });
+
+  // fetchRecommendation is called after initBookmarks (below)
+
+  // ========================================
+  // New Arrivals Section
+  // ========================================
+  const newArrivalsLoading = document.getElementById('new-arrivals-loading');
+  const newArrivalsContent = document.getElementById('new-arrivals-content');
+  const newArrivalsError = document.getElementById('new-arrivals-error');
+  const newArrivalsList = document.getElementById('new-arrivals-list');
+  const newArrivalsDateBadge = document.getElementById('new-arrivals-date-badge');
+  const newArrivalsRetryBtn = document.getElementById('new-arrivals-retry-btn');
+
+  let newArrivalsBooks: any[] = [];
+
+  const cardPlaceholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='170' viewBox='0 0 120 170'%3E%3Crect fill='%23e2e8f0' width='120' height='170'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='40' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='60%25' font-family='Arial' font-size='10' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+  async function fetchNewArrivals() {
+    newArrivalsLoading?.classList.remove('hidden');
+    newArrivalsContent?.classList.add('hidden');
+    newArrivalsError?.classList.add('hidden');
+    newArrivalsDateBadge?.classList.add('hidden');
+
+    try {
+      const response = await fetch('/api/new-arrivals');
+      const data = await response.json();
+
+      newArrivalsLoading?.classList.add('hidden');
+
+      if (data.error) {
+        newArrivalsError?.classList.remove('hidden');
+        return;
+      }
+
+      const docs = data.response?.docs || [];
+      if (docs.length === 0) {
+        newArrivalsError?.classList.remove('hidden');
+        return;
+      }
+
+      newArrivalsBooks = docs.map((item: any) => item.doc);
+
+      // Show date badge
+      const today = new Date();
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      const formatDt = (d: Date) => `${d.getMonth() + 1}.${d.getDate()}`;
+      if (newArrivalsDateBadge) {
+        newArrivalsDateBadge.textContent = `${formatDt(weekAgo)} ~ ${formatDt(today)}`;
+        newArrivalsDateBadge.classList.remove('hidden');
+      }
+
+      // Render cards
+      if (newArrivalsList) {
+        newArrivalsList.innerHTML = newArrivalsBooks.map((book: any, index: number) => {
+          const hasImage = book.bookImageURL && book.bookImageURL.trim() !== '';
+          const imgSrc = hasImage ? book.bookImageURL : cardPlaceholder;
+          const isbn = book.isbn13 || '';
+          const filled = isbn ? isBookmarked(isbn) : false;
+          return `
+            <div class="flex-shrink-0 w-[140px] sm:w-[160px] cursor-pointer group snap-start" data-new-arrival-index="${index}">
+              <div class="relative overflow-hidden rounded-lg mb-2 shadow-md group-hover:shadow-lg transition-shadow">
+                <img
+                  src="${imgSrc}"
+                  alt="${book.bookname}"
+                  class="w-full h-[190px] sm:h-[220px] object-cover bg-gray-200 dark:bg-charcoal-600 group-hover:scale-105 transition-transform duration-300"
+                  onerror="this.onerror=null; this.src='${cardPlaceholder}';"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                ${isbn ? `
+                  <button class="bookmark-btn absolute top-1 right-1 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 dark:bg-charcoal/80 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10" data-isbn="${isbn}" data-book-index="${index}">
+                    <span class="material-symbols-outlined text-lg ${filled ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}" style="font-variation-settings: 'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
+                  </button>
+                ` : ''}
+              </div>
+              <h4 class="text-xs sm:text-sm font-bold text-charcoal dark:text-white line-clamp-2 leading-tight mb-0.5">${book.bookname}</h4>
+              <p class="text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 truncate">${book.authors || '저자 미상'}</p>
+            </div>
+          `;
+        }).join('');
+
+        // Add click handlers
+        newArrivalsList.querySelectorAll('[data-new-arrival-index]').forEach((card) => {
+          card.addEventListener('click', (e) => {
+            // Don't open modal if clicking bookmark button
+            if ((e.target as HTMLElement).closest('.bookmark-btn')) return;
+            const idx = parseInt(card.getAttribute('data-new-arrival-index') || '0');
+            const book = newArrivalsBooks[idx];
+            if (book) openBookModal(book);
+          });
+        });
+
+        // Bookmark button handlers
+        newArrivalsList.querySelectorAll('.bookmark-btn').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const userId = getUserId();
+            if (!userId) {
+              const signinBtn = document.getElementById('signin-btn');
+              signinBtn?.click();
+              return;
+            }
+            const isbn = (btn as HTMLElement).dataset.isbn || '';
+            const bookIdx = parseInt((btn as HTMLElement).dataset.bookIndex || '0');
+            const book = newArrivalsBooks[bookIdx];
+            if (!book || !isbn) return;
+
+            const icon = btn.querySelector('.material-symbols-outlined');
+            const nowBookmarked = await toggleBookmark({
+              isbn13: isbn,
+              bookname: book.bookname,
+              authors: book.authors,
+              publisher: book.publisher,
+              publication_year: book.publication_year,
+              bookImageURL: book.bookImageURL,
+            });
+            if (icon) {
+              icon.className = `material-symbols-outlined text-lg ${nowBookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}`;
+              (icon as HTMLElement).style.fontVariationSettings = `'FILL' ${nowBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
+            }
+          });
+        });
+      }
+
+      newArrivalsContent?.classList.remove('hidden');
+
+      // Initialize carousel after content is visible
+      initCarousel();
+
+    } catch (error) {
+      console.error('New arrivals fetch error:', error);
+      newArrivalsLoading?.classList.add('hidden');
+      newArrivalsError?.classList.remove('hidden');
+    }
+  }
+
+  // ========================================
+  // Carousel Navigation
+  // ========================================
+  const carouselPrev = document.getElementById('carousel-prev') as HTMLButtonElement | null;
+  const carouselNext = document.getElementById('carousel-next') as HTMLButtonElement | null;
+  const carouselDots = document.getElementById('carousel-dots');
+
+  function initCarousel() {
+    if (!newArrivalsList || !carouselPrev || !carouselNext || !carouselDots) return;
+
+    const getCardWidth = () => {
+      const card = newArrivalsList.querySelector('[data-new-arrival-index]') as HTMLElement | null;
+      if (!card) return 176;
+      const gap = parseFloat(getComputedStyle(newArrivalsList).gap) || 12;
+      return card.offsetWidth + gap;
+    };
+
+    const getVisibleCount = () => {
+      const cardW = getCardWidth();
+      return Math.max(1, Math.floor(newArrivalsList!.clientWidth / cardW));
+    };
+
+    const getTotalPages = () => {
+      const total = newArrivalsList!.children.length;
+      const visible = getVisibleCount();
+      return Math.max(1, Math.ceil(total / visible));
+    };
+
+    const getCurrentPage = () => {
+      const cardW = getCardWidth();
+      const visible = getVisibleCount();
+      return Math.round(newArrivalsList!.scrollLeft / (cardW * visible));
+    };
+
+    // Build dots
+    function buildDots() {
+      if (!carouselDots) return;
+      const pages = getTotalPages();
+      carouselDots.innerHTML = '';
+      for (let i = 0; i < pages; i++) {
+        const dot = document.createElement('button');
+        dot.className = 'w-2 h-2 rounded-full transition-all duration-200 bg-charcoal/20 dark:bg-white/20';
+        dot.setAttribute('aria-label', `Page ${i + 1}`);
+        dot.addEventListener('click', () => {
+          const cardW = getCardWidth();
+          const visible = getVisibleCount();
+          newArrivalsList!.scrollTo({ left: cardW * visible * i, behavior: 'smooth' });
+        });
+        carouselDots.appendChild(dot);
+      }
+      updateCarouselState();
+    }
+
+    // Update arrows & dots based on scroll position
+    function updateCarouselState() {
+      if (!newArrivalsList) return;
+      const scrollLeft = newArrivalsList.scrollLeft;
+      const maxScroll = newArrivalsList.scrollWidth - newArrivalsList.clientWidth;
+
+      // Arrow visibility
+      if (carouselPrev) {
+        if (scrollLeft <= 5) {
+          carouselPrev.classList.add('!hidden');
+        } else {
+          carouselPrev.classList.remove('!hidden');
+        }
+      }
+      if (carouselNext) {
+        if (scrollLeft >= maxScroll - 5) {
+          carouselNext.classList.add('!hidden');
+        } else {
+          carouselNext.classList.remove('!hidden');
+        }
+      }
+
+      // Active dot
+      const page = getCurrentPage();
+      carouselDots?.querySelectorAll('button').forEach((dot, i) => {
+        if (i === page) {
+          dot.className = 'w-2.5 h-2.5 rounded-full transition-all duration-200 bg-primary';
+        } else {
+          dot.className = 'w-2 h-2 rounded-full transition-all duration-200 bg-charcoal/20 dark:bg-white/20 hover:bg-charcoal/40 dark:hover:bg-white/40';
+        }
+      });
+    }
+
+    // Arrow click handlers
+    carouselPrev.addEventListener('click', () => {
+      const cardW = getCardWidth();
+      const visible = getVisibleCount();
+      newArrivalsList!.scrollBy({ left: -(cardW * visible), behavior: 'smooth' });
+    });
+
+    carouselNext.addEventListener('click', () => {
+      const cardW = getCardWidth();
+      const visible = getVisibleCount();
+      newArrivalsList!.scrollBy({ left: cardW * visible, behavior: 'smooth' });
+    });
+
+    // Scroll listener (debounced)
+    let scrollTimer: ReturnType<typeof setTimeout>;
+    newArrivalsList.addEventListener('scroll', () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(updateCarouselState, 50);
+    }, { passive: true });
+
+    // Rebuild dots on resize
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(buildDots, 150);
+    });
+
+    buildDots();
+  }
+
+  newArrivalsRetryBtn?.addEventListener('click', () => {
+    fetchNewArrivals();
+  });
+
+  // Init bookmarks, then load recommendation + new arrivals
+  initBookmarks().then(() => { fetchRecommendation(); fetchNewArrivals(); });
+
+  // ========================================
+  // Footer Modals (Terms, Privacy, Sitemap)
+  // ========================================
+  const termsBtn = document.getElementById('terms-btn');
+  const termsModal = document.getElementById('terms-modal');
+  const closeTermsModal = document.getElementById('close-terms-modal');
+
+  const privacyBtn = document.getElementById('privacy-btn');
+  const privacyModal = document.getElementById('privacy-modal');
+  const closePrivacyModal = document.getElementById('close-privacy-modal');
+
+  const sitemapBtn = document.getElementById('sitemap-btn');
+  const sitemapModal = document.getElementById('sitemap-modal');
+  const closeSitemapModal = document.getElementById('close-sitemap-modal');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileSigninBtn = document.getElementById('mobile-signin-btn');
+  const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+  // Terms Modal
+  termsBtn?.addEventListener('click', () => termsModal?.classList.remove('hidden'));
+  closeTermsModal?.addEventListener('click', () => termsModal?.classList.add('hidden'));
+  termsModal?.addEventListener('click', (e) => {
+    if (e.target === termsModal) termsModal.classList.add('hidden');
+  });
+
+  // Privacy Modal
+  privacyBtn?.addEventListener('click', () => privacyModal?.classList.remove('hidden'));
+  closePrivacyModal?.addEventListener('click', () => privacyModal?.classList.add('hidden'));
+  privacyModal?.addEventListener('click', (e) => {
+    if (e.target === privacyModal) privacyModal.classList.add('hidden');
+  });
+
+  // Sitemap Modal
+  sitemapBtn?.addEventListener('click', () => sitemapModal?.classList.remove('hidden'));
+  closeSitemapModal?.addEventListener('click', () => sitemapModal?.classList.add('hidden'));
+  sitemapModal?.addEventListener('click', (e) => {
+    if (e.target === sitemapModal) sitemapModal.classList.add('hidden');
+  });
+
+  // Mobile Menu
+  mobileMenuBtn?.addEventListener('click', () => {
+    const isOpen = mobileMenu && !mobileMenu.classList.contains('hidden');
+    if (mobileMenu) mobileMenu.classList.toggle('hidden');
+    if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', String(!isOpen));
+  });
+
+  mobileMenuClose?.addEventListener('click', () => {
+    mobileMenu?.classList.add('hidden');
+    mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+  });
+
+  mobileMenu?.addEventListener('click', (e) => {
+    if (e.target === mobileMenu) {
+      mobileMenu.classList.add('hidden');
+      mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  mobileSigninBtn?.addEventListener('click', () => {
+    const signinBtn = document.getElementById('signin-btn');
+    signinBtn?.click();
+  });
+</script>
+<script>
+  import '../scripts/theme';
+</script>
+</body></html>

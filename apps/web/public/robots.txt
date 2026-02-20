@@ -1,0 +1,8 @@
+# Allow all bots to scan and index the site
+User-agent: *
+Allow: /
+Disallow: /search
+Disallow: /mypage
+
+# Sitemap location
+Sitemap: https://library-insights.pages.dev/sitemap.xml

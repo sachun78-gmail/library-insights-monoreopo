@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LibraryInsights - Project Introduction</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #E8C547;
+    --bg-dark: #111111;
+    --bg-card: #1a1a1a;
+    --text: #ffffff;
+    --text-muted: rgba(255,255,255,0.6);
+    --accent: #4A90D9;
+  }
+
+  body {
+    background: var(--bg-dark);
+    color: var(--text);
+    font-family: 'Noto Serif KR', serif;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* Slide Container */
+  .slides {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    pointer-events: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .slide.exit {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  /* Progress Bar */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--primary);
+    z-index: 100;
+    transition: width 0.3s linear;
+  }
+
+  /* Slide Counter */
+  .slide-counter {
+    position: fixed;
+    bottom: 24px;
+    right: 32px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--text-muted);
+    z-index: 100;
+  }
+
+  /* Navigation Dots */
+  .nav-dots {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+  .nav-dots .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .nav-dots .dot.active {
+    background: var(--primary);
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  /* Pause/Play Button */
+  .play-toggle {
+    position: fixed;
+    bottom: 20px;
+    left: 32px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--text-muted);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: all 0.2s;
+  }
+  .play-toggle:hover {
+    background: rgba(255,255,255,0.2);
+    color: var(--text);
+  }
+
+  /* Common Styles */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .title {
+    font-size: clamp(28px, 5vw, 56px);
+    font-weight: 900;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: clamp(14px, 2vw, 20px);
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 600px;
+    line-height: 1.7;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 24px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease;
+  }
+
+  .slide.active .feature-card {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feature-card .icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    font-size: 22px;
+  }
+
+  .feature-card h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .feature-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Staggered animation delays */
+  .slide.active .feature-card:nth-child(1) { transition-delay: 0.1s; }
+  .slide.active .feature-card:nth-child(2) { transition-delay: 0.2s; }
+  .slide.active .feature-card:nth-child(3) { transition-delay: 0.3s; }
+  .slide.active .feature-card:nth-child(4) { transition-delay: 0.4s; }
+  .slide.active .feature-card:nth-child(5) { transition-delay: 0.5s; }
+  .slide.active .feature-card:nth-child(6) { transition-delay: 0.6s; }
+
+  .stagger-item {
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.5s ease;
+  }
+  .slide.active .stagger-item:nth-child(1) { transition-delay: 0.1s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger-item:nth-child(2) { transition-delay: 0.25s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger-item:nth-child(3) { transition-delay: 0.4s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger-item:nth-child(4) { transition-delay: 0.55s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger-item:nth-child(5) { transition-delay: 0.7s; opacity: 1; transform: translateY(0); }
+
+  /* Slide-specific styles */
+
+  /* Slide 1: Title */
+  .slide-title .logo-icon {
+    font-size: 64px;
+    color: var(--primary);
+    margin-bottom: 16px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .slide-title .project-name {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary), #f0d878);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .slide-title .tagline {
+    font-size: clamp(14px, 2vw, 22px);
+    color: var(--text-muted);
+    margin-top: 12px;
+    letter-spacing: 0.02em;
+  }
+  .slide-title .tech-line {
+    margin-top: 32px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .slide-title .tech-tag {
+    padding: 6px 16px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Slide: Mock UI */
+  .mock-browser {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 700px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .mock-browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .mock-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .mock-url {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 8px;
+  }
+  .mock-content {
+    padding: 24px;
+  }
+
+  /* Search box mock */
+  .mock-search {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 16px;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .mock-search .typing-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--text-muted);
+    border-right: 2px solid var(--primary);
+    padding-right: 2px;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink {
+    50% { border-color: transparent; }
+  }
+  .mock-search-btn {
+    padding: 8px 20px;
+    background: var(--primary);
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    margin-left: auto;
+  }
+
+  /* Book cards mock */
+  .mock-book-row {
+    display: flex;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .mock-book {
+    flex-shrink: 0;
+    width: 90px;
+    text-align: center;
+  }
+  .mock-book-cover {
+    width: 90px;
+    height: 120px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  .mock-book-title {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .mock-book-author {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  /* Library status */
+  .mock-library-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .mock-library-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .mock-library-addr {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .mock-status {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .mock-status.available {
+    background: rgba(34,197,94,0.15);
+    color: #22c55e;
+  }
+  .mock-status.on-loan {
+    background: rgba(239,68,68,0.15);
+    color: #ef4444;
+  }
+
+  /* Slide: Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 800px;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    min-width: 100px;
+  }
+  .flow-step .material-symbols-outlined {
+    font-size: 28px;
+  }
+  .flow-step span:last-child {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .flow-arrow {
+    color: var(--primary);
+    font-size: 20px;
+  }
+
+  /* Slide: Closing */
+  .closing-url {
+    margin-top: 24px;
+    padding: 12px 28px;
+    background: var(--primary);
+    color: #111;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s;
+  }
+  .closing-url:hover {
+    transform: scale(1.05);
+  }
+
+  /* Numbers highlight */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 600px;
+    width: 100%;
+  }
+  .stat-item {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+  }
+  .stat-number {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 900;
+    color: var(--primary);
+  }
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<!-- Slide 1: Title -->
+<div class="slides" id="slides">
+
+<div class="slide slide-title active" data-duration="6000">
+  <div class="stagger-item">
+    <span class="material-symbols-outlined logo-icon">auto_stories</span>
+  </div>
+  <div class="stagger-item">
+    <div class="project-name">LibraryInsights</div>
+  </div>
+  <div class="stagger-item">
+    <p class="tagline">한국 공공도서관 데이터 기반 도서 탐색 플랫폼</p>
+  </div>
+  <div class="stagger-item">
+    <div class="tech-line">
+      <span class="tech-tag">Astro</span>
+      <span class="tech-tag">Supabase</span>
+      <span class="tech-tag">OpenAI</span>
+      <span class="tech-tag">Cloudflare</span>
+      <span class="tech-tag">Tailwind CSS</span>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 2: Problem & Solution -->
+<div class="slide" data-duration="6000">
+  <div class="stagger-item">
+    <span class="badge" style="background:rgba(232,197,71,0.15);color:var(--primary);">
+      <span class="material-symbols-outlined" style="font-size:16px;">lightbulb</span>
+      WHY
+    </span>
+  </div>
+  <div class="stagger-item" style="margin-top:20px;">
+    <h1 class="title">"읽고 싶은 책,<br/>어디서 빌릴 수 있을까?"</h1>
+  </div>
+  <div class="stagger-item" style="margin-top:20px;">
+    <p class="subtitle">
+      전국 수천 개 공공도서관의 대출 데이터를 한곳에 모아,<br/>
+      인기 도서 탐색부터 내 주변 도서관 소장 여부까지<br/>
+      한 번에 확인할 수 있는 서비스입니다.
+    </p>
+  </div>
+</div>
+
+<!-- Slide 3: Numbers -->
+<div class="slide" data-duration="5000">
+  <div class="stagger-item">
+    <span class="badge" style="background:rgba(74,144,217,0.15);color:var(--accent);">
+      <span class="material-symbols-outlined" style="font-size:16px;">bar_chart</span>
+      AT A GLANCE
+    </span>
+  </div>
+  <div class="stagger-item" style="margin: 24px 0;">
+    <h2 class="title" style="font-size:clamp(22px,3.5vw,36px);">프로젝트 규모</h2>
+  </div>
+  <div class="stat-grid stagger-item">
+    <div class="stat-item">
+      <div class="stat-number">4</div>
+      <div class="stat-label">주요 페이지</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">14</div>
+      <div class="stat-label">API 엔드포인트</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">3</div>
+      <div class="stat-label">핵심 컴포넌트</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 4: Search Feature -->
+<div class="slide" data-duration="7000">
+  <div class="stagger-item">
+    <span class="badge" style="background:rgba(232,197,71,0.15);color:var(--primary);">
+      <span class="material-symbols-outlined" style="font-size:16px;">search</span>
+      CORE FEATURE
+    </span>
+  </div>
+  <div class="stagger-item" style="margin:16px 0;">
+    <h2 class="title" style="font-size:clamp(22px,3.5vw,36px);">도서 검색 & AI 추천</h2>
+  </div>
+  <div class="stagger-item" style="width:100%;max-width:700px;">
+    <div class="mock-browser">
+      <div class="mock-browser-bar">
+        <div class="mock-dot" style="background:#ff5f57;"></div>
+        <div class="mock-dot" style="background:#ffbd2e;"></div>
+        <div class="mock-dot" style="background:#28c840;"></div>
+        <div class="mock-url">library-insights.pages.dev</div>
+      </div>
+      <div class="mock-content">
+        <div class="mock-search">
+          <span class="material-symbols-outlined" style="color:var(--text-muted);font-size:20px;">search</span>
+          <span class="typing-text" id="typing-demo">역사 소설 추천</span>
+          <button class="mock-search-btn">검색</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <span class="material-symbols-outlined" style="font-size:18px;color:var(--primary);">auto_awesome</span>
+          <span style="font-size:13px;color:var(--primary);font-weight:600;">AI 추천 모드</span>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">GPS 기반 내 주변 도서관 필터링</span>
+        </div>
+        <div class="mock-book-row">
+          <div class="mock-book">
+            <div class="mock-book-cover" style="background:linear-gradient(135deg,#2d5a87,#1a3a5c);"></div>
+            <div class="mock-book-title">나미야 잡화점의 기적</div>
+            <div class="mock-book-author">히가시노 게이고</div>
+          </div>
+          <div class="mock-book">
+            <div class="mock-book-cover" style="background:linear-gradient(135deg,#8b4513,#654321);"></div>
+            <div class="mock-book-title">파친코</div>
+            <div class="mock-book-author">이민진</div>
+          </div>
+          <div class="mock-book">
+            <div class="mock-book-cover" style="background:linear-gradient(135deg,#2e4057,#1a2634);"></div>
+            <div class="mock-book-title">설민석의 한국사 대모험</div>
+            <div class="mock-book-author">설민석</div>
+          </div>
+          <div class="mock-book">
+            <div class="mock-book-cover" style="background:linear-gradient(135deg,#5c4033,#3e2723);"></div>
+            <div class="mock-book-title">연금술사</div>
+            <div class="mock-book-author">파울로 코엘료</div>
+          </div>
+          <div class="mock-book">
+            <div class="mock-book-cover" style="background:linear-gradient(135deg,#1b4332,#0d261a);"></div>
+            <div class="mock-book-title">태백산맥</div>
+            <div class="mock-book-author">조정래</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 5: Library Availability -->
+<div class="slide" data-duration="6000">
+  <div class="stagger-item">
+    <span class="badge" style="background:rgba(34,197,94,0.15);color:#22c55e;">
+      <span class="material-symbols-outlined" style="font-size:16px;">location_on</span>
+      AVAILABILITY
+    </span>
+  </div>
+  <div class="stagger-item" style="margin:16px 0;">
+    <h2 class="title" style="font-size:clamp(22px,3.5vw,36px);">실시간 도서관 소장 확인</h2>
+  </div>
+  <div class="stagger-item" style="width:100%;max-width:600px;">
+    <div class="mock-browser">
+      <div class="mock-browser-bar">
+        <div class="mock-dot" style="background:#ff5f57;"></div>
+        <div class="mock-dot" style="background:#ffbd2e;"></div>
+        <div class="mock-dot" style="background:#28c840;"></div>
+        <div class="mock-url">도서 상세 > 소장 도서관</div>
+      </div>
+      <div class="mock-content">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">소장 도서관 검색</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">지역을 선택하면 해당 도서를 보유한 도서관 목록을 확인할 수 있습니다.</div>
+        <div class="mock-library-item">
+          <div>
+            <div class="mock-library-name">강남구립도서관</div>
+            <div class="mock-library-addr">서울 강남구 선릉로 668</div>
+          </div>
+          <span class="mock-status available">대출가능</span>
+        </div>
+        <div class="mock-library-item">
+          <div>
+            <div class="mock-library-name">서초구립반포도서관</div>
+            <div class="mock-library-addr">서울 서초구 고무래로 46</div>
+          </div>
+          <span class="mock-status on-loan">대출중</span>
+        </div>
+        <div class="mock-library-item" style="border:none;">
+          <div>
+            <div class="mock-library-name">송파어린이도서관</div>
+            <div class="mock-library-addr">서울 송파구 송파대로 지하 596</div>
+          </div>
+          <span class="mock-status available">대출가능</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 6: Trending & New Arrivals -->
+<div class="slide" data-duration="6000">
+  <div class="stagger-item">
+    <span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;">
+      <span class="material-symbols-outlined" style="font-size:16px;">trending_up</span>
+      DISCOVERY
+    </span>
+  </div>
+  <div class="stagger-item" style="margin:16px 0;">
+    <h2 class="title" style="font-size:clamp(22px,3.5vw,36px);">인기 도서 & 신착 도서</h2>
+  </div>
+  <div class="feature-grid stagger-item" style="max-width:700px;">
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(232,197,71,0.15);color:var(--primary);">
+        <span class="material-symbols-outlined">star</span>
+      </div>
+      <h3>인기 대출 도서</h3>
+      <p>지역별, 연령별, 성별 필터로 대출 인기 도서를 탐색합니다.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">
+        <span class="material-symbols-outlined">local_fire_department</span>
+      </div>
+      <h3>대출 급상승</h3>
+      <p>최근 급격히 대출이 늘어난 화제의 도서를 확인합니다.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(74,144,217,0.15);color:var(--accent);">
+        <span class="material-symbols-outlined">new_releases</span>
+      </div>
+      <h3>이번 주 신착 도서</h3>
+      <p>캐러셀 UI로 이번 주 새로 등록된 도서 20권을 탐색합니다.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(168,85,247,0.15);color:#a855f7;">
+        <span class="material-symbols-outlined">auto_awesome</span>
+      </div>
+      <h3>월간 키워드 추천</h3>
+      <p>AI가 선정한 이달의 키워드에 맞는 도서를 추천합니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 7: Key Features Grid -->
+<div class="slide" data-duration="6000">
+  <div class="stagger-item">
+    <span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;">
+      <span class="material-symbols-outlined" style="font-size:16px;">widgets</span>
+      FEATURES
+    </span>
+  </div>
+  <div class="stagger-item" style="margin:16px 0;">
+    <h2 class="title" style="font-size:clamp(22px,3.5vw,36px);">주요 기능</h2>
+  </div>
+  <div class="feature-grid stagger-item">
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(34,197,94,0.15);color:#22c55e;">
+        <span class="material-symbols-outlined">person</span>
+      </div>
+      <h3>회원 관리</h3>
+      <p>Google OAuth & 이메일 로그인, 프로필 관리, 지역 설정</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(74,144,217,0.15);color:var(--accent);">
+        <span class="material-symbols-outlined">dark_mode</span>
+      </div>
+      <h3>다크모드</h3>
+      <p>밝은/어두운 테마 전환으로 편안한 탐색 환경 제공</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(232,197,71,0.15);color:var(--primary);">
+        <span class="material-symbols-outlined">phone_iphone</span>
+      </div>
+      <h3>반응형 디자인</h3>
+      <p>모바일부터 데스크탑까지 모든 화면 크기에 최적화</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon" style="background:rgba(239,68,68,0.15);color:#ef4444;">
+        <span class="material-symbols-outlined">speed</span>
+      </div>
+      <h3>빠른 성능</h3>
+      <p>Cloudflare Edge에서 실행되는 서버리스 API</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 8: Architecture -->
+<div class="slide" data-duration="6000">
+  <div class="stagger-item">
+    <span class="badge" style="background:rgba(74,144,217,0.15);color:var(--accent);">
+      <span class="material-symbols-outlined" style="font-size:16px;">schema</span>
+      ARCHITECTURE
+    </span>
+  </div>
+  <div class="stagger-item" style="margin:16px 0;">
+    <h2 class="title" style="font-size:clamp(22px,3.5vw,36px);">기술 아키텍처</h2>
+  </div>
+  <div class="flow stagger-item">
+    <div class="flow-step">
+      <span class="material-symbols-outlined" style="color:var(--primary);">person</span>
+      <span>사용자</span>
+    </div>
+    <span class="material-symbols-outlined flow-arrow">arrow_forward</span>
+    <div class="flow-step">
+      <span class="material-symbols-outlined" style="color:#f97316;">language</span>
+      <span>Astro SSR</span>
+    </div>
+    <span class="material-symbols-outlined flow-arrow">arrow_forward</span>
+    <div class="flow-step">
+      <span class="material-symbols-outlined" style="color:var(--accent);">cloud</span>
+      <span>Cloudflare</span>
+    </div>
+    <span class="material-symbols-outlined flow-arrow">arrow_forward</span>
+    <div class="flow-step">
+      <span class="material-symbols-outlined" style="color:#22c55e;">database</span>
+      <span>Supabase</span>
+    </div>
+  </div>
+  <div class="flow stagger-item" style="margin-top:16px;">
+    <div class="flow-step">
+      <span class="material-symbols-outlined" style="color:#a855f7;">auto_awesome</span>
+      <span>OpenAI</span>
+    </div>
+    <div class="flow-step">
+      <span class="material-symbols-outlined" style="color:#ef4444;">menu_book</span>
+      <span>도서관 정보나루</span>
+    </div>
+    <div class="flow-step">
+      <span class="material-symbols-outlined" style="color:#22c55e;">travel_explore</span>
+      <span>Naver API</span>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 9: Closing -->
+<div class="slide" data-duration="8000">
+  <div class="stagger-item">
+    <span class="material-symbols-outlined" style="font-size:56px;color:var(--primary);">auto_stories</span>
+  </div>
+  <div class="stagger-item" style="margin-top:16px;">
+    <h1 class="title">오늘, 당신의 다음 책을<br/>발견하세요</h1>
+  </div>
+  <div class="stagger-item" style="margin-top:12px;">
+    <p class="subtitle">LibraryInsights와 함께 전국 공공도서관의 보물을 탐색하세요.</p>
+  </div>
+  <div class="stagger-item">
+    <a class="closing-url" href="https://library-insights.pages.dev" target="_blank">
+      <span class="material-symbols-outlined" style="font-size:20px;">open_in_new</span>
+      library-insights.pages.dev
+    </a>
+  </div>
+</div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav-dots" id="navDots"></div>
+<div class="slide-counter" id="counter"></div>
+<button class="play-toggle" id="playToggle" title="Pause / Play">
+  <span class="material-symbols-outlined" style="font-size:18px;" id="playIcon">pause</span>
+</button>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  const navDots = document.getElementById('navDots');
+  const counter = document.getElementById('counter');
+  const playToggle = document.getElementById('playToggle');
+  const playIcon = document.getElementById('playIcon');
+
+  let current = 0;
+  let timer = null;
+  let elapsed = 0;
+  let playing = true;
+  const TICK = 50;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    navDots.appendChild(dot);
+  });
+
+  function getDuration() {
+    return parseInt(slides[current].dataset.duration) || 5000;
+  }
+
+  function updateUI() {
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'exit');
+      if (i === current) s.classList.add('active');
+    });
+    navDots.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  function tick() {
+    elapsed += TICK;
+    const dur = getDuration();
+    const pct = Math.min((elapsed / dur) * 100, 100);
+    // Progress across full bar based on slide + progress within slide
+    const totalPct = ((current + pct / 100) / slides.length) * 100;
+    progress.style.width = totalPct + '%';
+
+    if (elapsed >= dur) {
+      next();
+    }
+  }
+
+  function next() {
+    elapsed = 0;
+    slides[current].classList.add('exit');
+    current = (current + 1) % slides.length;
+    updateUI();
+  }
+
+  function goTo(index) {
+    elapsed = 0;
+    slides[current].classList.add('exit');
+    current = index;
+    updateUI();
+  }
+
+  function startTimer() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(tick, TICK);
+  }
+
+  function stopTimer() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  playToggle.addEventListener('click', () => {
+    playing = !playing;
+    playIcon.textContent = playing ? 'pause' : 'play_arrow';
+    if (playing) startTimer(); else stopTimer();
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); elapsed = 0; next(); }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      elapsed = 0;
+      slides[current].classList.add('exit');
+      current = (current - 1 + slides.length) % slides.length;
+      updateUI();
+    }
+  });
+
+  // Start
+  updateUI();
+  startTimer();
+</script>
+</body>
+</html>

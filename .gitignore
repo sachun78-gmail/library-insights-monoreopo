@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.astro/
+reference_data/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Wrangler
+.wrangler/
+
+# Working/reference files
+*.png
+analytics_guide/
+librarybigdata_llms.txt
+r2_llm.txt
+sample.html
+nul
+*.pdf

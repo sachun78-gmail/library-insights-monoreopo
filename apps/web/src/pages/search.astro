@@ -1,0 +1,1196 @@
+---
+import Auth from '../components/Auth.astro';
+import Analytics from '../components/Analytics.astro';
+import BookDetailModal from '../components/BookDetailModal.astro';
+---
+<html lang="ko" class="">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <script is:inline>
+    (function(){
+      var t = localStorage.getItem('theme');
+      if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
+  <meta name="description" content="도서명이나 ISBN으로 공공도서관 데이터를 검색하고 결과를 확인하세요."/>
+  <meta name="robots" content="noindex,follow"/>
+  <link rel="canonical" href="https://library-insights.pages.dev/search"/>
+  <meta property="og:site_name" content="LibraryInsights"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="검색 결과 - LibraryInsights"/>
+  <meta property="og:description" content="도서명이나 ISBN으로 공공도서관 데이터를 검색하고 결과를 확인하세요."/>
+  <meta property="og:url" content="https://library-insights.pages.dev/search"/>
+  <meta property="og:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+  <meta property="og:locale" content="ko_KR"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="검색 결과 - LibraryInsights"/>
+  <meta name="twitter:description" content="도서명이나 ISBN으로 공공도서관 데이터를 검색하고 결과를 확인하세요."/>
+  <meta name="twitter:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+  <title>검색 결과 - LibraryInsights</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <Analytics />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7431853210834432" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="/fonts.css" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'YUniverse', sans-serif;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .book-placeholder {
+      background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dark .book-placeholder {
+      background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-charcoal dark:text-white transition-colors duration-300">
+  <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+    <div class="layout-container flex h-full grow flex-col">
+      <!-- Top Navigation Bar -->
+      <header class="border-b border-solid border-charcoal/10 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+  <div class="flex items-center justify-between max-w-[1200px] mx-auto w-full px-4 py-2 sm:py-4">
+    <a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0 flex-shrink-0">
+      <span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
+      <span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
+    </a>
+    <div class="flex flex-1 justify-end gap-2 sm:gap-4 ml-auto">
+      <!-- Search Bar in Header -->
+      <form id="header-search-form" class="hidden md:flex items-center">
+        <div class="flex items-stretch rounded-lg overflow-hidden border border-charcoal/10 dark:border-white/10">
+          <input
+            type="text"
+            id="header-search-input"
+            class="px-4 py-2 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-sm focus:outline-none w-64"
+            placeholder="?꾩꽌 寃??.."
+          />
+          <button type="submit" class="px-4 bg-primary text-charcoal hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-sm">search</span>
+          </button>
+        </div>
+      </form>
+      <nav class="hidden md:flex items-center gap-3 sm:gap-6">
+        <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+        <a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+      </nav>
+      <button id="theme-toggle" class="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-label="다크모드 전환">
+        <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl dark:hidden">dark_mode</span>
+        <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl hidden dark:inline">light_mode</span>
+      </button>
+      <!-- Sign In / Profile -->
+      <button id="signin-btn" class="hidden md:flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
+        <span class="truncate">Sign In</span>
+      </button>
+      <button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
+        <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
+      </button>
+      <div id="profile-container" class="hidden relative md:block md:hidden">
+        <button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+          <img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+          <span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
+          <span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
+        </button>
+        <div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
+          <!-- Profile Header -->
+          <div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
+            <img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
+            <p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
+          </div>
+          <!-- Menu Items -->
+          <div class="py-2">
+            <a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+              <span class="material-symbols-outlined text-lg">person</span>
+              마이페이지
+            </a>
+            <button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+              <span class="material-symbols-outlined text-lg">logout</span>
+              로그아웃
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-[70] bg-black/60">
+  <div class="h-full w-[78%] max-w-xs bg-white dark:bg-charcoal-900 shadow-2xl">
+    <div class="flex items-center justify-end px-4 py-3">
+      <button id="mobile-menu-close" class="w-8 h-8 rounded-full border border-charcoal/10 dark:border-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-lg">close</span>
+      </button>
+    </div>
+    <div class="px-4 pb-4 border-b border-charcoal/10 dark:border-white/10">
+      <div class="flex items-center justify-center">
+        <div class="w-14 h-14 rounded-full bg-primary/90 text-charcoal flex items-center justify-center">
+          <span class="material-symbols-outlined text-2xl">person</span>
+        </div>
+      </div>
+      <div id="mobile-auth-logged-out" class="mt-4 flex items-center justify-between">
+        <button id="mobile-signup-btn" class="px-4 py-2 rounded-full bg-charcoal text-white text-xs font-bold">회원가입</button>
+        <button id="mobile-signin-btn" class="text-xs font-bold text-charcoal dark:text-white">로그인 &gt;</button>
+      </div>
+      <div id="mobile-auth-logged-in" class="hidden mt-4">
+        <div class="flex items-center gap-3">
+          <img id="mobile-profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border border-primary" />
+          <div class="min-w-0">
+            <p id="mobile-profile-name" class="text-sm font-semibold text-charcoal dark:text-white truncate"></p>
+            <a class="text-xs text-primary hover:underline" href="/mypage">마이페이지</a>
+          </div>
+        </div>
+        <button id="mobile-signout-btn" class="mt-3 w-full rounded-lg border border-charcoal/20 dark:border-white/20 py-2 text-xs font-bold text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5">로그아웃</button>
+      </div>
+    </div>
+    <div class="px-4 py-4 space-y-2">
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+      <button id="mobile-theme-toggle" class="flex items-center gap-2 w-full text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors pt-2 border-t border-charcoal/10 dark:border-white/10 mt-2">
+        <span class="material-symbols-outlined text-lg dark:hidden">dark_mode</span>
+        <span class="material-symbols-outlined text-lg hidden dark:inline">light_mode</span>
+        <span class="dark:hidden">다크모드</span>
+        <span class="hidden dark:inline">라이트모드</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+      <main class="flex-1">
+  <div class="w-full flex justify-center py-10 sm:py-16 relative overflow-hidden">
+    <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80');"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/80 to-charcoal/70 dark:from-charcoal/95 dark:via-charcoal/90 dark:to-charcoal/85"></div>
+    <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10 relative z-10">
+      <h1 id="hero-title" class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">
+        <span id="search-keyword" class="text-primary"></span> 검색 결과
+      </h1>
+      <p id="result-count" class="text-white/80 text-sm sm:text-lg mt-3"></p>
+    </div>
+  </div>
+
+  <div class="w-full flex justify-center py-4 sm:py-8">
+    <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10">
+      <div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
+          <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
+          <div class="mt-3 h-[90px] sm:h-[120px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
+            AdSense 728x90
+          </div>
+        </div>
+        <div class="rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-4 shadow-sm">
+          <p class="text-[10px] tracking-widest uppercase text-charcoal/50 dark:text-white/50">Advertisement</p>
+          <div class="mt-3 h-[90px] sm:h-[120px] rounded-lg border border-dashed border-charcoal/20 dark:border-white/20 flex items-center justify-center text-xs text-charcoal/50 dark:text-white/50">
+            AdSense 728x90
+          </div>
+        </div>
+      </div>
+      <!-- AI Mode Toggle Bar -->
+      <div id="ai-mode-bar" class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-3 sm:p-4 shadow-sm">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+          <label for="ai-mode-toggle" class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+            <input type="checkbox" id="ai-mode-toggle" class="sr-only peer" />
+            <div class="w-9 h-5 sm:w-11 sm:h-6 bg-charcoal/20 dark:bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+          <div class="min-w-0">
+            <span class="text-sm sm:text-base font-bold text-charcoal dark:text-white flex items-center gap-1">
+              <span class="material-symbols-outlined text-primary text-sm sm:text-base">auto_awesome</span>
+              AI 추천
+            </span>
+            <p class="text-[10px] sm:text-xs text-charcoal/50 dark:text-white/50 truncate">주변 도서관 대출 가능 도서 AI 추천</p>
+          </div>
+        </div>
+        <div id="ai-location-status" class="hidden flex items-center gap-1 text-xs text-charcoal/50 dark:text-white/50 flex-shrink-0">
+          <span id="ai-location-icon" class="material-symbols-outlined text-sm">location_searching</span>
+          <span id="ai-location-text">위치 확인중</span>
+        </div>
+      </div>
+
+      <div>
+          <!-- AI Empty State -->
+          <div id="ai-empty-state" class="hidden flex flex-col items-center justify-center py-20">
+            <span class="material-symbols-outlined text-6xl text-charcoal/30 dark:text-white/30 mb-4">location_off</span>
+            <p class="text-charcoal/60 dark:text-white/60 mb-2">주변 도서관에 소장된 도서가 없습니다.</p>
+            <button id="ai-switch-normal" class="mt-2 px-4 py-2 text-sm font-bold text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors">
+              일반 검색으로 전환
+            </button>
+          </div>
+
+          <!-- AI GPS Error State -->
+          <div id="ai-gps-error" class="hidden flex flex-col items-center justify-center py-20">
+            <span class="material-symbols-outlined text-6xl text-red-400 mb-4">location_disabled</span>
+            <p class="text-charcoal/60 dark:text-white/60 mb-2">위치 정보를 가져올 수 없습니다.</p>
+            <p class="text-xs text-charcoal/40 dark:text-white/40 mb-4">브라우저에서 위치 권한을 허용해주세요.</p>
+            <button id="ai-switch-normal-gps" class="px-4 py-2 text-sm font-bold text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors">
+              일반 검색으로 전환
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div id="loading-state" class="hidden flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mb-4"></div>
+            <p id="loading-text" class="text-charcoal/60 dark:text-white/60">검색 중...</p>
+          </div>
+
+          <!-- Error State -->
+          <div id="error-state" class="hidden flex flex-col items-center justify-center py-20">
+            <span class="material-symbols-outlined text-6xl text-red-500 mb-4">error</span>
+            <p id="error-message" class="text-charcoal/60 dark:text-white/60"></p>
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20">
+            <span class="material-symbols-outlined text-6xl text-charcoal/30 dark:text-white/30 mb-4">search_off</span>
+            <p class="text-charcoal/60 dark:text-white/60">검색 결과가 없습니다.</p>
+          </div>
+
+          <!-- Search Results -->
+          <div id="search-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+            <!-- Results will be inserted here -->
+          </div>
+
+          <!-- Pagination -->
+          <div id="pagination" class="hidden flex justify-center items-center gap-1 sm:gap-2 mt-6 sm:mt-10">
+            <button id="prev-page" class="px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <span class="material-symbols-outlined text-lg sm:text-2xl">chevron_left</span>
+            </button>
+            <span id="page-info" class="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"></span>
+            <button id="next-page" class="px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <span class="material-symbols-outlined text-lg sm:text-2xl">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+      </main>
+
+      <!-- Footer -->
+      <footer class="bg-[#1a1a1a] text-white/70">
+        <!-- Top Row: Links -->
+        <div class="border-b border-white/10">
+          <div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+            <nav class="flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm">
+              <button id="terms-btn" class="hover:text-white transition-colors">이용약관</button>
+              <button id="privacy-btn" class="hover:text-white transition-colors">개인정보처리방침</button>
+              <button id="sitemap-btn" class="hover:text-white transition-colors">사이트맵</button>
+            </nav>
+            <div class="relative">
+              <select class="bg-transparent border border-white/20 rounded px-3 py-1.5 text-xs sm:text-sm text-white/70 focus:outline-none focus:border-white/40 cursor-pointer appearance-none pr-8">
+                <option value="" class="bg-[#1a1a1a]">유관 사이트</option>
+                <option value="https://www.nl.go.kr" class="bg-[#1a1a1a]">국립중앙도서관</option>
+                <option value="https://www.data4library.kr" class="bg-[#1a1a1a]">도서관 정보나루</option>
+                <option value="https://www.mcst.go.kr" class="bg-[#1a1a1a]">문화체육관광부</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-sm pointer-events-none">expand_more</span>
+            </div>
+          </div>
+        </div>
+        <!-- Bottom Row: Logo & Copyright -->
+        <div class="max-w-[1200px] mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+            <!-- Logo -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
+                <div class="w-6 h-6 bg-white rounded-full"></div>
+              </div>
+              <div class="flex flex-col text-xs sm:text-sm">
+                <span class="text-white font-bold text-base sm:text-lg">LibraryInsights</span>
+                <span class="text-white/50">도서관 정보 서비스</span>
+              </div>
+            </div>
+            <!-- Contact Info -->
+            <div class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
+              <a href="tel:02-595-6131" class="flex items-center gap-1.5 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-sm">call</span>
+                02-595-6131
+              </a>
+              <a href="mailto:sachun78@gmail.com" class="flex items-center gap-1.5 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-sm">mail</span>
+                sachun78@gmail.com
+              </a>
+            </div>
+          </div>
+          <!-- Copyright -->
+          <p class="text-xs sm:text-sm text-white/50">
+            © 2024 LibraryInsights. Data provided by 도서관 정보나루. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <BookDetailModal />
+
+  <!-- Terms of Service Modal -->
+  <div id="terms-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+    <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+        <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">LibraryInsights 이용약관</h2>
+        <button id="close-terms-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+          <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+        <h3 class="font-bold text-charcoal dark:text-white mb-4">1. 목적</h3>
+        <p class="mb-3">본 약관은 LibraryInsights(이하 “서비스”)의 이용 조건과 절차, 운영자와 이용자의 권리·의무를 규정합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">2. 서비스 내용</h3>
+        <p class="mb-3">서비스는 공공도서관 대출 데이터를 기반으로 도서 검색, 추천, 인기/급상승 도서 정보 제공 등의 기능을 제공합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">3. 계정 및 이용자 의무</h3>
+        <p class="mb-3">이용자는 정확한 정보를 제공해야 하며, 계정 보안 책임은 이용자에게 있습니다. 타인의 권리를 침해하거나 불법적인 행위를 해서는 안 됩니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">4. 콘텐츠 및 지식재산권</h3>
+        <p class="mb-3">서비스 내 데이터 및 콘텐츠의 저작권은 각 권리자에게 있으며, 서비스는 합리적 범위 내에서 이를 표시합니다. 이용자는 무단 복제·배포를 할 수 없습니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">5. 광고 및 외부 링크</h3>
+        <p class="mb-3">서비스에는 제3자 광고(예: Google AdSense) 또는 외부 링크가 포함될 수 있습니다. 외부 사이트의 내용 및 개인정보 처리에 대해 운영자는 책임을 지지 않습니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">6. 서비스 제한 및 중단</h3>
+        <p class="mb-3">시스템 점검, 장애, 불가항력 사유로 서비스가 일시 중단될 수 있으며, 사전 공지가 가능한 경우 안내합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">7. 면책</h3>
+        <p class="mb-3">운영자는 서비스 이용과 관련된 직접·간접 손해에 대해 고의 또는 중대한 과실이 없는 한 책임을 지지 않습니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-4">8. 분쟁 해결</h3>
+        <p class="mb-3">본 약관은 대한민국 법령을 따르며, 분쟁 발생 시 관할 법원은 운영자 소재지 관할 법원으로 합니다.</p>
+
+        <p class="mt-6 text-xs text-charcoal/60 dark:text-white/60">시행일: 2026년 2월 7일</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sitemap Modal -->
+  <div id="sitemap-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+    <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-lg w-full relative">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+        <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">사이트맵</h2>
+        <button id="close-sitemap-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+          <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6">
+        <nav class="space-y-4">
+          <a href="/" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">home</span>홈
+          </a>
+          <a href="/bestsellers" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">star</span>인기 도서
+          </a>
+          <a href="/search" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">search</span>검색
+          </a>
+          <a href="/mybookshelf" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">collections_bookmark</span>내 서재
+          </a>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- Privacy Policy Modal -->
+  <div id="privacy-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+    <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+        <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">개인정보처리방침</h2>
+        <button id="close-privacy-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+          <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+        </button>
+      </div>
+      <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+        <p class="mb-4">LibraryInsights는 개인정보 보호법 등 관련 법령을 준수하며 이용자의 개인정보를 안전하게 처리합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">1. 수집 항목</h3>
+        <p class="mb-3"><strong>필수:</strong> 이메일, 닉네임/프로필명<br/><strong>선택:</strong> 성별, 생년월일, 지역, 프로필 이미지 등<br/><strong>자동 수집:</strong> IP 주소, 쿠키, 접속 로그, 이용 기록, 기기/브라우저 정보</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">2. 이용 목적</h3>
+        <p class="mb-3">서비스 제공, 개인화된 추천, 계정 관리, 문의 응대, 보안 및 부정 이용 방지, 통계 분석을 위해 사용합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">3. 보유 및 이용 기간</h3>
+        <p class="mb-3">회원 탈퇴 시 지체 없이 파기하며, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">4. 제3자 제공</h3>
+        <p class="mb-3">원칙적으로 제3자 제공을 하지 않습니다. 단, 법령에 근거하거나 수사기관의 요청이 있는 경우 예외로 합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">5. 광고 및 쿠키</h3>
+        <p class="mb-3">서비스에는 Google AdSense 등 제3자 광고가 포함될 수 있으며, 광고 제공을 위해 쿠키가 사용될 수 있습니다. 이용자는 브라우저 설정을 통해 쿠키 저장을 거부하거나 삭제할 수 있습니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">6. 처리 위탁</h3>
+        <p class="mb-3">현재 개인정보 처리 위탁은 없습니다. 향후 위탁이 발생하는 경우 본 방침에 공개합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">7. 이용자 권리</h3>
+        <p class="mb-3">이용자는 개인정보 열람, 정정, 삭제, 처리정지, 동의 철회를 요청할 수 있습니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">8. 안전성 확보 조치</h3>
+        <p class="mb-3">접근 통제, 최소 권한 부여, 암호화 및 보안 점검 등 합리적인 안전조치를 적용합니다.</p>
+
+        <h3 class="font-bold text-charcoal dark:text-white mt-6 mb-3">9. 개인정보 보호책임자</h3>
+        <p class="mb-3">운영자: LibraryInsights<br/>이메일: sachun78@gmail.com</p>
+
+        <p class="mt-6 text-xs text-charcoal/60 dark:text-white/60">시행일: 2026년 2월 7일</p>
+      </div>
+    </div>
+  </div>
+
+  <Auth />
+
+  <script>
+    import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
+    import { initBookmarks, isBookmarked, toggleBookmark, getUserId } from '../scripts/bookmarks';
+
+    // Get search keyword from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const keyword = urlParams.get('q') || '';
+    const isbnParam = urlParams.get('isbn') || '';
+    const modeParam = urlParams.get('mode') || '';
+    let currentPage = parseInt(urlParams.get('page') || '1');
+    const pageSize = 12;
+
+    // AI mode state
+    let isAIMode = modeParam === 'ai';
+
+    // Store current book data for modal
+    let currentBooks: any[] = [];
+    let currentBookIndex = -1;
+
+    const searchKeywordEl = document.getElementById('search-keyword');
+    const resultCountEl = document.getElementById('result-count');
+    const heroTitle = document.getElementById('hero-title');
+    const loadingState = document.getElementById('loading-state');
+    const errorState = document.getElementById('error-state');
+    const emptyState = document.getElementById('empty-state');
+    const searchResults = document.getElementById('search-results');
+    const pagination = document.getElementById('pagination');
+    const pageInfo = document.getElementById('page-info');
+    const prevPageBtn = document.getElementById('prev-page') as HTMLButtonElement | null;
+    const nextPageBtn = document.getElementById('next-page') as HTMLButtonElement | null;
+    const headerSearchInput = document.getElementById('header-search-input') as HTMLInputElement | null;
+    const headerSearchForm = document.getElementById('header-search-form');
+
+    // AI mode elements
+    const aiModeToggle = document.getElementById('ai-mode-toggle') as HTMLInputElement | null;
+    const aiLocationStatus = document.getElementById('ai-location-status');
+    const aiLocationIcon = document.getElementById('ai-location-icon');
+    const aiLocationText = document.getElementById('ai-location-text');
+    const aiEmptyState = document.getElementById('ai-empty-state');
+    const aiGpsError = document.getElementById('ai-gps-error');
+    const aiSwitchNormal = document.getElementById('ai-switch-normal');
+    const aiSwitchNormalGps = document.getElementById('ai-switch-normal-gps');
+
+    // Set search keyword in UI
+    const displayKeyword = isbnParam ? `ISBN: ${isbnParam}` : keyword;
+    if (searchKeywordEl) searchKeywordEl.textContent = `"${displayKeyword}"`;
+    if (headerSearchInput) headerSearchInput.value = keyword || isbnParam;
+
+    // Update hero for AI mode
+    function updateHeroForMode() {
+      if (isAIMode && heroTitle) {
+        heroTitle.innerHTML = `<span class="material-symbols-outlined text-primary align-middle">auto_awesome</span> <span id="search-keyword" class="text-primary">"${displayKeyword}"</span> AI 추천 결과`;
+        if (resultCountEl) resultCountEl.textContent = 'AI가 주변 도서관 대출 가능 도서를 찾고 있습니다...';
+      }
+    }
+
+    // Init AI mode toggle
+    if (aiModeToggle) {
+      aiModeToggle.checked = isAIMode;
+    }
+
+    if (isAIMode) updateHeroForMode();
+
+    // Header search form
+    headerSearchForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newKeyword = headerSearchInput?.value?.trim();
+      if (newKeyword) {
+        const modeStr = isAIMode ? '&mode=ai' : '';
+        window.location.href = `/search?q=${encodeURIComponent(newKeyword)}${modeStr}`;
+      }
+    });
+
+    // AI mode toggle event
+    aiModeToggle?.addEventListener('change', () => {
+      isAIMode = aiModeToggle.checked;
+      const newUrl = new URL(window.location.href);
+      if (isAIMode) {
+        newUrl.searchParams.set('mode', 'ai');
+      } else {
+        newUrl.searchParams.delete('mode');
+      }
+      newUrl.searchParams.delete('page');
+      window.history.pushState({}, '', newUrl.toString());
+      hideAllStates();
+      if (isAIMode) {
+        updateHeroForMode();
+        performAISearch();
+      } else {
+        // Reset hero
+        if (heroTitle) {
+          heroTitle.innerHTML = `<span id="search-keyword" class="text-primary">"${displayKeyword}"</span> 검색 결과`;
+        }
+        performSearch(1);
+      }
+    });
+
+    // Switch to normal search buttons
+    aiSwitchNormal?.addEventListener('click', () => {
+      if (aiModeToggle) aiModeToggle.checked = false;
+      aiModeToggle?.dispatchEvent(new Event('change'));
+    });
+    aiSwitchNormalGps?.addEventListener('click', () => {
+      if (aiModeToggle) aiModeToggle.checked = false;
+      aiModeToggle?.dispatchEvent(new Event('change'));
+    });
+
+    // Initialize shared book modal
+    initBookModal();
+
+    // Open book detail modal
+    function openBookModal(bookIndex: number) {
+      const book = currentBooks[bookIndex];
+      if (!book) return;
+      currentBookIndex = bookIndex;
+      sharedOpenModal(book);
+    }
+
+    // Make function globally accessible
+    (window as any).openBookModal = openBookModal;
+
+    // Hide all states
+    function hideAllStates() {
+      loadingState?.classList.add('hidden');
+      errorState?.classList.add('hidden');
+      emptyState?.classList.add('hidden');
+      aiEmptyState?.classList.add('hidden');
+      aiGpsError?.classList.add('hidden');
+      searchResults?.classList.add('hidden');
+      pagination?.classList.add('hidden');
+      aiLocationStatus?.classList.add('hidden');
+    }
+
+    // Default placeholder SVG
+    const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='170' viewBox='0 0 120 170'%3E%3Crect fill='%23e2e8f0' width='120' height='170'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='40' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='60%25' font-family='Arial' font-size='10' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+    // ========================================
+    // AI Search Function
+    // ========================================
+    const loadingTextEl = document.getElementById('loading-text');
+    let aiSearchRequestId = 0;
+    let aiCardsRenderToken = 0;
+
+    // Store AI recommendations for detail lookup (ai-only mode)
+    let aiOnlyRecommendations: Array<{ title: string; author: string }> = [];
+
+    async function fetchJSONWithTimeout(apiUrl: string, timeoutMs = 15000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(apiUrl, { signal: controller.signal });
+        const data = await res.json();
+        if (data?.error) throw new Error(data.error);
+        return data;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function getGeoPosition(timeoutMs = 2500): Promise<GeolocationPosition | null> {
+      if (!navigator.geolocation) return null;
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: timeoutMs,
+            maximumAge: 300000,
+          });
+        });
+        return pos;
+      } catch {
+        return null;
+      }
+    }
+
+    function applyAIResult(data: any) {
+      const mode = data.mode as string;
+      const recommendations = data.recommendations || [];
+      const regions = (data.regions || []) as string[];
+      const seedBook = data.seedBook;
+
+      if (recommendations.length === 0) {
+        aiEmptyState?.classList.remove('hidden');
+        return;
+      }
+
+      if (mode === 'full') {
+        const availCount = recommendations.filter((r: any) => r.nearbyLibCount > 0).length;
+        if (heroTitle) {
+          heroTitle.innerHTML = `<span class="material-symbols-outlined text-primary align-middle">auto_awesome</span> <span class="text-primary">"${displayKeyword}"</span> AI 추천 결과`;
+        }
+        if (resultCountEl) {
+          resultCountEl.textContent = `AI가 ${recommendations.length}권의 도서를 추천했습니다.`;
+        }
+      } else if (mode === 'no-gps') {
+        if (resultCountEl) {
+          resultCountEl.textContent = `AI가 ${recommendations.length}권의 관련 도서를 추천합니다.`;
+        }
+      } else {
+        if (resultCountEl) {
+          resultCountEl.textContent = `AI가 ${recommendations.length}권의 도서를 추천했습니다. 클릭하면 상세 정보를 확인할 수 있습니다.`;
+        }
+      }
+
+      if (mode === 'ai-only') {
+        renderAIOnlyCards(recommendations);
+      } else {
+        renderFullAICards(recommendations, mode, seedBook);
+      }
+    }
+
+    async function performAISearch() {
+      if (!keyword) {
+        window.location.href = '/';
+        return;
+      }
+
+      const requestId = ++aiSearchRequestId;
+      hideAllStates();
+      loadingState?.classList.remove('hidden');
+      if (loadingTextEl) loadingTextEl.textContent = 'AI 추천 생성 중...';
+
+      if (aiLocationStatus) {
+        aiLocationStatus.classList.remove('hidden');
+        if (aiLocationIcon) aiLocationIcon.textContent = 'location_searching';
+        if (aiLocationText) aiLocationText.textContent = '위치 확인 중';
+      }
+
+      const baseUrl = `/api/ai-search?keyword=${encodeURIComponent(keyword)}`;
+      const geoPromise = getGeoPosition(2500);
+
+      try {
+        const baseData = await fetchJSONWithTimeout(baseUrl, 15000);
+        if (requestId !== aiSearchRequestId || !isAIMode) return;
+
+        loadingState?.classList.add('hidden');
+        applyAIResult(baseData);
+
+        const pos = await geoPromise;
+        if (requestId !== aiSearchRequestId || !isAIMode) return;
+
+        if (!pos) {
+          if (aiLocationStatus) {
+            if (aiLocationIcon) aiLocationIcon.textContent = 'location_off';
+            if (aiLocationText) aiLocationText.textContent = '위치 없음';
+          }
+          return;
+        }
+
+        if (aiLocationStatus) {
+          if (aiLocationIcon) aiLocationIcon.textContent = 'my_location';
+          if (aiLocationText) aiLocationText.textContent = '위치 반영 중';
+        }
+
+        const geoUrl = `${baseUrl}&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`;
+        const geoData = await fetchJSONWithTimeout(geoUrl, 12000).catch(() => null);
+        if (!geoData || requestId !== aiSearchRequestId || !isAIMode) return;
+
+        // Prevent double-render flicker: cards are rendered from the first response.
+        // Apply geo result only if nothing is rendered yet.
+        if (geoData.mode === 'full' && currentBooks.length === 0) {
+          applyAIResult(geoData);
+        }
+
+        if (aiLocationStatus) {
+          if (aiLocationIcon) aiLocationIcon.textContent = 'my_location';
+          if (aiLocationText) aiLocationText.textContent = '위치 반영 완료';
+        }
+      } catch (error) {
+        if (requestId !== aiSearchRequestId) return;
+        loadingState?.classList.add('hidden');
+        errorState?.classList.remove('hidden');
+        const errorMessage = document.getElementById('error-message');
+        if (errorMessage) {
+          errorMessage.textContent = error instanceof Error ? error.message : '검색 중 오류가 발생했습니다.';
+        }
+      }
+    }
+
+    // Render full book cards (mode: full or no-gps)
+    function renderFullAICards(recommendations: any[], mode: string, seedBook: any) {
+      currentBooks = recommendations.map((r: any) => r.book);
+
+      if (searchResults) {
+        // Seed book card at top
+        let seedHtml = '';
+        if (seedBook) {
+          const seedImg = seedBook.bookImageURL || '';
+          const hasSeedImg = seedImg && seedImg.trim() !== '';
+          seedHtml = `
+            <div class="col-span-full mb-2 p-3 sm:p-4 rounded-xl border-2 border-primary/30 bg-primary/5 dark:bg-primary/10">
+              <div class="flex items-center gap-2 mb-2 text-xs text-primary font-bold">
+                <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                AI가 선택한 기준 도서
+              </div>
+              <div class="flex items-center gap-3">
+                ${hasSeedImg ? `<img src="${seedImg}" alt="" class="w-10 h-14 object-cover rounded" onerror="this.style.display='none'" />` : ''}
+                <div>
+                  <p class="font-bold text-charcoal dark:text-white text-sm">${seedBook.bookname || ''}</p>
+                  <p class="text-xs text-charcoal/60 dark:text-white/60">${seedBook.authors || ''}</p>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        const cardsHtml = recommendations.map((item: any, index: number) => {
+          const book = item.book;
+          const libCount = item.nearbyLibCount || 0;
+          const bookImageUrl = book.bookImageURL || '';
+          const hasImage = bookImageUrl && bookImageUrl.trim() !== '';
+          const bookname = book.bookname || book.bookName || '';
+          const authors = book.authors || '';
+          const publisher = book.publisher || '';
+          const pubYear = book.publication_year || '';
+
+          const stableIsbn = book.isbn13 || book.isbn || '';
+          return `
+            <div
+              class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+              onclick="openBookModal(${index})"
+              data-ai-card-index="${index}"
+              data-ai-isbn="${stableIsbn}"
+            >
+              <div class="flex p-3 sm:p-4 gap-3 sm:gap-4">
+                <div class="ai-image-slot">
+                  ${hasImage ? `
+                    <img
+                      src="${bookImageUrl}"
+                      alt="${bookname}"
+                      class="w-16 h-24 sm:w-24 sm:h-36 object-cover rounded-lg flex-shrink-0 bg-gray-200 dark:bg-charcoal-600"
+                      onerror="this.onerror=null; this.src='${placeholderImage}';"
+                    />
+                  ` : `
+                    <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
+                      <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">menu_book</span>
+                      <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">No Image</span>
+                    </div>
+                  `}
+                </div>
+                <div class="flex flex-col flex-1 min-w-0">
+                  <h3 class="font-bold text-charcoal dark:text-white line-clamp-2 mb-1 text-sm sm:text-base">${bookname}</h3>
+                  <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 mb-0.5 sm:mb-1 truncate">${authors || '저자 미상'}</p>
+                  <p class="text-xs sm:text-sm text-charcoal/40 dark:text-white/40 mb-1 sm:mb-2 truncate">${publisher} ${pubYear ? `(${pubYear})` : ''}</p>
+                  <div class="mt-auto flex flex-wrap gap-1">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-primary/10 text-primary">
+                      <span class="material-symbols-outlined text-xs">auto_awesome</span>
+                      AI 추천
+                    </span>
+                    ${mode === 'full' && libCount > 0 ? `
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                        <span class="material-symbols-outlined text-xs">local_library</span>
+                        주변 ${libCount}개 도서관 소장
+                      </span>
+                    ` : ''}
+                    ${book.isbn13 ? `
+                      <button class="bookmark-btn ml-auto flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-isbn="${book.isbn13}" data-card-index="${index}" data-card-type="ai">
+                        <span class="material-symbols-outlined text-lg ${isBookmarked(book.isbn13) ? 'text-red-500' : 'text-charcoal/30 dark:text-white/30'}" style="font-variation-settings: 'FILL' ${isBookmarked(book.isbn13) ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        searchResults.innerHTML = seedHtml + cardsHtml;
+        searchResults.classList.remove('hidden');
+        attachBookmarkHandlers('ai');
+        const renderToken = ++aiCardsRenderToken;
+        hydrateMissingAICardImages(renderToken);
+      }
+    }
+
+    function normalizeIsbn(value: string | null | undefined): string {
+      if (!value) return '';
+      return String(value).replace(/[^0-9Xx]/g, '').toUpperCase();
+    }
+
+    async function hydrateMissingAICardImages(renderToken: number) {
+      const candidates = currentBooks
+        .map((book: any, index: number) => ({ book, index }))
+        .filter(({ book }) => !!(book?.isbn13 || book?.isbn) && !book?.bookImageURL)
+        .slice(0, 12);
+
+      await Promise.all(
+        candidates.map(async ({ book, index }) => {
+          try {
+            const requestIsbn = book.isbn13 || book.isbn;
+            const normalizedRequestIsbn = normalizeIsbn(requestIsbn);
+            if (!normalizedRequestIsbn) return;
+
+            const data = await fetchJSONWithTimeout(
+              `/api/search?isbn=${encodeURIComponent(requestIsbn)}&pageNo=1&pageSize=5`,
+              5000
+            );
+            const docs = data?.response?.docs || [];
+            const matched = docs
+              .map((d: any) => d?.doc)
+              .find((doc: any) => {
+                const docIsbn13 = normalizeIsbn(doc?.isbn13);
+                const docIsbn = normalizeIsbn(doc?.isbn);
+                return docIsbn13 === normalizedRequestIsbn || docIsbn === normalizedRequestIsbn;
+              });
+            const img = matched?.bookImageURL;
+            if (!img) return;
+
+            const card = document.querySelector(`[data-ai-card-index="${index}"]`);
+            const slot = card?.querySelector('.ai-image-slot');
+            if (!slot) return;
+            if (renderToken !== aiCardsRenderToken) return;
+            if (
+              normalizeIsbn((card as HTMLElement).getAttribute('data-ai-isbn')) !==
+              normalizedRequestIsbn
+            ) return;
+
+            slot.innerHTML = `
+              <img
+                src="${img}"
+                alt="${book.bookname || book.bookName || ''}"
+                class="w-16 h-24 sm:w-24 sm:h-36 object-cover rounded-lg flex-shrink-0 bg-gray-200 dark:bg-charcoal-600"
+                onerror="this.onerror=null; this.src='${placeholderImage}';"
+              />
+            `;
+            book.bookImageURL = img;
+          } catch {
+            // keep placeholder on failure
+          }
+        })
+      );
+    }
+
+    // Render minimal cards for ai-only mode (just title + author from OpenAI)
+    function renderAIOnlyCards(recommendations: Array<{ title: string; author: string }>) {
+      aiOnlyRecommendations = recommendations;
+      currentBooks = [];
+
+      if (searchResults) {
+        searchResults.innerHTML = recommendations.map((rec, index) => {
+          return `
+            <div
+              class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+              onclick="openAIOnlyDetail(${index})"
+            >
+              <div class="flex p-3 sm:p-4 gap-3 sm:gap-4">
+                <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
+                  <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">auto_awesome</span>
+                  <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">${index + 1}</span>
+                </div>
+                <div class="flex flex-col flex-1 min-w-0 justify-center">
+                  <h3 class="font-bold text-charcoal dark:text-white line-clamp-2 mb-1 text-sm sm:text-base">${rec.title}</h3>
+                  <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 mb-2 truncate">${rec.author || '저자 미상'}</p>
+                  <div class="mt-auto">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-primary/10 text-primary">
+                      <span class="material-symbols-outlined text-xs">auto_awesome</span>
+                      AI 추천
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        searchResults.classList.remove('hidden');
+      }
+    }
+
+    // Open detail for ai-only mode: search data4library by title, then open modal
+    async function openAIOnlyDetail(index: number) {
+      const rec = aiOnlyRecommendations[index];
+      if (!rec) return;
+
+      const cards = searchResults?.querySelectorAll(':scope > div');
+      const card = cards?.[index];
+      if (card) {
+        card.classList.add('opacity-60', 'pointer-events-none');
+        const placeholder = card.querySelector('.book-placeholder');
+        if (placeholder) {
+          placeholder.innerHTML = '<div class="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>';
+        }
+      }
+
+      try {
+        const res = await fetch(`/api/search?keyword=${encodeURIComponent(rec.title)}&pageNo=1&pageSize=3`);
+        const data = await res.json();
+        const docs = data.response?.docs || [];
+
+        if (docs.length > 0) {
+          const book = docs[0].doc;
+          currentBooks = [book];
+          sharedOpenModal(book);
+        } else {
+          const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: '', isbn13: '', publisher: '', publication_year: '' };
+          currentBooks = [minimalBook];
+          sharedOpenModal(minimalBook);
+        }
+      } catch {
+        const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: '', isbn13: '', publisher: '', publication_year: '' };
+        currentBooks = [minimalBook];
+        sharedOpenModal(minimalBook);
+      } finally {
+        if (card) {
+          card.classList.remove('opacity-60', 'pointer-events-none');
+          const placeholder = card.querySelector('.book-placeholder');
+          if (placeholder) {
+            placeholder.innerHTML = `<span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">auto_awesome</span><span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">${index + 1}</span>`;
+          }
+        }
+      }
+    }
+
+    // Make functions globally accessible
+    (window as any).openAIOnlyDetail = openAIOnlyDetail;
+
+    // ========================================
+    // Normal Search Function
+    // ========================================
+    async function performSearch(page = 1, autoOpenModal = false) {
+      if (!keyword && !isbnParam) {
+        window.location.href = '/';
+        return;
+      }
+
+      hideAllStates();
+      loadingState?.classList.remove('hidden');
+      if (loadingTextEl) loadingTextEl.textContent = '검색 중...';
+
+      try {
+        let apiUrl;
+        if (isbnParam) {
+          apiUrl = `/api/search?isbn=${encodeURIComponent(isbnParam)}&pageNo=${page}&pageSize=${pageSize}`;
+        } else {
+          apiUrl = `/api/search?keyword=${encodeURIComponent(keyword)}&pageNo=${page}&pageSize=${pageSize}`;
+        }
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        loadingState?.classList.add('hidden');
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const books = data.response?.docs || [];
+        const totalCount = parseInt(data.response?.numFound || '0');
+        const totalPages = Math.ceil(totalCount / pageSize);
+
+        currentBooks = books.map((item: any) => item.doc);
+
+        if (resultCountEl) {
+          resultCountEl.textContent = `총 ${totalCount.toLocaleString()}건의 도서가 검색되었습니다.`;
+        }
+
+        if (books.length === 0) {
+          emptyState?.classList.remove('hidden');
+          return;
+        }
+
+        if (searchResults) {
+          searchResults.innerHTML = books.map((item: any, index: number) => {
+            const book = item.doc;
+            const bookImageUrl = book.bookImageURL || '';
+            const hasImage = bookImageUrl && bookImageUrl.trim() !== '';
+            return `
+              <div
+                class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
+                onclick="openBookModal(${index})"
+              >
+                <div class="flex p-3 sm:p-4 gap-3 sm:gap-4">
+                  ${hasImage ? `
+                    <img
+                      src="${bookImageUrl}"
+                      alt="${book.bookname}"
+                      class="w-16 h-24 sm:w-24 sm:h-36 object-cover rounded-lg flex-shrink-0 bg-gray-200 dark:bg-charcoal-600"
+                      onerror="this.onerror=null; this.src='${placeholderImage}';"
+                    />
+                  ` : `
+                    <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
+                      <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">menu_book</span>
+                      <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">No Image</span>
+                    </div>
+                  `}
+                  <div class="flex flex-col flex-1 min-w-0">
+                    <h3 class="font-bold text-charcoal dark:text-white line-clamp-2 mb-1 text-sm sm:text-base">${book.bookname}</h3>
+                    <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 mb-0.5 sm:mb-1 truncate">${book.authors || '저자 미상'}</p>
+                    <p class="text-xs sm:text-sm text-charcoal/40 dark:text-white/40 mb-1 sm:mb-2 truncate">${book.publisher || ''} ${book.publication_year ? `(${book.publication_year})` : ''}</p>
+                    <div class="mt-auto flex items-center">
+                      <span class="inline-flex items-center gap-1 text-[10px] sm:text-xs text-primary">
+                        <span class="material-symbols-outlined text-xs sm:text-sm">local_library</span>
+                        소장 도서관 확인
+                      </span>
+                      ${book.isbn13 ? `
+                        <button class="bookmark-btn ml-auto flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-isbn="${book.isbn13}" data-card-index="${index}" data-card-type="normal">
+                          <span class="material-symbols-outlined text-lg ${isBookmarked(book.isbn13) ? 'text-red-500' : 'text-charcoal/30 dark:text-white/30'}" style="font-variation-settings: 'FILL' ${isBookmarked(book.isbn13) ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+          searchResults.classList.remove('hidden');
+          attachBookmarkHandlers('normal');
+        }
+
+        // Pagination
+        if (totalPages > 1) {
+          pagination?.classList.remove('hidden');
+          if (pageInfo) pageInfo.textContent = `${page} / ${totalPages}`;
+          if (prevPageBtn) prevPageBtn.disabled = page <= 1;
+          if (nextPageBtn) nextPageBtn.disabled = page >= totalPages;
+          currentPage = page;
+        }
+
+        // Auto-open modal for ISBN search
+        if (autoOpenModal && currentBooks.length > 0) {
+          openBookModal(0);
+        }
+
+      } catch (error) {
+        loadingState?.classList.add('hidden');
+        errorState?.classList.remove('hidden');
+        const errorMessage = document.getElementById('error-message');
+        if (errorMessage) {
+          errorMessage.textContent = error instanceof Error ? error.message : '검색 중 오류가 발생했습니다.';
+        }
+      }
+    }
+
+    // Bookmark button handler
+    function attachBookmarkHandlers(cardType: string) {
+      if (!searchResults) return;
+      searchResults.querySelectorAll(`.bookmark-btn[data-card-type="${cardType}"]`).forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const userId = getUserId();
+          if (!userId) {
+            const signinBtn = document.getElementById('signin-btn');
+            signinBtn?.click();
+            return;
+          }
+          const isbn = (btn as HTMLElement).dataset.isbn || '';
+          const cardIdx = parseInt((btn as HTMLElement).dataset.cardIndex || '0');
+          const book = currentBooks[cardIdx];
+          if (!book || !isbn) return;
+
+          const icon = btn.querySelector('.material-symbols-outlined');
+          const nowBookmarked = await toggleBookmark({
+            isbn13: isbn,
+            bookname: book.bookname || book.bookName,
+            authors: book.authors,
+            publisher: book.publisher,
+            publication_year: book.publication_year,
+            bookImageURL: book.bookImageURL,
+          });
+          if (icon) {
+            icon.className = `material-symbols-outlined text-lg ${nowBookmarked ? 'text-red-500' : 'text-charcoal/30 dark:text-white/30'}`;
+            (icon as HTMLElement).style.fontVariationSettings = `'FILL' ${nowBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
+          }
+        });
+      });
+    }
+
+    // Pagination handlers
+    prevPageBtn?.addEventListener('click', () => {
+      if (currentPage > 1) {
+        performSearch(currentPage - 1);
+        window.history.pushState({}, '', `/search?q=${encodeURIComponent(keyword)}&page=${currentPage - 1}`);
+      }
+    });
+
+    nextPageBtn?.addEventListener('click', () => {
+      performSearch(currentPage + 1);
+      window.history.pushState({}, '', `/search?q=${encodeURIComponent(keyword)}&page=${currentPage + 1}`);
+    });
+
+    // Init bookmarks then perform search
+    initBookmarks().then(() => {
+      if (isAIMode) {
+        performAISearch();
+      } else {
+        performSearch(currentPage, !!isbnParam);
+      }
+    });
+
+    // ========================================
+    // Footer Modals
+    // ========================================
+    const termsBtn = document.getElementById('terms-btn');
+    const termsModal = document.getElementById('terms-modal');
+    const closeTermsModal = document.getElementById('close-terms-modal');
+    const privacyBtn = document.getElementById('privacy-btn');
+    const privacyModal = document.getElementById('privacy-modal');
+    const closePrivacyModal = document.getElementById('close-privacy-modal');
+    const sitemapBtn = document.getElementById('sitemap-btn');
+    const sitemapModal = document.getElementById('sitemap-modal');
+    const closeSitemapModal = document.getElementById('close-sitemap-modal');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const mobileSigninBtn = document.getElementById('mobile-signin-btn');
+    const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+    termsBtn?.addEventListener('click', () => termsModal?.classList.remove('hidden'));
+    closeTermsModal?.addEventListener('click', () => termsModal?.classList.add('hidden'));
+    termsModal?.addEventListener('click', (e) => { if (e.target === termsModal) termsModal.classList.add('hidden'); });
+
+    privacyBtn?.addEventListener('click', () => privacyModal?.classList.remove('hidden'));
+    closePrivacyModal?.addEventListener('click', () => privacyModal?.classList.add('hidden'));
+    privacyModal?.addEventListener('click', (e) => { if (e.target === privacyModal) privacyModal.classList.add('hidden'); });
+
+    sitemapBtn?.addEventListener('click', () => sitemapModal?.classList.remove('hidden'));
+    closeSitemapModal?.addEventListener('click', () => sitemapModal?.classList.add('hidden'));
+    sitemapModal?.addEventListener('click', (e) => { if (e.target === sitemapModal) sitemapModal.classList.add('hidden'); });
+
+    // Mobile Menu
+    mobileMenuBtn?.addEventListener('click', () => {
+      const isOpen = mobileMenu && !mobileMenu.classList.contains('hidden');
+      if (mobileMenu) mobileMenu.classList.toggle('hidden');
+      if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    mobileMenuClose?.addEventListener('click', () => {
+      mobileMenu?.classList.add('hidden');
+      mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+    });
+
+    mobileMenu?.addEventListener('click', (e) => {
+      if (e.target === mobileMenu) {
+        mobileMenu.classList.add('hidden');
+        mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    mobileSigninBtn?.addEventListener('click', () => {
+      const signinBtn = document.getElementById('signin-btn');
+      signinBtn?.click();
+    });
+  </script>
+<script>
+  import '../scripts/theme';
+</script>
+</body>
+</html>

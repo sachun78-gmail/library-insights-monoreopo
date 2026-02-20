@@ -1,0 +1,809 @@
+---
+import { regions } from '../data/regions.js';
+---
+<!-- Profile Completion Modal -->
+<div id="profile-complete-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="text-center mb-6">
+      <span class="material-symbols-outlined text-primary text-5xl mb-2">person_add</span>
+      <h3 class="text-xl font-bold text-charcoal dark:text-white">프로필 완성하기</h3>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">추가 정보를 입력해주세요</p>
+    </div>
+
+    <form id="profile-complete-form" class="flex flex-col gap-4">
+      <!-- Profile Image -->
+      <div class="flex flex-col items-center gap-2">
+        <div class="relative">
+          <img id="profile-preview" src="https://ui-avatars.com/api/?name=User&background=F4CE14&color=1A1A1A&size=96" alt="Profile" class="w-24 h-24 rounded-full object-cover border-4 border-primary" />
+          <label for="profile-image-input" class="absolute bottom-0 right-0 bg-primary text-charcoal rounded-full p-1.5 cursor-pointer hover:bg-primary/80 transition-colors">
+            <span class="material-symbols-outlined text-sm">photo_camera</span>
+          </label>
+          <input type="file" id="profile-image-input" accept="image/*" class="hidden" />
+        </div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">프로필 이미지 (선택)</span>
+      </div>
+
+      <!-- Birth Date -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">생년월일</label>
+        <input
+          type="date"
+          id="profile-birthdate"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+        />
+      </div>
+
+      <!-- Gender -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">성별</label>
+        <select
+          id="profile-gender"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+        >
+          <option value="">선택하세요</option>
+          <option value="male">남성</option>
+          <option value="female">여성</option>
+          <option value="other">기타</option>
+        </select>
+      </div>
+
+      <!-- Region -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">지역</label>
+        <select
+          id="profile-region"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+        >
+          <option value="">선택하세요</option>
+        </select>
+      </div>
+
+      <!-- Sub Region -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">세부 지역</label>
+        <select
+          id="profile-subregion"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+          disabled
+        >
+          <option value="">먼저 지역을 선택하세요</option>
+        </select>
+      </div>
+
+      <p id="profile-complete-message" class="text-center text-sm hidden"></p>
+
+      <div class="flex gap-3 mt-2">
+        <button
+          type="button"
+          id="profile-skip-btn"
+          class="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-charcoal-600 text-charcoal dark:text-white hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+        >
+          나중에
+        </button>
+        <button
+          type="submit"
+          class="flex-1 bg-primary text-charcoal font-bold px-4 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          저장하기
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div id="delete-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+    <div class="text-center">
+      <span class="material-symbols-outlined text-red-500 text-5xl mb-4">warning</span>
+      <h3 class="text-xl font-bold text-charcoal dark:text-white mb-2">Delete Account?</h3>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
+        This action cannot be undone. All your data will be permanently deleted.
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button id="cancel-delete-btn" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-charcoal-600 text-charcoal dark:text-white hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors">
+          Cancel
+        </button>
+        <button id="confirm-delete-btn" class="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">
+          Delete
+        </button>
+      </div>
+      <p id="delete-message" class="mt-4 text-sm hidden"></p>
+    </div>
+  </div>
+</div>
+
+<div id="auth-container" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl p-8 max-w-md w-full relative">
+    <button id="close-auth" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <!-- Tab Navigation -->
+    <div class="flex mb-6 border-b border-gray-300 dark:border-charcoal-600">
+      <button id="signin-tab" class="flex-1 py-3 text-center font-bold text-charcoal dark:text-white border-b-2 border-primary transition-colors">
+        Sign In
+      </button>
+      <button id="signup-tab" class="flex-1 py-3 text-center font-medium text-gray-500 dark:text-gray-400 border-b-2 border-transparent hover:text-charcoal dark:hover:text-white transition-colors">
+        Sign Up
+      </button>
+    </div>
+
+    <!-- Google Sign In Button -->
+    <button
+      id="google-signin-btn"
+      class="w-full flex items-center justify-center gap-3 p-3 border border-gray-300 rounded-md bg-white hover:bg-gray-50 dark:bg-white dark:border-gray-300 dark:hover:bg-gray-100 transition-colors mb-4"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      <span id="google-btn-text" class="text-gray-700 font-medium">Sign in with Google</span>
+    </button>
+
+    <!-- Divider -->
+    <div class="flex items-center gap-4 my-6">
+      <div class="flex-1 h-px bg-gray-300 dark:bg-charcoal-600"></div>
+      <span class="text-gray-500 dark:text-gray-400 text-sm">or</span>
+      <div class="flex-1 h-px bg-gray-300 dark:bg-charcoal-600"></div>
+    </div>
+
+    <!-- Sign In Form -->
+    <form id="signin-form" class="flex flex-col gap-4">
+      <input
+        type="email"
+        id="signin-email"
+        placeholder="Email"
+        required
+        class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+      />
+      <input
+        type="password"
+        id="signin-password"
+        placeholder="Password"
+        required
+        class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+      />
+      <button
+        type="submit"
+        class="bg-primary text-charcoal-900 font-bold p-3 rounded-md hover:bg-primary-dark transition-colors"
+      >
+        Sign In with Email
+      </button>
+    </form>
+
+    <!-- Sign Up Form (hidden by default) -->
+    <form id="signup-form" class="hidden flex flex-col gap-4">
+      <input
+        type="text"
+        id="signup-name"
+        placeholder="Full Name"
+        required
+        class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+      />
+      <input
+        type="email"
+        id="signup-email"
+        placeholder="Email"
+        required
+        class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+      />
+      <input
+        type="password"
+        id="signup-password"
+        placeholder="Password (min 6 characters)"
+        required
+        minlength="6"
+        class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+      />
+      <input
+        type="password"
+        id="signup-password-confirm"
+        placeholder="Confirm Password"
+        required
+        class="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+      />
+      <button
+        type="submit"
+        class="bg-primary text-charcoal-900 font-bold p-3 rounded-md hover:bg-primary-dark transition-colors"
+      >
+        Create Account
+      </button>
+    </form>
+
+    <p id="auth-message" class="text-center text-sm text-red-500 hidden mt-4"></p>
+  </div>
+</div>
+
+<script>
+  import { supabase, isAuthEnabled } from '../lib/supabase';
+  import { regions as regionsData } from '../data/regions.js';
+
+  const authContainer = document.getElementById('auth-container');
+
+  // Profile completion modal elements
+  const profileCompleteModal = document.getElementById('profile-complete-modal');
+  const profileCompleteForm = document.getElementById('profile-complete-form');
+  const profilePreview = document.getElementById('profile-preview');
+  const profileImageInput = document.getElementById('profile-image-input');
+  const profileBirthdate = document.getElementById('profile-birthdate');
+  const profileGender = document.getElementById('profile-gender');
+  const profileRegion = document.getElementById('profile-region');
+  const profileSubregion = document.getElementById('profile-subregion');
+  const profileSkipBtn = document.getElementById('profile-skip-btn');
+  const profileCompleteMessage = document.getElementById('profile-complete-message');
+
+  let profileImageFile = null;
+
+  // Populate region select
+  if (profileRegion) {
+    regionsData.forEach(region => {
+      const option = document.createElement('option');
+      option.value = region.code;
+      option.textContent = region.name;
+      profileRegion.appendChild(option);
+    });
+
+    profileRegion.addEventListener('change', (e) => {
+      const selectedRegion = regionsData.find(r => r.code === e.target.value);
+      profileSubregion.innerHTML = '<option value="">선택하세요</option>';
+
+      if (selectedRegion && selectedRegion.subRegions) {
+        profileSubregion.disabled = false;
+        selectedRegion.subRegions.forEach(sub => {
+          const option = document.createElement('option');
+          option.value = sub.code;
+          option.textContent = sub.name;
+          profileSubregion.appendChild(option);
+        });
+      } else {
+        profileSubregion.disabled = true;
+        profileSubregion.innerHTML = '<option value="">먼저 지역을 선택하세요</option>';
+      }
+    });
+  }
+
+  // Handle profile image selection
+  if (profileImageInput) {
+    profileImageInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        profileImageFile = file;
+        // Preview the image
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (profilePreview) {
+            profilePreview.src = event.target?.result;
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Skip profile completion
+  if (profileSkipBtn) {
+    profileSkipBtn.addEventListener('click', () => {
+      profileCompleteModal?.classList.add('hidden');
+      localStorage.setItem('profileSkipped', 'true');
+    });
+  }
+
+  // Submit profile completion form
+  if (profileCompleteForm) {
+    profileCompleteForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      profileCompleteMessage?.classList.add('hidden');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        profileCompleteMessage.textContent = '로그인이 필요합니다.';
+        profileCompleteMessage?.classList.remove('hidden');
+        profileCompleteMessage?.classList.add('text-red-500');
+        return;
+      }
+
+      const birthDate = profileBirthdate?.value || null;
+      const gender = profileGender?.value || null;
+      const regionCode = profileRegion?.value || null;
+      const regionName = profileRegion?.options[profileRegion.selectedIndex]?.text || null;
+      const subRegionCode = profileSubregion?.value || null;
+      const subRegionName = profileSubregion?.value ? profileSubregion?.options[profileSubregion.selectedIndex]?.text : null;
+
+      try {
+        let avatarUrl = null;
+
+        // Upload image to R2 if selected
+        if (profileImageFile) {
+          profileCompleteMessage.textContent = '이미지 업로드 중...';
+          profileCompleteMessage?.classList.remove('hidden');
+          profileCompleteMessage?.classList.remove('text-red-500');
+          profileCompleteMessage?.classList.add('text-gray-500');
+
+          const formData = new FormData();
+          formData.append('file', profileImageFile);
+          formData.append('userId', user.id);
+
+          const uploadResponse = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const uploadResult = await uploadResponse.json();
+
+          if (!uploadResponse.ok) {
+            throw new Error(uploadResult.error || '이미지 업로드에 실패했습니다.');
+          }
+
+          avatarUrl = uploadResult.url;
+        }
+
+        profileCompleteMessage.textContent = '프로필 저장 중...';
+
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            birthDate,
+            gender,
+            regionCode,
+            regionName: regionCode ? regionName : null,
+            subRegionCode,
+            subRegionName,
+            avatarUrl,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          profileCompleteMessage.textContent = '프로필이 저장되었습니다!';
+          profileCompleteMessage?.classList.remove('hidden');
+          profileCompleteMessage?.classList.remove('text-red-500');
+          profileCompleteMessage?.classList.remove('text-gray-500');
+          profileCompleteMessage?.classList.add('text-green-500');
+
+          localStorage.removeItem('profileSkipped');
+
+          setTimeout(() => {
+            profileCompleteModal?.classList.add('hidden');
+            window.location.reload();
+          }, 1500);
+        } else {
+          throw new Error(result.error || '저장에 실패했습니다.');
+        }
+      } catch (error) {
+        profileCompleteMessage.textContent = error.message;
+        profileCompleteMessage?.classList.remove('hidden');
+        profileCompleteMessage?.classList.remove('text-gray-500');
+        profileCompleteMessage?.classList.add('text-red-500');
+      }
+    });
+  }
+
+  // Check if profile needs completion
+  async function checkProfileCompletion() {
+    if (!isAuthEnabled) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Skip if user already skipped
+    if (localStorage.getItem('profileSkipped') === 'true') return;
+
+    try {
+      const response = await fetch(`/api/profile?userId=${user.id}`);
+      const result = await response.json();
+
+      // Show modal if no profile exists
+      if (!result.profile) {
+        profileCompleteModal?.classList.remove('hidden');
+
+        // Pre-fill with user metadata if available
+        const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
+        const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+        if (avatar && profilePreview) {
+          profilePreview.src = avatar;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+    }
+  }
+
+  // Check profile on load
+  setTimeout(checkProfileCompletion, 1000);
+  const closeAuthButton = document.getElementById('close-auth');
+  const authMessage = document.getElementById('auth-message');
+  const googleSignInBtn = document.getElementById('google-signin-btn');
+  const googleBtnText = document.getElementById('google-btn-text');
+  const signInButton = document.getElementById('signin-btn');
+  const mobileSigninBtn = document.getElementById('mobile-signin-btn');
+  const mobileSignupBtn = document.getElementById('mobile-signup-btn');
+
+  // Tab elements
+  const signInTab = document.getElementById('signin-tab');
+  const signUpTab = document.getElementById('signup-tab');
+  const signInForm = document.getElementById('signin-form');
+  const signUpForm = document.getElementById('signup-form');
+
+  // Profile elements
+  const profileContainer = document.getElementById('profile-container');
+  const profileBtn = document.getElementById('profile-btn');
+  const profileDropdown = document.getElementById('profile-dropdown');
+  const profileAvatar = document.getElementById('profile-avatar');
+  const profileName = document.getElementById('profile-name');
+  const dropdownAvatar = document.getElementById('dropdown-avatar');
+  const dropdownName = document.getElementById('dropdown-name');
+  const signOutBtn = document.getElementById('signout-btn');
+  const mobileAuthLoggedOut = document.getElementById('mobile-auth-logged-out');
+  const mobileAuthLoggedIn = document.getElementById('mobile-auth-logged-in');
+  const mobileProfileName = document.getElementById('mobile-profile-name');
+  const mobileProfileAvatar = document.getElementById('mobile-profile-avatar');
+  const mobileSignoutBtn = document.getElementById('mobile-signout-btn');
+
+  // Check auth state and update UI
+  async function getProfileAvatar(userId) {
+    try {
+      const response = await fetch(`/api/profile?userId=${userId}`);
+      if (!response.ok) return null;
+      const result = await response.json();
+      return result?.profile?.avatar_url || null;
+    } catch (error) {
+      console.error('Error loading profile avatar:', error);
+      return null;
+    }
+  }
+
+  async function updateAuthUI() {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      // User is logged in
+      signInButton?.classList.add('md:hidden');
+      profileContainer?.classList.remove('md:hidden');
+      mobileAuthLoggedOut?.classList.add('hidden');
+      mobileAuthLoggedIn?.classList.remove('hidden');
+
+      // Set profile info
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
+      const metadataAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+      const profileAvatarUrl = await getProfileAvatar(user.id);
+      const avatar = profileAvatarUrl || metadataAvatar;
+      const email = user.email;
+
+      if (profileName) profileName.textContent = name;
+      if (dropdownName) dropdownName.textContent = name;
+      if (mobileProfileName) mobileProfileName.textContent = name;
+
+      const avatarUrl = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F4CE14&color=1A1A1A`;
+      if (profileAvatar) profileAvatar.src = avatarUrl;
+      if (dropdownAvatar) dropdownAvatar.src = avatarUrl;
+      if (mobileProfileAvatar) mobileProfileAvatar.src = avatarUrl;
+    } else {
+      // User is logged out
+      signInButton?.classList.remove('md:hidden');
+      profileContainer?.classList.add('md:hidden');
+      mobileAuthLoggedOut?.classList.remove('hidden');
+      mobileAuthLoggedIn?.classList.add('hidden');
+    }
+  }
+
+  // Initialize auth state
+  updateAuthUI();
+
+  // Listen for auth state changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    updateAuthUI();
+  });
+
+  // Toggle profile dropdown
+  if (profileBtn) {
+    profileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileDropdown?.classList.toggle('hidden');
+    });
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    profileDropdown?.classList.add('hidden');
+  });
+
+  // Sign out
+  if (signOutBtn) {
+    signOutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      profileDropdown?.classList.add('hidden');
+      window.location.reload();
+    });
+  }
+
+  if (mobileSignoutBtn) {
+    mobileSignoutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.reload();
+    });
+  }
+
+  // Delete account
+  const deleteAccountBtn = document.getElementById('delete-account-btn');
+  const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+  const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+  const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+  const deleteMessage = document.getElementById('delete-message');
+
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener('click', () => {
+      profileDropdown?.classList.add('hidden');
+      deleteConfirmModal?.classList.remove('hidden');
+    });
+  }
+
+  if (cancelDeleteBtn) {
+    cancelDeleteBtn.addEventListener('click', () => {
+      deleteConfirmModal?.classList.add('hidden');
+      deleteMessage?.classList.add('hidden');
+    });
+  }
+
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', async () => {
+      confirmDeleteBtn.disabled = true;
+      confirmDeleteBtn.textContent = 'Deleting...';
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        deleteMessage.textContent = 'Session expired. Please sign in again.';
+        deleteMessage?.classList.remove('hidden');
+        deleteMessage?.classList.add('text-red-500');
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.textContent = 'Delete';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/delete-account', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: session.user.id,
+            accessToken: session.access_token,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          deleteMessage.textContent = 'Account deleted successfully. Redirecting...';
+          deleteMessage?.classList.remove('hidden');
+          deleteMessage?.classList.remove('text-red-500');
+          deleteMessage?.classList.add('text-green-500');
+
+          await supabase.auth.signOut();
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          deleteMessage.textContent = result.error || 'Failed to delete account';
+          deleteMessage?.classList.remove('hidden');
+          deleteMessage?.classList.add('text-red-500');
+          confirmDeleteBtn.disabled = false;
+          confirmDeleteBtn.textContent = 'Delete';
+        }
+      } catch (error) {
+        deleteMessage.textContent = 'An error occurred. Please try again.';
+        deleteMessage?.classList.remove('hidden');
+        deleteMessage?.classList.add('text-red-500');
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.textContent = 'Delete';
+      }
+    });
+  }
+
+  // Tab switching
+  function switchToSignIn() {
+    signInTab?.classList.add('border-primary', 'font-bold', 'text-charcoal', 'dark:text-white');
+    signInTab?.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    signUpTab?.classList.remove('border-primary', 'font-bold', 'text-charcoal', 'dark:text-white');
+    signUpTab?.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    signInForm?.classList.remove('hidden');
+    signUpForm?.classList.add('hidden');
+    if (googleBtnText) googleBtnText.textContent = 'Sign in with Google';
+    authMessage?.classList.add('hidden');
+  }
+
+  function switchToSignUp() {
+    signUpTab?.classList.add('border-primary', 'font-bold', 'text-charcoal', 'dark:text-white');
+    signUpTab?.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    signInTab?.classList.remove('border-primary', 'font-bold', 'text-charcoal', 'dark:text-white');
+    signInTab?.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    signUpForm?.classList.remove('hidden');
+    signInForm?.classList.add('hidden');
+    if (googleBtnText) googleBtnText.textContent = 'Sign up with Google';
+    authMessage?.classList.add('hidden');
+  }
+
+  signInTab?.addEventListener('click', switchToSignIn);
+  signUpTab?.addEventListener('click', switchToSignUp);
+
+  // Open auth modal
+  if (signInButton) {
+    signInButton.addEventListener('click', () => {
+      if (!isAuthEnabled) {
+        alert('인증 기능이 현재 사용할 수 없습니다. 나중에 다시 시도해주세요.');
+        return;
+      }
+      authContainer.classList.remove('hidden');
+      switchToSignIn();
+    });
+  }
+
+  if (mobileSigninBtn) {
+    mobileSigninBtn.addEventListener('click', () => {
+      if (!isAuthEnabled) {
+        alert('인증 기능이 현재 사용할 수 없습니다. 나중에 다시 시도해주세요.');
+        return;
+      }
+      document.getElementById('mobile-menu')?.classList.add('hidden');
+      document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+      authContainer.classList.remove('hidden');
+      switchToSignIn();
+    });
+  }
+
+  if (mobileSignupBtn) {
+    mobileSignupBtn.addEventListener('click', () => {
+      if (!isAuthEnabled) {
+        alert('인증 기능이 현재 사용할 수 없습니다. 나중에 다시 시도해주세요.');
+        return;
+      }
+      document.getElementById('mobile-menu')?.classList.add('hidden');
+      document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+      authContainer.classList.remove('hidden');
+      switchToSignUp();
+    });
+  }
+
+  // Close auth modal
+  if (closeAuthButton) {
+    closeAuthButton.addEventListener('click', () => {
+      authContainer.classList.add('hidden');
+      authMessage.classList.add('hidden');
+      signInForm?.reset();
+      signUpForm?.reset();
+    });
+  }
+
+  // Google Sign In
+  if (googleSignInBtn) {
+    googleSignInBtn.addEventListener('click', async () => {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        authMessage.textContent = error.message;
+        authMessage.classList.remove('hidden');
+        console.error('Google login error:', error.message);
+      }
+    });
+  }
+
+  // Email Sign In
+  if (signInForm) {
+    signInForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      authMessage.classList.add('hidden');
+
+      const email = document.getElementById('signin-email').value;
+      const password = document.getElementById('signin-password').value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        // Provide more helpful error messages
+        let errorMsg = error.message;
+        if (error.message.includes('Invalid login credentials')) {
+          errorMsg = 'Invalid email or password. Please check your credentials.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMsg = 'Please verify your email before signing in. Check your inbox.';
+        }
+        authMessage.textContent = errorMsg;
+        authMessage.classList.remove('hidden');
+        authMessage.classList.add('text-red-500');
+        authMessage.classList.remove('text-green-500');
+        console.error('Login error:', error.message);
+      } else {
+        authMessage.textContent = 'Login successful! Redirecting...';
+        authMessage.classList.remove('hidden');
+        authMessage.classList.remove('text-red-500');
+        authMessage.classList.add('text-green-500');
+        console.log('Login successful:', data);
+
+        setTimeout(() => {
+          authContainer.classList.add('hidden');
+          signInForm.reset();
+          authMessage.classList.add('hidden');
+          window.location.reload();
+        }, 1500);
+      }
+    });
+  }
+
+  // Email Sign Up
+  if (signUpForm) {
+    signUpForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      authMessage.classList.add('hidden');
+
+      const name = document.getElementById('signup-name').value;
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+      const passwordConfirm = document.getElementById('signup-password-confirm').value;
+
+      // Validate passwords match
+      if (password !== passwordConfirm) {
+        authMessage.textContent = 'Passwords do not match';
+        authMessage.classList.remove('hidden');
+        authMessage.classList.add('text-red-500');
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+
+      if (error) {
+        authMessage.textContent = error.message;
+        authMessage.classList.remove('hidden');
+        authMessage.classList.add('text-red-500');
+        authMessage.classList.remove('text-green-500');
+        console.error('Sign up error:', error.message);
+      } else {
+        signUpForm.reset();
+
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+          // Email confirmation required
+          authMessage.textContent = 'Account created! Please check your email to verify, then sign in.';
+        } else {
+          // Auto-confirmed (no email verification needed)
+          authMessage.textContent = 'Account created! You can now sign in.';
+        }
+
+        authMessage.classList.remove('hidden');
+        authMessage.classList.remove('text-red-500');
+        authMessage.classList.add('text-green-500');
+        console.log('Sign up successful:', data);
+
+        // Switch to Sign In tab after 2 seconds
+        setTimeout(() => {
+          switchToSignIn();
+          // Keep the success message visible
+          authMessage.classList.remove('hidden');
+          authMessage.classList.remove('text-red-500');
+          authMessage.classList.add('text-green-500');
+        }, 2000);
+      }
+    });
+  }
+</script>

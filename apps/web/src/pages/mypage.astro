@@ -1,0 +1,468 @@
+---
+import Auth from '../components/Auth.astro';
+import Analytics from '../components/Analytics.astro';
+---
+<html lang="ko" class="">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script is:inline>
+  (function(){
+    var t = localStorage.getItem('theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  })();
+</script>
+<meta name="description" content="내 계정 정보와 프로필을 확인하고 관리하세요."/>
+<meta name="robots" content="noindex,follow"/>
+<link rel="canonical" href="https://library-insights.pages.dev/mypage"/>
+<meta property="og:site_name" content="LibraryInsights"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="마이페이지 - LibraryInsights"/>
+<meta property="og:description" content="내 계정 정보와 프로필을 확인하고 관리하세요."/>
+<meta property="og:url" content="https://library-insights.pages.dev/mypage"/>
+<meta property="og:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+<meta property="og:locale" content="ko_KR"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="마이페이지 - LibraryInsights"/>
+<meta name="twitter:description" content="내 계정 정보와 프로필을 확인하고 관리하세요."/>
+<meta name="twitter:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+<title>마이 페이지 - LibraryInsights</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<Analytics />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="/fonts.css" rel="stylesheet"/>
+<style>
+  body {
+    font-family: 'YUniverse', sans-serif;
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-charcoal dark:text-white transition-colors duration-300">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="border-b border-solid border-charcoal/10 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center justify-between max-w-[1200px] mx-auto w-full px-4 py-2 sm:py-4">
+<a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0">
+<span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
+<span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
+</a>
+<div class="flex items-center justify-end gap-2 sm:gap-8 ml-auto">
+<nav class="hidden md:flex items-center gap-3 sm:gap-9">
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/">Home</a>
+</nav>
+<button id="theme-toggle" class="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-label="다크모드 전환">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl dark:hidden">dark_mode</span>
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl hidden dark:inline">light_mode</span>
+</button>
+<button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
+</button>
+<!-- Sign In Button (shown when logged out) -->
+<button id="signin-btn" class="hidden md:flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
+<span class="truncate">Sign In</span>
+</button>
+<!-- Profile Button (shown when logged in) -->
+<div id="profile-container" class="hidden relative md:block md:hidden">
+<button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+<img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+<span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
+<span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
+</button>
+<!-- Dropdown Menu -->
+<div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
+<!-- Profile Header -->
+<div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
+<img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
+<p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
+</div>
+<!-- Menu Items -->
+<div class="py-2">
+<a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary font-medium hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">person</span>
+마이 페이지
+</a>
+<button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">logout</span>
+로그아웃
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-[70] bg-black/60">
+  <div class="h-full w-[78%] max-w-xs bg-white dark:bg-charcoal-900 shadow-2xl">
+    <div class="flex items-center justify-end px-4 py-3">
+      <button id="mobile-menu-close" class="w-8 h-8 rounded-full border border-charcoal/10 dark:border-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-lg">close</span>
+      </button>
+    </div>
+    <div class="px-4 pb-4 border-b border-charcoal/10 dark:border-white/10">
+      <div class="flex items-center justify-center">
+        <div class="w-14 h-14 rounded-full bg-primary/90 text-charcoal flex items-center justify-center">
+          <span class="material-symbols-outlined text-2xl">person</span>
+        </div>
+      </div>
+      <div id="mobile-auth-logged-out" class="mt-4 flex items-center justify-between">
+        <button id="mobile-signup-btn" class="px-4 py-2 rounded-full bg-charcoal text-white text-xs font-bold">회원가입</button>
+        <button id="mobile-signin-btn" class="text-xs font-bold text-charcoal dark:text-white">로그인 &gt;</button>
+      </div>
+      <div id="mobile-auth-logged-in" class="hidden mt-4">
+        <div class="flex items-center gap-3">
+          <img id="mobile-profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border border-primary" />
+          <div class="min-w-0">
+            <p id="mobile-profile-name" class="text-sm font-semibold text-charcoal dark:text-white truncate"></p>
+            <a class="text-xs text-primary hover:underline" href="/mypage">마이페이지</a>
+          </div>
+        </div>
+        <button id="mobile-signout-btn" class="mt-3 w-full rounded-lg border border-charcoal/20 dark:border-white/20 py-2 text-xs font-bold text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5">로그아웃</button>
+      </div>
+    </div>
+    <div class="px-4 py-4 space-y-2">
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+      <button id="mobile-theme-toggle" class="flex items-center gap-2 w-full text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors pt-2 border-t border-charcoal/10 dark:border-white/10 mt-2">
+        <span class="material-symbols-outlined text-lg dark:hidden">dark_mode</span>
+        <span class="material-symbols-outlined text-lg hidden dark:inline">light_mode</span>
+        <span class="dark:hidden">다크모드</span>
+        <span class="hidden dark:inline">라이트모드</span>
+      </button>
+    </div>
+  </div>
+</div>
+</header>
+
+<main class="flex-1">
+<div class="w-full flex justify-center py-10 sm:py-16 relative overflow-hidden">
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80');"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/80 to-charcoal/70 dark:from-charcoal/95 dark:via-charcoal/90 dark:to-charcoal/85"></div>
+  <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10 relative z-10">
+    <h1 class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">마이 페이지</h1>
+    <p class="text-white/80 text-sm sm:text-lg mt-3">내 정보와 추천 기록을 확인하세요</p>
+  </div>
+</div>
+
+<div class="w-full flex justify-center py-4 sm:py-8">
+  <div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10">
+<!-- My Page Content -->
+    <div class="max-w-[800px] mx-auto w-full">
+<!-- Profile Section -->
+<div id="mypage-content" class="hidden">
+<div class="bg-white dark:bg-charcoal-800 rounded-2xl shadow-lg overflow-hidden">
+<!-- Profile Header -->
+<div class="bg-gradient-to-r from-primary to-primary/80 p-6 sm:p-8">
+<div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+<img id="mypage-avatar" src="" alt="Profile" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white shadow-lg" />
+<div class="text-center sm:text-left">
+<h1 id="mypage-name" class="text-2xl sm:text-3xl font-bold text-charcoal"></h1>
+<p id="mypage-email" class="text-charcoal/70 mt-1"></p>
+</div>
+</div>
+</div>
+
+<!-- Profile Info -->
+<div class="p-6 sm:p-8">
+<h2 class="text-lg font-bold text-charcoal dark:text-white mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">account_circle</span>
+계정 정보
+</h2>
+<div class="space-y-4">
+<div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
+<span class="text-charcoal/60 dark:text-white/60">이름</span>
+<span id="info-name" class="font-medium text-charcoal dark:text-white"></span>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
+<span class="text-charcoal/60 dark:text-white/60">이메일</span>
+<span id="info-email" class="font-medium text-charcoal dark:text-white"></span>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
+<span class="text-charcoal/60 dark:text-white/60">가입일</span>
+<span id="info-created" class="font-medium text-charcoal dark:text-white"></span>
+</div>
+</div>
+
+<!-- Additional Profile Info -->
+<h2 class="text-lg font-bold text-charcoal dark:text-white mb-4 mt-8 flex items-center gap-2">
+<span class="material-symbols-outlined">badge</span>
+프로필 정보
+</h2>
+<div class="space-y-4">
+<div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
+<span class="text-charcoal/60 dark:text-white/60">생년월일</span>
+<span id="info-birthdate" class="font-medium text-charcoal dark:text-white">-</span>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
+<span class="text-charcoal/60 dark:text-white/60">성별</span>
+<span id="info-gender" class="font-medium text-charcoal dark:text-white">-</span>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
+<span class="text-charcoal/60 dark:text-white/60">지역</span>
+<span id="info-region" class="font-medium text-charcoal dark:text-white">-</span>
+</div>
+</div>
+
+<!-- Actions -->
+<div class="mt-8 space-y-3">
+<button id="edit-profile-btn" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm text-charcoal dark:text-white border border-charcoal/20 dark:border-white/20 rounded-lg hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+프로필 수정
+</button>
+<button id="delete-account-btn" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm text-red-500 border border-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-lg">person_remove</span>
+계정 삭제
+</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Not logged in message -->
+<div id="mypage-login-required" class="text-center py-16">
+<span class="material-symbols-outlined text-6xl text-charcoal/30 dark:text-white/30 mb-4">account_circle</span>
+<h2 class="text-xl font-bold text-charcoal dark:text-white mb-2">로그인이 필요합니다</h2>
+<p class="text-charcoal/60 dark:text-white/60 mb-6">마이 페이지를 이용하시려면 로그인해주세요.</p>
+<button id="mypage-signin-btn" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-charcoal font-bold rounded-lg hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined">login</span>
+로그인
+</button>
+</div>
+</div>
+  </div>
+</div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-[#1a1a1a] text-white/70">
+<div class="max-w-[1200px] mx-auto px-4 py-6">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+<a href="/" class="flex items-center gap-2">
+<span class="text-white font-bold">LibraryInsights</span>
+</a>
+<p class="text-xs text-white/50">
+© 2024 LibraryInsights. Data provided by 도서관 정보나루. All rights reserved.
+</p>
+</div>
+</div>
+</footer>
+</div>
+</div>
+
+<Auth />
+
+<script>
+  import { supabase, isAuthEnabled } from '../lib/supabase';
+
+  const mypageContent = document.getElementById('mypage-content');
+  const mypageLoginRequired = document.getElementById('mypage-login-required');
+  const mypageSigninBtn = document.getElementById('mypage-signin-btn');
+  const mypageAvatar = document.getElementById('mypage-avatar');
+  const mypageName = document.getElementById('mypage-name');
+  const mypageEmail = document.getElementById('mypage-email');
+  const infoName = document.getElementById('info-name');
+  const infoEmail = document.getElementById('info-email');
+  const infoCreated = document.getElementById('info-created');
+  const infoBirthdate = document.getElementById('info-birthdate');
+  const infoGender = document.getElementById('info-gender');
+  const infoRegion = document.getElementById('info-region');
+  const editProfileBtn = document.getElementById('edit-profile-btn');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileSigninBtn = document.getElementById('mobile-signin-btn');
+  const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+  const genderMap = {
+    'male': '남성',
+    'female': '여성',
+    'other': '기타'
+  };
+
+  // Mobile Menu
+  mobileMenuBtn?.addEventListener('click', () => {
+    const isOpen = mobileMenu && !mobileMenu.classList.contains('hidden');
+    if (mobileMenu) mobileMenu.classList.toggle('hidden');
+    if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', String(!isOpen));
+  });
+
+  mobileMenuClose?.addEventListener('click', () => {
+    mobileMenu?.classList.add('hidden');
+    mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+  });
+
+  mobileMenu?.addEventListener('click', (e) => {
+    if (e.target === mobileMenu) {
+      mobileMenu.classList.add('hidden');
+      mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  mobileSigninBtn?.addEventListener('click', () => {
+    const signinBtn = document.getElementById('signin-btn');
+    signinBtn?.click();
+  });
+
+  async function loadMyPage() {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      mypageLoginRequired?.classList.add('hidden');
+      mypageContent?.classList.remove('hidden');
+
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
+      let avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+      const email = user.email;
+      const createdAt = new Date(user.created_at).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      // Load profile from database
+      try {
+        const response = await fetch(`/api/profile?userId=${user.id}`);
+        const result = await response.json();
+
+        if (result.profile) {
+          const profile = result.profile;
+
+          // Use profile avatar if available
+          if (profile.avatar_url) {
+            avatar = profile.avatar_url;
+          }
+
+          // Display birth date
+          if (profile.birth_date && infoBirthdate) {
+            const birthDate = new Date(profile.birth_date);
+            infoBirthdate.textContent = birthDate.toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+          }
+
+          // Display gender
+          if (profile.gender && infoGender) {
+            infoGender.textContent = genderMap[profile.gender] || profile.gender;
+          }
+
+          // Display region
+          if (profile.region_name && infoRegion) {
+            let regionText = profile.region_name;
+            if (profile.sub_region_name) {
+              regionText += ` ${profile.sub_region_name}`;
+            }
+            infoRegion.textContent = regionText;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+
+      const avatarUrl = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F4CE14&color=1A1A1A&size=128`;
+
+      if (mypageAvatar) mypageAvatar.src = avatarUrl;
+      if (mypageName) mypageName.textContent = name;
+      if (mypageEmail) mypageEmail.textContent = email;
+      if (infoName) infoName.textContent = name;
+      if (infoEmail) infoEmail.textContent = email;
+      if (infoCreated) infoCreated.textContent = createdAt;
+    } else {
+      mypageLoginRequired?.classList.remove('hidden');
+      mypageContent?.classList.add('hidden');
+    }
+  }
+
+  // Load my page on init
+  loadMyPage();
+
+  // Listen for auth state changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    loadMyPage();
+  });
+
+  // Sign in button click
+  if (mypageSigninBtn) {
+    mypageSigninBtn.addEventListener('click', () => {
+      const signinBtn = document.getElementById('signin-btn');
+      signinBtn?.click();
+    });
+  }
+
+  // Edit profile button click - show profile completion modal with existing data
+  if (editProfileBtn) {
+    editProfileBtn.addEventListener('click', async () => {
+      localStorage.removeItem('profileSkipped');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load existing profile data
+      try {
+        const response = await fetch(`/api/profile?userId=${user.id}`);
+        const result = await response.json();
+
+        const profileCompleteModal = document.getElementById('profile-complete-modal');
+        const profilePreview = document.getElementById('profile-preview') as HTMLImageElement;
+        const profileBirthdate = document.getElementById('profile-birthdate') as HTMLInputElement;
+        const profileGender = document.getElementById('profile-gender') as HTMLSelectElement;
+        const profileRegion = document.getElementById('profile-region') as HTMLSelectElement;
+        const profileSubregion = document.getElementById('profile-subregion') as HTMLSelectElement;
+
+        if (result.profile) {
+          const profile = result.profile;
+
+          // Pre-fill avatar
+          if (profile.avatar_url && profilePreview) {
+            profilePreview.src = profile.avatar_url;
+          } else if (user.user_metadata?.avatar_url && profilePreview) {
+            profilePreview.src = user.user_metadata.avatar_url;
+          }
+
+          // Pre-fill birth date
+          if (profile.birth_date && profileBirthdate) {
+            profileBirthdate.value = profile.birth_date;
+          }
+
+          // Pre-fill gender
+          if (profile.gender && profileGender) {
+            profileGender.value = profile.gender;
+          }
+
+          // Pre-fill region
+          if (profile.region_code && profileRegion) {
+            profileRegion.value = profile.region_code;
+            // Trigger change event to populate sub-regions
+            profileRegion.dispatchEvent(new Event('change'));
+
+            // Wait a bit for sub-regions to populate, then set the value
+            setTimeout(() => {
+              if (profile.sub_region_code && profileSubregion) {
+                profileSubregion.value = profile.sub_region_code;
+              }
+            }, 100);
+          }
+        }
+
+        profileCompleteModal?.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error loading profile for edit:', error);
+        // Still show modal even if loading fails
+        const profileCompleteModal = document.getElementById('profile-complete-modal');
+        profileCompleteModal?.classList.remove('hidden');
+      }
+    });
+  }
+</script>
+<script>
+  import '../scripts/theme';
+</script>
+</body>
+</html>
