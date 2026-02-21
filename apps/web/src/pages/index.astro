@@ -185,6 +185,17 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 </h2>
 </div>
 <form id="search-form" class="flex flex-col w-full max-w-[600px] px-2 gap-2 sm:gap-3">
+<!-- 검색 타입 탭 + AI 버튼 -->
+<div class="flex items-center justify-between">
+  <div id="search-type-tabs" class="flex gap-1.5">
+    <button type="button" id="type-title-btn" class="px-3 py-1 rounded-lg text-xs font-bold bg-primary text-charcoal transition-colors">도서명</button>
+    <button type="button" id="type-author-btn" class="px-3 py-1 rounded-lg text-xs font-bold bg-white/20 text-white/70 hover:bg-white/30 transition-colors">저자명</button>
+  </div>
+  <button type="button" id="ai-mode-btn" class="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold transition-all bg-white/20 text-white/70 hover:bg-white/30 border border-white/20">
+    <span class="material-symbols-outlined text-sm">auto_awesome</span>
+    AI 추천
+  </button>
+</div>
 <div class="flex w-full items-stretch rounded-xl h-12 sm:h-14 shadow-2xl overflow-hidden">
 <div class="text-charcoal/50 flex bg-white items-center justify-center pl-3 sm:pl-4 border-r-0">
 <span class="material-symbols-outlined text-xl sm:text-2xl">search</span>
@@ -196,13 +207,10 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 </button>
 </div>
 </div>
-<label for="ai-mode-check" class="flex items-center justify-center gap-2 cursor-pointer select-none">
-<input type="checkbox" id="ai-mode-check" class="w-4 h-4 rounded border-white/40 text-primary focus:ring-primary/50 bg-white/20" />
-<span class="text-white/90 text-xs sm:text-sm font-medium flex items-center gap-1">
-<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
-AI 추천: 내 주변 도서관 소장 도서만 보기
-</span>
-</label>
+<div id="ai-guide" class="hidden items-center justify-center gap-1.5 text-white/80 text-[11px] sm:text-xs text-center">
+  <span class="material-symbols-outlined text-primary text-sm flex-shrink-0">auto_awesome</span>
+  <span>입력한 키워드를 AI가 분석해 관련 도서를 추천하고 주변 도서관 대출 가능 여부를 안내해드립니다</span>
+</div>
 </form>
 </div>
 <!-- Today's Recommended Book (Monthly Keyword Based) -->
@@ -552,14 +560,63 @@ sachun78@gmail.com
   // Search form handler
   const searchForm = document.getElementById('search-form');
   const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
-  const aiModeCheck = document.getElementById('ai-mode-check') as HTMLInputElement | null;
+  const aiModeBtn = document.getElementById('ai-mode-btn');
+  const aiGuide = document.getElementById('ai-guide');
+  const searchTypeTabs = document.getElementById('search-type-tabs');
+  const typeTitleBtn = document.getElementById('type-title-btn');
+  const typeAuthorBtn = document.getElementById('type-author-btn');
+
+  let searchType = 'title';
+  let isAIMode = false;
+
+  function setSearchType(type: string) {
+    searchType = type;
+    if (type === 'author') {
+      typeTitleBtn?.classList.remove('bg-primary', 'text-charcoal');
+      typeTitleBtn?.classList.add('bg-white/20', 'text-white/70');
+      typeAuthorBtn?.classList.add('bg-primary', 'text-charcoal');
+      typeAuthorBtn?.classList.remove('bg-white/20', 'text-white/70');
+      if (searchInput) searchInput.placeholder = '저자명을 입력하세요...';
+    } else {
+      typeAuthorBtn?.classList.remove('bg-primary', 'text-charcoal');
+      typeAuthorBtn?.classList.add('bg-white/20', 'text-white/70');
+      typeTitleBtn?.classList.add('bg-primary', 'text-charcoal');
+      typeTitleBtn?.classList.remove('bg-white/20', 'text-white/70');
+      if (searchInput) searchInput.placeholder = '도서명을 입력하세요...';
+    }
+  }
+
+  typeTitleBtn?.addEventListener('click', () => setSearchType('title'));
+  typeAuthorBtn?.addEventListener('click', () => setSearchType('author'));
+
+  function setAIMode(active: boolean) {
+    isAIMode = active;
+    if (active) {
+      aiModeBtn?.classList.remove('bg-white/20', 'text-white/70', 'hover:bg-white/30', 'border-white/20');
+      aiModeBtn?.classList.add('bg-primary', 'text-charcoal', 'border-primary');
+      searchTypeTabs?.classList.add('hidden');
+      aiGuide?.classList.remove('hidden');
+      aiGuide?.classList.add('flex');
+      if (searchInput) searchInput.placeholder = '키워드를 입력하면 AI가 관련 도서를 추천해드립니다...';
+    } else {
+      aiModeBtn?.classList.add('bg-white/20', 'text-white/70', 'hover:bg-white/30', 'border-white/20');
+      aiModeBtn?.classList.remove('bg-primary', 'text-charcoal', 'border-primary');
+      searchTypeTabs?.classList.remove('hidden');
+      aiGuide?.classList.add('hidden');
+      aiGuide?.classList.remove('flex');
+      if (searchInput) searchInput.placeholder = searchType === 'author' ? '저자명을 입력하세요...' : '도서명을 입력하세요...';
+    }
+  }
+
+  aiModeBtn?.addEventListener('click', () => setAIMode(!isAIMode));
 
   searchForm?.addEventListener('submit', (e) => {
     e.preventDefault();
     const keyword = searchInput?.value?.trim();
     if (keyword) {
-      const modeStr = aiModeCheck?.checked ? '&mode=ai' : '';
-      window.location.href = `/search?q=${encodeURIComponent(keyword)}${modeStr}`;
+      const modeStr = isAIMode ? '&mode=ai' : '';
+      const typeStr = !isAIMode && searchType === 'author' ? '&type=author' : '';
+      window.location.href = `/search?q=${encodeURIComponent(keyword)}${modeStr}${typeStr}`;
     }
   });
 

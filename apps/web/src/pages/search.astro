@@ -75,11 +75,15 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       <!-- Search Bar in Header -->
       <form id="header-search-form" class="hidden md:flex items-center">
         <div class="flex items-stretch rounded-lg overflow-hidden border border-charcoal/10 dark:border-white/10">
+          <select id="header-search-type" class="px-2 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-xs border-r border-charcoal/10 dark:border-white/10 focus:outline-none cursor-pointer">
+            <option value="title">도서명</option>
+            <option value="author">저자명</option>
+          </select>
           <input
             type="text"
             id="header-search-input"
-            class="px-4 py-2 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-sm focus:outline-none w-64"
-            placeholder="?꾩꽌 寃??.."
+            class="px-4 py-2 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-sm focus:outline-none w-56"
+            placeholder="검색..."
           />
           <button type="submit" class="px-4 bg-primary text-charcoal hover:bg-primary/90 transition-colors">
             <span class="material-symbols-outlined text-sm">search</span>
@@ -202,17 +206,11 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       <!-- AI Mode Toggle Bar -->
       <div id="ai-mode-bar" class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-charcoal/10 dark:border-white/10 bg-white/90 dark:bg-charcoal/60 p-3 sm:p-4 shadow-sm">
         <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-          <label for="ai-mode-toggle" class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-            <input type="checkbox" id="ai-mode-toggle" class="sr-only peer" />
-            <div class="w-9 h-5 sm:w-11 sm:h-6 bg-charcoal/20 dark:bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-primary"></div>
-          </label>
-          <div class="min-w-0">
-            <span class="text-sm sm:text-base font-bold text-charcoal dark:text-white flex items-center gap-1">
-              <span class="material-symbols-outlined text-primary text-sm sm:text-base">auto_awesome</span>
-              AI 추천
-            </span>
-            <p class="text-[10px] sm:text-xs text-charcoal/50 dark:text-white/50 truncate">주변 도서관 대출 가능 도서 AI 추천</p>
-          </div>
+          <button type="button" id="ai-mode-toggle" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all flex-shrink-0 bg-charcoal/10 dark:bg-white/10 text-charcoal/60 dark:text-white/60 hover:bg-charcoal/20 dark:hover:bg-white/20 border border-transparent">
+            <span class="material-symbols-outlined text-sm sm:text-base">auto_awesome</span>
+            AI 추천
+          </button>
+          <p id="ai-mode-guide" class="text-[10px] sm:text-xs text-charcoal/50 dark:text-white/50 truncate">입력한 키워드를 AI가 분석해 관련 도서를 추천하고 주변 도서관 대출 가능 여부를 안내해드립니다</p>
         </div>
         <div id="ai-location-status" class="hidden flex items-center gap-1 text-xs text-charcoal/50 dark:text-white/50 flex-shrink-0">
           <span id="ai-location-icon" class="material-symbols-outlined text-sm">location_searching</span>
@@ -458,11 +456,13 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     const keyword = urlParams.get('q') || '';
     const isbnParam = urlParams.get('isbn') || '';
     const modeParam = urlParams.get('mode') || '';
+    const typeParam = urlParams.get('type') || 'title';
     let currentPage = parseInt(urlParams.get('page') || '1');
     const pageSize = 12;
 
     // AI mode state
     let isAIMode = modeParam === 'ai';
+    let currentSearchType = typeParam; // 'title' | 'author'
 
     // Store current book data for modal
     let currentBooks: any[] = [];
@@ -480,10 +480,12 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     const prevPageBtn = document.getElementById('prev-page') as HTMLButtonElement | null;
     const nextPageBtn = document.getElementById('next-page') as HTMLButtonElement | null;
     const headerSearchInput = document.getElementById('header-search-input') as HTMLInputElement | null;
+    const headerSearchTypeEl = document.getElementById('header-search-type') as HTMLSelectElement | null;
     const headerSearchForm = document.getElementById('header-search-form');
 
     // AI mode elements
-    const aiModeToggle = document.getElementById('ai-mode-toggle') as HTMLInputElement | null;
+    const aiModeToggle = document.getElementById('ai-mode-toggle') as HTMLButtonElement | null;
+    const aiModeGuide = document.getElementById('ai-mode-guide');
     const aiLocationStatus = document.getElementById('ai-location-status');
     const aiLocationIcon = document.getElementById('ai-location-icon');
     const aiLocationText = document.getElementById('ai-location-text');
@@ -496,6 +498,13 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     const displayKeyword = isbnParam ? `ISBN: ${isbnParam}` : keyword;
     if (searchKeywordEl) searchKeywordEl.textContent = `"${displayKeyword}"`;
     if (headerSearchInput) headerSearchInput.value = keyword || isbnParam;
+    if (headerSearchTypeEl) {
+      headerSearchTypeEl.value = currentSearchType;
+      if (isAIMode) headerSearchTypeEl.classList.add('hidden');
+    }
+    if (typeParam === 'author' && !isAIMode && heroTitle) {
+      heroTitle.innerHTML = `<span class="text-white/70 font-normal">저자</span> <span id="search-keyword" class="text-primary">"${displayKeyword}"</span> 검색 결과`;
+    }
 
     // Update hero for AI mode
     function updateHeroForMode() {
@@ -505,11 +514,23 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       }
     }
 
-    // Init AI mode toggle
-    if (aiModeToggle) {
-      aiModeToggle.checked = isAIMode;
+    // AI mode toggle button visual state
+    function updateAIToggleBtn() {
+      if (!aiModeToggle) return;
+      if (isAIMode) {
+        aiModeToggle.classList.remove('bg-charcoal/10', 'dark:bg-white/10', 'text-charcoal/60', 'dark:text-white/60', 'hover:bg-charcoal/20', 'dark:hover:bg-white/20', 'border-transparent');
+        aiModeToggle.classList.add('bg-primary', 'text-charcoal', 'border-primary/60');
+        if (aiModeGuide) aiModeGuide.textContent = 'AI가 관련 도서를 분석하고 있습니다...';
+        if (headerSearchInput) headerSearchInput.placeholder = '키워드를 입력하면 AI가 관련 도서를 추천해드립니다...';
+      } else {
+        aiModeToggle.classList.add('bg-charcoal/10', 'dark:bg-white/10', 'text-charcoal/60', 'dark:text-white/60', 'hover:bg-charcoal/20', 'dark:hover:bg-white/20', 'border-transparent');
+        aiModeToggle.classList.remove('bg-primary', 'text-charcoal', 'border-primary/60');
+        if (aiModeGuide) aiModeGuide.textContent = '입력한 키워드를 AI가 분석해 관련 도서를 추천하고 주변 도서관 대출 가능 여부를 안내해드립니다';
+        if (headerSearchInput) headerSearchInput.placeholder = '검색...';
+      }
     }
 
+    updateAIToggleBtn();
     if (isAIMode) updateHeroForMode();
 
     // Header search form
@@ -518,13 +539,21 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       const newKeyword = headerSearchInput?.value?.trim();
       if (newKeyword) {
         const modeStr = isAIMode ? '&mode=ai' : '';
-        window.location.href = `/search?q=${encodeURIComponent(newKeyword)}${modeStr}`;
+        const typeStr = !isAIMode && currentSearchType === 'author' ? '&type=author' : '';
+        window.location.href = `/search?q=${encodeURIComponent(newKeyword)}${modeStr}${typeStr}`;
       }
     });
 
-    // AI mode toggle event
-    aiModeToggle?.addEventListener('change', () => {
-      isAIMode = aiModeToggle.checked;
+    // Header search type select
+    headerSearchTypeEl?.addEventListener('change', () => {
+      currentSearchType = headerSearchTypeEl.value;
+    });
+
+    // AI mode toggle action
+    function triggerAIMode(active: boolean) {
+      isAIMode = active;
+      updateAIToggleBtn();
+      if (headerSearchTypeEl) headerSearchTypeEl.classList.toggle('hidden', isAIMode);
       const newUrl = new URL(window.location.href);
       if (isAIMode) {
         newUrl.searchParams.set('mode', 'ai');
@@ -540,21 +569,18 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       } else {
         // Reset hero
         if (heroTitle) {
-          heroTitle.innerHTML = `<span id="search-keyword" class="text-primary">"${displayKeyword}"</span> 검색 결과`;
+          const prefix = currentSearchType === 'author' ? `<span class="text-white/70 font-normal">저자</span> ` : '';
+          heroTitle.innerHTML = `${prefix}<span id="search-keyword" class="text-primary">"${displayKeyword}"</span> 검색 결과`;
         }
         performSearch(1);
       }
-    });
+    }
+
+    aiModeToggle?.addEventListener('click', () => triggerAIMode(!isAIMode));
 
     // Switch to normal search buttons
-    aiSwitchNormal?.addEventListener('click', () => {
-      if (aiModeToggle) aiModeToggle.checked = false;
-      aiModeToggle?.dispatchEvent(new Event('change'));
-    });
-    aiSwitchNormalGps?.addEventListener('click', () => {
-      if (aiModeToggle) aiModeToggle.checked = false;
-      aiModeToggle?.dispatchEvent(new Event('change'));
-    });
+    aiSwitchNormal?.addEventListener('click', () => triggerAIMode(false));
+    aiSwitchNormalGps?.addEventListener('click', () => triggerAIMode(false));
 
     // Initialize shared book modal
     initBookModal();
@@ -982,7 +1008,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         if (isbnParam) {
           apiUrl = `/api/search?isbn=${encodeURIComponent(isbnParam)}&pageNo=${page}&pageSize=${pageSize}`;
         } else {
-          apiUrl = `/api/search?keyword=${encodeURIComponent(keyword)}&pageNo=${page}&pageSize=${pageSize}`;
+          apiUrl = `/api/search?keyword=${encodeURIComponent(keyword)}&type=${currentSearchType}&pageNo=${page}&pageSize=${pageSize}`;
         }
         const response = await fetch(apiUrl);
         const data = await response.json();
@@ -1115,16 +1141,17 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     }
 
     // Pagination handlers
+    const typeUrlStr = () => currentSearchType === 'author' ? '&type=author' : '';
     prevPageBtn?.addEventListener('click', () => {
       if (currentPage > 1) {
         performSearch(currentPage - 1);
-        window.history.pushState({}, '', `/search?q=${encodeURIComponent(keyword)}&page=${currentPage - 1}`);
+        window.history.pushState({}, '', `/search?q=${encodeURIComponent(keyword)}${typeUrlStr()}&page=${currentPage - 1}`);
       }
     });
 
     nextPageBtn?.addEventListener('click', () => {
       performSearch(currentPage + 1);
-      window.history.pushState({}, '', `/search?q=${encodeURIComponent(keyword)}&page=${currentPage + 1}`);
+      window.history.pushState({}, '', `/search?q=${encodeURIComponent(keyword)}${typeUrlStr()}&page=${currentPage + 1}`);
     });
 
     // Init bookmarks then perform search

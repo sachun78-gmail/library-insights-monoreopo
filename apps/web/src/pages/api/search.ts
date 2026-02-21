@@ -7,6 +7,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const keyword = url.searchParams.get('keyword') || '';
   const isbn = url.searchParams.get('isbn') || '';
+  const type = url.searchParams.get('type') || 'title';
   const pageNo = url.searchParams.get('pageNo') || '1';
   const pageSize = url.searchParams.get('pageSize') || '10';
 
@@ -34,6 +35,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
           pageSize,
         });
       }
+    } else if (type === 'author') {
+      data = await fetchLibraryProxy(locals, '/v1/srchBooks', {
+        author: keyword,
+        pageNo,
+        pageSize,
+      });
     } else {
       data = await fetchLibraryProxy(locals, '/v1/srchBooks', {
         title: keyword,
