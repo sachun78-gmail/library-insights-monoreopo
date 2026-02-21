@@ -373,7 +373,7 @@ function resetLibraryState(): void {
   getEl('library-location-error')?.classList.add('hidden');
   getEl('library-count')?.classList.add('hidden');
   getEl('library-gps-view')?.classList.add('hidden');
-  getEl('library-region-view')?.classList.add('hidden');
+  getEl('library-region-view')?.classList.remove('hidden');
   const libraryList = getEl('library-list');
   if (libraryList) libraryList.innerHTML = '';
 
@@ -509,6 +509,16 @@ async function searchLibrariesByGPS(): Promise<void> {
   try {
     const nearestRegions = getNearestRegions(userLat, userLon, 2);
 
+    // GPS 매칭된 가장 가까운 지역을 드롭다운에 자동 세팅
+    const primaryRegion = nearestRegions[0];
+    if (primaryRegion) {
+      modalSelectedRegion = primaryRegion.code;
+      modalSelectedSubRegion = '';
+      const regionSelect = getEl('modal-region-select') as HTMLSelectElement | null;
+      if (regionSelect) regionSelect.value = primaryRegion.code;
+      updateSubRegions(primaryRegion.code);
+    }
+
     const responses = await Promise.all(
       nearestRegions.map(r =>
         fetch(`/api/library-by-book?isbn=${isbn}&region=${r.code}`)
@@ -533,7 +543,7 @@ async function searchLibrariesByGPS(): Promise<void> {
     }
 
     if (allLibs.length === 0) {
-      getEl('library-section')?.classList.add('hidden');
+      getEl('library-empty')?.classList.remove('hidden');
       return;
     }
 
@@ -558,13 +568,18 @@ async function searchLibrariesByGPS(): Promise<void> {
     }
 
     if (libsWithDistance.length === 0) {
-      getEl('library-section')?.classList.add('hidden');
+      getEl('library-empty')?.classList.remove('hidden');
       return;
     }
 
     if (libraryCount) {
       libraryCount.textContent = `반경 ${radiusKm}km 이내 ${libsWithDistance.length}개 소장 도서관 (가까운 순)`;
       libraryCount.classList.remove('hidden');
+    }
+
+    const modeDescGps = getEl('library-mode-desc');
+    if (modeDescGps) {
+      modeDescGps.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">my_location</span> GPS 위치 기반 결과 · 지역을 변경하여 재검색할 수 있습니다.';
     }
 
     if (libraryList) {
@@ -578,7 +593,7 @@ async function searchLibrariesByGPS(): Promise<void> {
 
   } catch (error) {
     getEl('library-loading')?.classList.add('hidden');
-    getEl('library-section')?.classList.add('hidden');
+    getEl('library-empty')?.classList.remove('hidden');
     console.error('Library fetch error:', error);
   }
 }
@@ -619,6 +634,7 @@ async function searchLibrariesByRegion(): Promise<void> {
 
   getEl('library-initial')?.classList.add('hidden');
   getEl('library-empty')?.classList.add('hidden');
+  getEl('library-location-error')?.classList.add('hidden');
   libraryLoading?.classList.remove('hidden');
   libraryCount?.classList.add('hidden');
   if (libraryList) libraryList.innerHTML = '';
@@ -634,13 +650,18 @@ async function searchLibrariesByRegion(): Promise<void> {
 
     const libs = data.response?.libs || [];
     if (libs.length === 0) {
-      getEl('library-section')?.classList.add('hidden');
+      getEl('library-empty')?.classList.remove('hidden');
       return;
     }
 
     if (libraryCount) {
       libraryCount.textContent = `총 ${libs.length}개의 도서관에서 소장 중`;
       libraryCount.classList.remove('hidden');
+    }
+
+    const modeDescRegion = getEl('library-mode-desc');
+    if (modeDescRegion) {
+      modeDescRegion.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">location_on</span> 선택 지역 기반 결과입니다.';
     }
 
     if (libraryList) {
@@ -651,7 +672,7 @@ async function searchLibrariesByRegion(): Promise<void> {
 
   } catch (error) {
     getEl('library-loading')?.classList.add('hidden');
-    getEl('library-section')?.classList.add('hidden');
+    getEl('library-empty')?.classList.remove('hidden');
     console.error('Library fetch error:', error);
   }
 }
@@ -663,7 +684,6 @@ async function searchLibrariesByRegion(): Promise<void> {
 function switchToGPSMode(): void {
   libraryMode = 'gps';
   getEl('library-gps-view')?.classList.remove('hidden');
-  getEl('library-region-view')?.classList.add('hidden');
   const modeDesc = getEl('library-mode-desc');
   if (modeDesc) {
     modeDesc.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">my_location</span> 현재 위치를 기반으로 가까운 소장 도서관을 조회합니다.';
@@ -724,9 +744,12 @@ async function startLibrarySearch(): Promise<void> {
     userLon = loc.lon;
     searchLibrariesByGPS();
   } catch {
-    // Location denied/unavailable → hide library section
     getEl('library-loading')?.classList.add('hidden');
-    getEl('library-section')?.classList.add('hidden');
+    getEl('library-location-error')?.classList.remove('hidden');
+    const modeDesc = getEl('library-mode-desc');
+    if (modeDesc) {
+      modeDesc.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">location_off</span> GPS를 사용할 수 없습니다. 지역을 선택하여 검색하세요.';
+    }
   }
 }
 

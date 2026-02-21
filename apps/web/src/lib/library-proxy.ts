@@ -11,6 +11,17 @@ function getEnvVar(locals: any, key: string): string | undefined {
   return process.env[key];
 }
 
+function resolveProxyBaseUrl(baseUrl: string, port?: string): string {
+  const baseWithProtocol = /^https?:\/\//i.test(baseUrl) ? baseUrl : `http://${baseUrl}`;
+  const parsed = new URL(baseWithProtocol);
+
+  if (port && !parsed.port) {
+    parsed.port = port;
+  }
+
+  return parsed.toString().replace(/\/+$/, '');
+}
+
 export async function fetchLibraryProxy(
   locals: any,
   endpoint: string,
@@ -18,6 +29,7 @@ export async function fetchLibraryProxy(
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<any> {
   const baseUrl = getEnvVar(locals, 'LIB_PROXY_BASE_URL');
+  const proxyPort = getEnvVar(locals, 'LIB_PROXY_PORT');
   const sharedSecret = getEnvVar(locals, 'LIB_PROXY_SHARED_SECRET');
 
   if (!baseUrl || !sharedSecret) {
@@ -30,7 +42,7 @@ export async function fetchLibraryProxy(
     throw new Error(`Library proxy not configured: missing ${missing}`);
   }
 
-  const normalizedBase = baseUrl.replace(/\/+$/, '');
+  const normalizedBase = resolveProxyBaseUrl(baseUrl, proxyPort);
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const query = new URLSearchParams();
 
@@ -51,11 +63,25 @@ export async function fetchLibraryProxy(
       },
       signal: controller.signal,
     });
+    const rawText = await response.text();
+    let data: any = null;
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data?.error || `Library proxy request failed: ${response.status}`);
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        const preview = rawText.slice(0, 200).replace(/\s+/g, ' ').trim();
+        throw new Error(
+          `Library proxy returned non-JSON response (status ${response.status}) from ${requestUrl}: ${preview}`
+        );
+      }
     }
+
+    if (!response.ok) {
+      const message = data?.error || `Library proxy request failed: ${response.status}`;
+      throw new Error(`${message} (${requestUrl})`);
+    }
+
     return data;
   } finally {
     clearTimeout(timer);

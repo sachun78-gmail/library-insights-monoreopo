@@ -84,7 +84,8 @@ powershell -ExecutionPolicy Bypass -File scripts/check-web.ps1 -WebBaseUrl http:
 
 웹 주요 키:
 
-- `LIB_PROXY_BASE_URL` (예: `http://127.0.0.1:8080` 또는 배포 서버 URL)
+- `LIB_PROXY_BASE_URL` (예: `http://127.0.0.1` 또는 배포 서버 URL/IP)
+- `LIB_PROXY_PORT` (선택, 예: `8080`. `LIB_PROXY_BASE_URL`에 포트가 없을 때만 사용)
 - `LIB_PROXY_SHARED_SECRET` (서버 `PROXY_SHARED_SECRET`와 동일)
 
 ## Notes

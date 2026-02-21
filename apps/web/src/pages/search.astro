@@ -608,12 +608,12 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       }
     }
 
-    async function getGeoPosition(timeoutMs = 2500): Promise<GeolocationPosition | null> {
+    async function getGeoPosition(timeoutMs = 10000): Promise<GeolocationPosition | null> {
       if (!navigator.geolocation) return null;
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
+            enableHighAccuracy: true,
             timeout: timeoutMs,
             maximumAge: 300000,
           });
