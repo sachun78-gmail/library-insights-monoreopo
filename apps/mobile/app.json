@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Library Insights",
+    "slug": "library-insights",
+    "version": "1.0.0",
+    "scheme": "libraryinsights",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bookreserch.libraryinsights"
+    },
+    "android": {
+      "package": "com.bookreserch.libraryinsights",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "도서관 검색을 위해 위치 정보를 사용합니다."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "c66ce7dd-9c43-4e33-8eae-8d88961cea91"
+      }
+    },
+    "owner": "sachun78"
+  }
+}
