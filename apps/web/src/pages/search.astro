@@ -551,6 +551,10 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
     // AI mode toggle action
     function triggerAIMode(active: boolean) {
+      if (active && !getUserId()) {
+        document.getElementById('signin-btn')?.click();
+        return;
+      }
       isAIMode = active;
       updateAIToggleBtn();
       if (headerSearchTypeEl) headerSearchTypeEl.classList.toggle('hidden', isAIMode);

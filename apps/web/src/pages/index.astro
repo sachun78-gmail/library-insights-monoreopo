@@ -590,6 +590,10 @@ sachun78@gmail.com
   typeAuthorBtn?.addEventListener('click', () => setSearchType('author'));
 
   function setAIMode(active: boolean) {
+    if (active && !getUserId()) {
+      document.getElementById('signin-btn')?.click();
+      return;
+    }
     isAIMode = active;
     if (active) {
       aiModeBtn?.classList.remove('bg-white/20', 'text-white/70', 'hover:bg-white/30', 'border-white/20');
