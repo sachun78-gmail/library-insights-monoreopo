@@ -8,7 +8,6 @@ import React, {
 import type { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
-import { Platform } from "react-native";
 import { supabase } from "./supabase";
 
 // OAuth 완료 처리 (앱으로 돌아올 때)
@@ -169,11 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 브라우저에서 OAuth 진행
       // Android에서는 result.type이 'cancel'/'dismiss'로 올 수 있음 (정상)
       authLog("signInWithGoogle:oauthUrl", data.url);
-      if (Platform.OS === "android") {
-        authLog("signInWithGoogle:androidFallback", "Linking.openURL");
-        await Linking.openURL(data.url);
-        return { error: null };
-      }
       const result = await WebBrowser.openAuthSessionAsync(data.url, REDIRECT_URI);
       authLog("signInWithGoogle:webBrowserResult", result);
 
