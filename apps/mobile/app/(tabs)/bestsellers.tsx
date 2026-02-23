@@ -18,7 +18,7 @@ import type { Book } from "../../lib/types";
 type TabType = "popular" | "hot";
 
 function formatDate(d: Date): string {
-  return d.toISOString().split("T")[0].replace(/-/g, "");
+  return d.toISOString().split("T")[0]; // YYYY-MM-DD
 }
 
 function getDateRange(days: number): { startDt: string; endDt: string } {
