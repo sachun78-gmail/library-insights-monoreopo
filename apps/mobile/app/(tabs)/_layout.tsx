@@ -3,15 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-function TabIcon({
-  name,
-  color,
-  size,
-}: {
-  name: IoniconName;
-  color: string;
-  size: number;
-}) {
+function TabIcon({ name, color, size }: { name: IoniconName; color: string; size: number }) {
   return <Ionicons name={name} size={size} color={color} />;
 }
 
@@ -49,9 +41,27 @@ export default function TabLayout() {
       <Tabs.Screen
         name="bestsellers"
         options={{
-          title: "인기도서",
+          title: "인기",
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="bar-chart-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="bookshelf"
+        options={{
+          title: "내 서재",
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="bookmark-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="mypage"
+        options={{
+          title: "마이",
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="person-outline" color={color} size={size} />
           ),
         }}
       />

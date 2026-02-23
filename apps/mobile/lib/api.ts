@@ -18,9 +18,41 @@ async function get(path: string, params: Params = {}): Promise<any> {
 
   try {
     const res = await fetch(url.toString(), { signal: controller.signal });
-    if (!res.ok) {
-      throw new Error(`API error ${res.status} on ${path}`);
-    }
+    if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function post(path: string, body: Record<string, any>): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function del(path: string, body: Record<string, any>): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
   } finally {
     clearTimeout(timer);
@@ -28,16 +60,20 @@ async function get(path: string, params: Params = {}): Promise<any> {
 }
 
 export const api = {
+  // ── 검색 ──
   search: (keyword: string, type: string, pageNo: number, pageSize = 20) =>
     get("/api/search", { keyword, type, pageNo, pageSize }),
 
   aiSearch: (keyword: string, lat?: number, lon?: number) =>
     get("/api/ai-search", { keyword, lat, lon }),
 
+  // ── 홈 ──
   newArrivals: () => get("/api/new-arrivals"),
-
   monthlyRecommend: () => get("/api/monthly-recommend"),
+  personalizedRecommend: (isbn13List: string) =>
+    get("/api/personalized-recommend", { isbn13: isbn13List }),
 
+  // ── 인기 도서 ──
   popularBooks: (params: {
     startDt?: string;
     endDt?: string;
@@ -51,9 +87,56 @@ export const api = {
 
   hotTrend: (searchDt?: string) => get("/api/hot-trend", { searchDt }),
 
+  // ── 도서 상세 ──
   bookDetail: (isbn: string, title?: string) =>
     get("/api/book-detail", { isbn, title }),
 
+  bookIntro: (isbn: string) => get("/api/book-intro", { isbn }),
+
   bookAIInsight: (title: string, author?: string) =>
     get("/api/book-ai-insight", { title, author }),
+
+  // ── 도서관 검색 ──
+  libraryByBook: (isbn: string, region: string) =>
+    get("/api/library-by-book", { isbn, region }),
+
+  bookExist: (isbn: string, region: string) =>
+    get("/api/book-exist", { isbn, region }),
+
+  // ── 북마크 ──
+  bookmarks: (userId: string) => get("/api/bookmarks", { userId }),
+
+  addBookmark: (userId: string, book: {
+    isbn13: string;
+    bookname: string;
+    authors: string;
+    publisher: string;
+    publication_year: string;
+    bookImageURL: string;
+  }) =>
+    post("/api/bookmarks", {
+      userId,
+      isbn13: book.isbn13,
+      bookname: book.bookname,
+      authors: book.authors,
+      publisher: book.publisher,
+      publication_year: book.publication_year,
+      book_image_url: book.bookImageURL,
+    }),
+
+  removeBookmark: (userId: string, isbn13: string) =>
+    del("/api/bookmarks", { userId, isbn13 }),
+
+  // ── 프로필 ──
+  profile: (userId: string) => get("/api/profile", { userId }),
+
+  updateProfile: (userId: string, data: {
+    birth_date?: string;
+    gender?: string;
+    region_code?: string;
+    region_name?: string;
+  }) => post("/api/profile", { userId, ...data }),
+
+  deleteAccount: (userId: string) =>
+    post("/api/delete-account", { userId }),
 };
