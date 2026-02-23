@@ -175,56 +175,6 @@ export function BookDetailSheet({ book, onClose }: Props) {
                 </View>
               ) : null}
 
-              {/* ── 서평 / 네이버 감상평 ── */}
-              <View style={styles.reviewSection}>
-                <Text style={styles.sectionTitle}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={15} color="#374151" /> 서평 &amp; 감상평
-                </Text>
-
-                {isReviewLoading ? (
-                  <View style={styles.loadingRow}>
-                    <ActivityIndicator size="small" color="#D97706" />
-                    <Text style={styles.loadingText}>리뷰 불러오는 중...</Text>
-                  </View>
-                ) : naverReview ? (
-                  <View style={styles.blogReviewBox}>
-                    <View style={styles.blogReviewHeader}>
-                      <Ionicons name="logo-rss" size={14} color="#03C75A" />
-                      <Text style={styles.blogReviewLabel}>블로그 리뷰</Text>
-                    </View>
-                    <Text style={styles.blogReviewTitle} numberOfLines={2}>
-                      {naverReview.title}
-                    </Text>
-                    <Text style={styles.blogReviewDesc} numberOfLines={3}>
-                      {naverReview.description}
-                    </Text>
-                    <View style={styles.blogReviewFooter}>
-                      <Text style={styles.blogReviewMeta}>
-                        {naverReview.bloggerName}
-                        {naverReview.postDate ? `  ·  ${formatPostDate(naverReview.postDate)}` : ""}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => naverReview.link && Linking.openURL(naverReview.link)}
-                      >
-                        <Text style={styles.blogReviewLink}>전체 보기</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ) : null}
-
-                {/* 네이버 더 보기 버튼 */}
-                {naverSearchUrl && (
-                  <TouchableOpacity
-                    style={styles.naverBtn}
-                    onPress={() => Linking.openURL(naverSearchUrl)}
-                  >
-                    <Text style={styles.naverBtnText}>N</Text>
-                    <Text style={styles.naverBtnLabel}>네이버에서 감상평 더 보기</Text>
-                    <Ionicons name="open-outline" size={13} color="#FFFFFF" />
-                  </TouchableOpacity>
-                )}
-              </View>
-
               {/* ── AI 인사이트 (로그인 후 + 펼치기) ── */}
               <View style={styles.aiSection}>
                 <TouchableOpacity
@@ -245,7 +195,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
                   }}
                 >
                   <Text style={styles.aiToggleIcon}>✨</Text>
-                  <Text style={styles.aiToggleText}>AI 요약 &amp; 핵심 인사이트</Text>
+                  <Text style={styles.aiToggleText}>AI 요약 & 핵심 인사이트</Text>
                   {!user && (
                     <View style={styles.loginBadge}>
                       <Text style={styles.loginBadgeText}>로그인</Text>
@@ -289,6 +239,58 @@ export function BookDetailSheet({ book, onClose }: Props) {
                     )}
                   </>
                 )}
+              </View>
+
+              {/* ── 서평 / 네이버 감상평 ── */}
+              <View style={styles.reviewSection}>
+                <View style={styles.sectionTitleRow}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={15} color="#374151" />
+                  <Text style={styles.sectionTitle}>서평 & 감상평</Text>
+                </View>
+
+                {isReviewLoading ? (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator size="small" color="#D97706" />
+                    <Text style={styles.loadingText}>리뷰 불러오는 중...</Text>
+                  </View>
+                ) : naverReview ? (
+                  <View style={styles.blogReviewBox}>
+                    <View style={styles.blogReviewHeader}>
+                      <Ionicons name="logo-rss" size={14} color="#03C75A" />
+                      <Text style={styles.blogReviewLabel}>블로그 리뷰</Text>
+                    </View>
+                    <Text style={styles.blogReviewTitle} numberOfLines={2}>
+                      {naverReview.title}
+                    </Text>
+                    <Text style={styles.blogReviewDesc} numberOfLines={3}>
+                      {naverReview.description}
+                    </Text>
+                    <View style={styles.blogReviewFooter}>
+                      <Text style={styles.blogReviewMeta}>
+                        {naverReview.bloggerName}
+                        {naverReview.postDate
+                          ? "  ·  " + formatPostDate(naverReview.postDate)
+                          : ""}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => naverReview.link && Linking.openURL(naverReview.link)}
+                      >
+                        <Text style={styles.blogReviewLink}>전체 보기</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : null}
+
+                {naverSearchUrl ? (
+                  <TouchableOpacity
+                    style={styles.naverBtn}
+                    onPress={() => Linking.openURL(naverSearchUrl)}
+                  >
+                    <Text style={styles.naverBtnText}>N</Text>
+                    <Text style={styles.naverBtnLabel}>네이버에서 감상평 더 보기</Text>
+                    <Ionicons name="open-outline" size={13} color="#FFFFFF" />
+                  </TouchableOpacity>
+                ) : null}
               </View>
 
               {/* ── 도서관 검색 ── */}
@@ -414,7 +416,8 @@ const styles = StyleSheet.create({
   loadingRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, paddingHorizontal: 16 },
   loadingText: { fontSize: 12, color: "#9CA3AF" },
   sectionLabel: { fontSize: 12, fontWeight: "600", color: "#9CA3AF", marginBottom: 6 },
-  sectionTitle: { fontSize: 14, fontWeight: "700", color: "#374151", marginBottom: 10 },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
+  sectionTitle: { fontSize: 14, fontWeight: "700", color: "#374151" },
 
   // 책 소개
   descBox: { paddingHorizontal: 20, marginBottom: 4 },
