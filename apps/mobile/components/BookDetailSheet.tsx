@@ -10,13 +10,14 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useAuth } from "../lib/auth-context";
 import { api } from "../lib/api";
-import type { Book, AIInsight, Library, Bookmark } from "../lib/types";
+import type { Book, Library, Bookmark } from "../lib/types";
 
 interface Props {
   book: Book | null;
@@ -33,23 +34,20 @@ const REGIONS = [
   { code: "39", name: "제주" },
 ];
 
+function formatPostDate(raw?: string): string {
+  if (!raw || raw.length < 8) return "";
+  return `${raw.slice(0, 4)}.${raw.slice(4, 6)}.${raw.slice(6, 8)}`;
+}
+
 export function BookDetailSheet({ book, onClose }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showAI, setShowAI] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("11");
 
-  // AI 인사이트
-  const { data: insight, isLoading: isInsightLoading } = useQuery<AIInsight>({
-    queryKey: ["ai-insight", book?.bookname],
-    queryFn: () => api.bookAIInsight(book!.bookname, book?.authors),
-    enabled: !!book,
-    staleTime: 7 * 24 * 60 * 60 * 1000,
-    retry: false,
-  });
-
-  // 북마크 목록
+  // ── 북마크 목록 ──
   const { data: bookmarks } = useQuery<Bookmark[]>({
     queryKey: ["bookmarks", user?.id],
     queryFn: () => api.bookmarks(user!.id),
@@ -59,7 +57,6 @@ export function BookDetailSheet({ book, onClose }: Props) {
 
   const isBookmarked = bookmarks?.some((b) => b.isbn13 === book?.isbn13) ?? false;
 
-  // 북마크 추가/제거
   const addMutation = useMutation({
     mutationFn: () => api.addBookmark(user!.id, book!),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookmarks", user?.id] }),
@@ -81,7 +78,30 @@ export function BookDetailSheet({ book, onClose }: Props) {
     else addMutation.mutate();
   };
 
-  // 도서관 검색
+  // ── 네이버 서평 / 감상평 ──
+  const { data: reviewData, isLoading: isReviewLoading } = useQuery<any>({
+    queryKey: ["book-review", book?.isbn13],
+    queryFn: () => api.bookDetail(book!.isbn13, book?.bookname),
+    enabled: !!book,
+    staleTime: 24 * 60 * 60 * 1000,
+    retry: false,
+  });
+
+  const naverReview = reviewData?.review;
+  const naverSearchUrl = book
+    ? `https://search.naver.com/search.naver?where=nexearch&query=${encodeURIComponent((book.bookname ?? "") + " 책 리뷰")}`
+    : undefined;
+
+  // ── AI 인사이트 (로그인 + 펼치기 후 fetch) ──
+  const { data: insight, isLoading: isInsightLoading } = useQuery<any>({
+    queryKey: ["ai-insight", book?.bookname],
+    queryFn: () => api.bookAIInsight(book!.bookname, book?.authors),
+    enabled: !!book && !!user && showAI,
+    staleTime: 7 * 24 * 60 * 60 * 1000,
+    retry: false,
+  });
+
+  // ── 도서관 검색 ──
   const { data: libraries, isLoading: isLibLoading } = useQuery<Library[]>({
     queryKey: ["libraries", book?.isbn13, selectedRegion],
     queryFn: () => api.libraryByBook(book!.isbn13, selectedRegion),
@@ -103,13 +123,12 @@ export function BookDetailSheet({ book, onClose }: Props) {
       </TouchableWithoutFeedback>
 
       <View style={styles.sheet}>
-        {/* Handle bar */}
         <View style={styles.handle} />
 
         <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
           {book && (
             <>
-              {/* Book header */}
+              {/* ── 도서 헤더 ── */}
               <View style={styles.bookHeader}>
                 <Image
                   source={{ uri: book.bookImageURL || PLACEHOLDER }}
@@ -131,7 +150,6 @@ export function BookDetailSheet({ book, onClose }: Props) {
                     </View>
                   )}
                 </View>
-                {/* 북마크 버튼 */}
                 <TouchableOpacity
                   style={styles.bookmarkBtn}
                   onPress={handleBookmark}
@@ -149,43 +167,131 @@ export function BookDetailSheet({ book, onClose }: Props) {
                 </TouchableOpacity>
               </View>
 
-              {/* AI Insight */}
-              {isInsightLoading && (
-                <View style={styles.loadingRow}>
-                  <ActivityIndicator size="small" color="#D97706" />
-                  <Text style={styles.loadingText}>AI 분석 중...</Text>
-                </View>
-              )}
-              {insight && (
-                <View style={styles.insightBox}>
-                  <Text style={styles.insightTitle}>✨ AI 도서 인사이트</Text>
-                  <Text style={styles.insightSummary}>{insight.summary}</Text>
-                  <View style={styles.insightRow}>
-                    <View style={styles.insightCard}>
-                      <Text style={styles.insightCardLabel}>핵심 메시지</Text>
-                      <Text style={styles.insightCardText}>{insight.keyMessage}</Text>
-                    </View>
-                    <View style={styles.insightCard}>
-                      <Text style={styles.insightCardLabel}>추천 대상</Text>
-                      <Text style={styles.insightCardText}>{insight.recommendFor}</Text>
-                    </View>
-                  </View>
-                  <View style={[styles.insightCard, { marginTop: 0 }]}>
-                    <Text style={styles.insightCardLabel}>난이도</Text>
-                    <Text style={styles.insightCardText}>{insight.difficulty}</Text>
-                  </View>
-                </View>
-              )}
-
-              {/* 도서 소개 */}
-              {book.description && (
+              {/* ── 책 소개 ── */}
+              {book.description ? (
                 <View style={styles.descBox}>
-                  <Text style={styles.descLabel}>책 소개</Text>
+                  <Text style={styles.sectionLabel}>책 소개</Text>
                   <Text style={styles.descText}>{book.description}</Text>
                 </View>
-              )}
+              ) : null}
 
-              {/* 도서관 검색 */}
+              {/* ── 서평 / 네이버 감상평 ── */}
+              <View style={styles.reviewSection}>
+                <Text style={styles.sectionTitle}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={15} color="#374151" /> 서평 &amp; 감상평
+                </Text>
+
+                {isReviewLoading ? (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator size="small" color="#D97706" />
+                    <Text style={styles.loadingText}>리뷰 불러오는 중...</Text>
+                  </View>
+                ) : naverReview ? (
+                  <View style={styles.blogReviewBox}>
+                    <View style={styles.blogReviewHeader}>
+                      <Ionicons name="logo-rss" size={14} color="#03C75A" />
+                      <Text style={styles.blogReviewLabel}>블로그 리뷰</Text>
+                    </View>
+                    <Text style={styles.blogReviewTitle} numberOfLines={2}>
+                      {naverReview.title}
+                    </Text>
+                    <Text style={styles.blogReviewDesc} numberOfLines={3}>
+                      {naverReview.description}
+                    </Text>
+                    <View style={styles.blogReviewFooter}>
+                      <Text style={styles.blogReviewMeta}>
+                        {naverReview.bloggerName}
+                        {naverReview.postDate ? `  ·  ${formatPostDate(naverReview.postDate)}` : ""}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => naverReview.link && Linking.openURL(naverReview.link)}
+                      >
+                        <Text style={styles.blogReviewLink}>전체 보기</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : null}
+
+                {/* 네이버 더 보기 버튼 */}
+                {naverSearchUrl && (
+                  <TouchableOpacity
+                    style={styles.naverBtn}
+                    onPress={() => Linking.openURL(naverSearchUrl)}
+                  >
+                    <Text style={styles.naverBtnText}>N</Text>
+                    <Text style={styles.naverBtnLabel}>네이버에서 감상평 더 보기</Text>
+                    <Ionicons name="open-outline" size={13} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* ── AI 인사이트 (로그인 후 + 펼치기) ── */}
+              <View style={styles.aiSection}>
+                <TouchableOpacity
+                  style={styles.aiToggle}
+                  onPress={() => {
+                    if (!user) {
+                      Alert.alert(
+                        "로그인 필요",
+                        "AI 인사이트는 로그인 후 이용 가능합니다.",
+                        [
+                          { text: "취소", style: "cancel" },
+                          { text: "로그인", onPress: () => { onClose(); router.push("/login"); } },
+                        ]
+                      );
+                      return;
+                    }
+                    setShowAI(!showAI);
+                  }}
+                >
+                  <Text style={styles.aiToggleIcon}>✨</Text>
+                  <Text style={styles.aiToggleText}>AI 요약 &amp; 핵심 인사이트</Text>
+                  {!user && (
+                    <View style={styles.loginBadge}>
+                      <Text style={styles.loginBadgeText}>로그인</Text>
+                    </View>
+                  )}
+                  <Ionicons
+                    name={showAI ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color="#6B7280"
+                    style={{ marginLeft: "auto" }}
+                  />
+                </TouchableOpacity>
+
+                {showAI && user && (
+                  <>
+                    {isInsightLoading ? (
+                      <View style={styles.loadingRow}>
+                        <ActivityIndicator size="small" color="#D97706" />
+                        <Text style={styles.loadingText}>AI 분석 중...</Text>
+                      </View>
+                    ) : insight ? (
+                      <View style={styles.insightBody}>
+                        <Text style={styles.insightSummary}>{insight.summary}</Text>
+                        <View style={styles.insightRow}>
+                          <View style={styles.insightCard}>
+                            <Text style={styles.insightCardLabel}>핵심 메시지</Text>
+                            <Text style={styles.insightCardText}>{insight.keyMessage}</Text>
+                          </View>
+                          <View style={styles.insightCard}>
+                            <Text style={styles.insightCardLabel}>추천 대상</Text>
+                            <Text style={styles.insightCardText}>{insight.recommendFor}</Text>
+                          </View>
+                        </View>
+                        <View style={[styles.insightCard, { marginTop: 0 }]}>
+                          <Text style={styles.insightCardLabel}>난이도</Text>
+                          <Text style={styles.insightCardText}>{insight.difficulty}</Text>
+                        </View>
+                      </View>
+                    ) : (
+                      <Text style={styles.insightEmpty}>AI 분석 결과를 가져올 수 없습니다.</Text>
+                    )}
+                  </>
+                )}
+              </View>
+
+              {/* ── 도서관 검색 ── */}
               <View style={styles.librarySection}>
                 <TouchableOpacity
                   style={styles.libraryToggle}
@@ -203,7 +309,6 @@ export function BookDetailSheet({ book, onClose }: Props) {
 
                 {showLibrary && (
                   <>
-                    {/* 지역 선택 */}
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
@@ -236,13 +341,9 @@ export function BookDetailSheet({ book, onClose }: Props) {
                         <Text style={styles.loadingText}>도서관 검색 중...</Text>
                       </View>
                     )}
-
                     {!isLibLoading && libraries?.length === 0 && (
-                      <Text style={styles.noLibText}>
-                        해당 지역에서 소장한 도서관이 없습니다
-                      </Text>
+                      <Text style={styles.noLibText}>해당 지역에서 소장한 도서관이 없습니다</Text>
                     )}
-
                     {!isLibLoading && libraries && libraries.length > 0 && (
                       <View style={styles.libraryList}>
                         {libraries.slice(0, 5).map((lib) => (
@@ -250,16 +351,12 @@ export function BookDetailSheet({ book, onClose }: Props) {
                             <View style={styles.libraryDot} />
                             <View style={{ flex: 1 }}>
                               <Text style={styles.libraryName}>{lib.libName}</Text>
-                              <Text style={styles.libraryAddr} numberOfLines={1}>
-                                {lib.address}
-                              </Text>
+                              <Text style={styles.libraryAddr} numberOfLines={1}>{lib.address}</Text>
                             </View>
                           </View>
                         ))}
                         {libraries.length > 5 && (
-                          <Text style={styles.moreLibText}>
-                            외 {libraries.length - 5}개 도서관
-                          </Text>
+                          <Text style={styles.moreLibText}>외 {libraries.length - 5}개 도서관</Text>
                         )}
                       </View>
                     )}
@@ -281,30 +378,24 @@ export function BookDetailSheet({ book, onClose }: Props) {
 const styles = StyleSheet.create({
   sheet: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: 0, left: 0, right: 0,
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "90%",
+    maxHeight: "92%",
   },
   handle: {
-    width: 40,
-    height: 4,
+    width: 40, height: 4,
     backgroundColor: "#E5E7EB",
     borderRadius: 2,
     alignSelf: "center",
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: 12, marginBottom: 4,
   },
 
   // Book header
   bookHeader: {
-    flexDirection: "row",
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    flexDirection: "row", gap: 14,
+    paddingHorizontal: 20, paddingVertical: 16,
     alignItems: "flex-start",
   },
   bookImage: { width: 80, height: 110, borderRadius: 8 },
@@ -313,72 +404,92 @@ const styles = StyleSheet.create({
   bookAuthor: { fontSize: 13, color: "#4B5563", marginBottom: 2 },
   bookPublisher: { fontSize: 12, color: "#9CA3AF" },
   classBadge: {
-    marginTop: 8,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    alignSelf: "flex-start",
+    marginTop: 8, backgroundColor: "#F3F4F6",
+    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: "flex-start",
   },
   classText: { fontSize: 11, color: "#6B7280" },
   bookmarkBtn: { padding: 4, marginTop: 2 },
 
-  // Loading
-  loadingRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12, paddingHorizontal: 20 },
+  // 공통
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, paddingHorizontal: 16 },
   loadingText: { fontSize: 12, color: "#9CA3AF" },
+  sectionLabel: { fontSize: 12, fontWeight: "600", color: "#9CA3AF", marginBottom: 6 },
+  sectionTitle: { fontSize: 14, fontWeight: "700", color: "#374151", marginBottom: 10 },
 
-  // AI Insight
-  insightBox: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    backgroundColor: "#FFFBEB",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#FDE68A",
-  },
-  insightTitle: { fontSize: 12, fontWeight: "700", color: "#92400E", marginBottom: 8 },
-  insightSummary: { fontSize: 13, color: "#374151", lineHeight: 20, marginBottom: 12 },
-  insightRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  insightCard: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 10,
-  },
-  insightCardLabel: { fontSize: 10, color: "#9CA3AF", marginBottom: 4 },
-  insightCardText: { fontSize: 12, color: "#374151" },
-
-  // Description
-  descBox: { paddingHorizontal: 20, marginBottom: 16 },
-  descLabel: { fontSize: 12, fontWeight: "600", color: "#9CA3AF", marginBottom: 6 },
+  // 책 소개
+  descBox: { paddingHorizontal: 20, marginBottom: 4 },
   descText: { fontSize: 13, color: "#4B5563", lineHeight: 20 },
 
-  // Library
-  librarySection: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+  // 서평 & 감상평
+  reviewSection: {
+    marginHorizontal: 16, marginBottom: 12,
     backgroundColor: "#F9FAFB",
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    overflow: "hidden",
-  },
-  libraryToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    borderWidth: 1, borderColor: "#E5E7EB",
     padding: 14,
   },
+  blogReviewBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10, padding: 12,
+    borderWidth: 1, borderColor: "#E5E7EB",
+    marginBottom: 10,
+  },
+  blogReviewHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  blogReviewLabel: { fontSize: 12, fontWeight: "700", color: "#374151" },
+  blogReviewTitle: { fontSize: 13, fontWeight: "600", color: "#111827", marginBottom: 4, lineHeight: 19 },
+  blogReviewDesc: { fontSize: 12, color: "#6B7280", lineHeight: 18, marginBottom: 8 },
+  blogReviewFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  blogReviewMeta: { fontSize: 11, color: "#9CA3AF", flex: 1 },
+  blogReviewLink: { fontSize: 12, color: "#03C75A", fontWeight: "600" },
+  naverBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, backgroundColor: "#03C75A",
+    borderRadius: 10, paddingVertical: 10,
+  },
+  naverBtnText: { fontSize: 14, fontWeight: "900", color: "#FFFFFF" },
+  naverBtnLabel: { fontSize: 13, fontWeight: "600", color: "#FFFFFF" },
+
+  // AI 인사이트
+  aiSection: {
+    marginHorizontal: 16, marginBottom: 12,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 12,
+    borderWidth: 1, borderColor: "#FDE68A",
+    overflow: "hidden",
+  },
+  aiToggle: {
+    flexDirection: "row", alignItems: "center", gap: 8, padding: 14,
+  },
+  aiToggleIcon: { fontSize: 16 },
+  aiToggleText: { fontSize: 14, fontWeight: "600", color: "#92400E" },
+  loginBadge: {
+    backgroundColor: "#D97706", borderRadius: 6,
+    paddingHorizontal: 7, paddingVertical: 2, marginLeft: 4,
+  },
+  loginBadgeText: { fontSize: 10, fontWeight: "700", color: "#FFFFFF" },
+  insightBody: { paddingHorizontal: 14, paddingBottom: 14 },
+  insightSummary: { fontSize: 13, color: "#374151", lineHeight: 20, marginBottom: 12 },
+  insightRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  insightCard: { flex: 1, backgroundColor: "#FFFFFF", borderRadius: 10, padding: 10 },
+  insightCardLabel: { fontSize: 10, color: "#9CA3AF", marginBottom: 4 },
+  insightCardText: { fontSize: 12, color: "#374151" },
+  insightEmpty: { fontSize: 12, color: "#9CA3AF", padding: 14 },
+
+  // 도서관
+  librarySection: {
+    marginHorizontal: 16, marginBottom: 16,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    borderWidth: 1, borderColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  libraryToggle: { flexDirection: "row", alignItems: "center", gap: 8, padding: 14 },
   libraryToggleText: { fontSize: 14, fontWeight: "600", color: "#374151" },
   regionScroll: { paddingHorizontal: 14, paddingBottom: 12, gap: 6 },
   regionChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 20, backgroundColor: "#FFFFFF",
+    borderWidth: 1, borderColor: "#E5E7EB",
   },
   regionChipActive: { borderColor: "#D97706", backgroundColor: "#FEF3C7" },
   regionChipText: { fontSize: 12, color: "#6B7280" },
@@ -391,15 +502,11 @@ const styles = StyleSheet.create({
   libraryAddr: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
   moreLibText: { fontSize: 12, color: "#9CA3AF", marginTop: 4 },
 
-  // Close
+  // 닫기
   closeBtn: {
-    marginHorizontal: 20,
-    marginBottom: 32,
-    marginTop: 8,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 16,
-    paddingVertical: 13,
-    alignItems: "center",
+    marginHorizontal: 20, marginBottom: 32, marginTop: 8,
+    backgroundColor: "#F3F4F6", borderRadius: 16,
+    paddingVertical: 13, alignItems: "center",
   },
   closeBtnText: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
 });
