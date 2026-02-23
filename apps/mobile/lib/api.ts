@@ -98,13 +98,16 @@ export const api = {
 
   // ── 도서관 검색 ──
   libraryByBook: (isbn: string, region: string) =>
-    get("/api/library-by-book", { isbn, region }),
+    get("/api/library-by-book", { isbn, region }).then(
+      (res) => res?.response?.libs ?? []
+    ),
 
   bookExist: (isbn: string, region: string) =>
     get("/api/book-exist", { isbn, region }),
 
   // ── 북마크 ──
-  bookmarks: (userId: string) => get("/api/bookmarks", { userId }),
+  bookmarks: (userId: string) =>
+    get("/api/bookmarks", { userId }).then((res) => res?.bookmarks ?? []),
 
   addBookmark: (userId: string, book: {
     isbn13: string;
@@ -128,14 +131,16 @@ export const api = {
     del("/api/bookmarks", { userId, isbn13 }),
 
   // ── 프로필 ──
-  profile: (userId: string) => get("/api/profile", { userId }),
+  profile: (userId: string) =>
+    get("/api/profile", { userId }).then((res) => res?.profile ?? null),
 
   updateProfile: (userId: string, data: {
     birth_date?: string;
     gender?: string;
     region_code?: string;
     region_name?: string;
-  }) => post("/api/profile", { userId, ...data }),
+  }) =>
+    post("/api/profile", { userId, ...data }).then((res) => res?.profile ?? null),
 
   deleteAccount: (userId: string) =>
     post("/api/delete-account", { userId }),
