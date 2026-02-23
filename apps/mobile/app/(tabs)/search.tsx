@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
@@ -21,11 +22,31 @@ import type { Book, AISearchResult } from "../../lib/types";
 type SearchType = "title" | "author";
 
 export default function SearchScreen() {
-  const [keyword, setKeyword] = useState("");
-  const [submittedKeyword, setSubmittedKeyword] = useState("");
-  const [searchType, setSearchType] = useState<SearchType>("title");
-  const [aiMode, setAiMode] = useState(false);
+  // 홈 화면에서 전달된 검색어/타입/AI 모드 파라미터
+  const { q, type: typeParam, ai: aiParam } = useLocalSearchParams<{
+    q?: string;
+    type?: string;
+    ai?: string;
+  }>();
+
+  const [keyword, setKeyword] = useState(q ?? "");
+  const [submittedKeyword, setSubmittedKeyword] = useState(q ?? "");
+  const [searchType, setSearchType] = useState<SearchType>(
+    typeParam === "author" ? "author" : "title"
+  );
+  const [aiMode, setAiMode] = useState(aiParam === "1");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+
+  // 홈에서 새 파라미터로 이동할 때 상태 동기화
+  useEffect(() => {
+    if (q !== undefined) {
+      setKeyword(q);
+      setSubmittedKeyword(q);
+    }
+    if (typeParam === "author") setSearchType("author");
+    else if (typeParam === "title") setSearchType("title");
+    if (aiParam === "1") setAiMode(true);
+  }, [q, typeParam, aiParam]);
 
   // Regular infinite search
   const {
