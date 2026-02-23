@@ -96,6 +96,14 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const [showAI, setShowAI] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("11");
 
+  // 도서 변경 시 섹션 상태 초기화
+  useEffect(() => {
+    setShowLibrary(false);
+    setShowAI(false);
+    setSelectedRegion("11");
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [book?.isbn13]);
+
   // 도서관 섹션 열릴 때 스크롤 맨 아래로
   useEffect(() => {
     if (showLibrary) {
@@ -133,6 +141,16 @@ export function BookDetailSheet({ book, onClose }: Props) {
     if (isBookmarked) removeMutation.mutate();
     else addMutation.mutate();
   };
+
+  // ── 책 소개 (book-intro API로 보완) ──
+  const { data: introData } = useQuery<any>({
+    queryKey: ["book-intro", book?.isbn13],
+    queryFn: () => api.bookIntro(book!.isbn13),
+    enabled: !!book && !book.description,
+    staleTime: 7 * 24 * 60 * 60 * 1000,
+    retry: false,
+  });
+  const description = book?.description || introData?.description || "";
 
   // ── 네이버 서평 / 감상평 ──
   const { data: reviewData, isLoading: isReviewLoading } = useQuery<any>({
@@ -224,10 +242,10 @@ export function BookDetailSheet({ book, onClose }: Props) {
               </View>
 
               {/* ── 책 소개 ── */}
-              {book.description ? (
+              {description ? (
                 <View style={styles.descBox}>
                   <Text style={styles.sectionLabel}>책 소개</Text>
-                  <Text style={styles.descText}>{book.description}</Text>
+                  <Text style={styles.descText}>{description}</Text>
                 </View>
               ) : null}
 

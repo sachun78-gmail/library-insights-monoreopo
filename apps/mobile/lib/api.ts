@@ -91,7 +91,10 @@ export const api = {
   bookDetail: (isbn: string, title?: string) =>
     get("/api/book-detail", { isbn, title }),
 
-  bookIntro: (isbn: string) => get("/api/book-intro", { isbn }),
+  bookIntro: (isbn13: string) =>
+    get("/api/book-intro", { isbn13 }).then(
+      (res) => res?.response?.detail?.[0]?.book ?? null
+    ),
 
   bookAIInsight: (title: string, author?: string) =>
     get("/api/book-ai-insight", { title, author }),
