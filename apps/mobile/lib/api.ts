@@ -99,7 +99,7 @@ export const api = {
   // ── 도서관 검색 ──
   libraryByBook: (isbn: string, region: string) =>
     get("/api/library-by-book", { isbn, region }).then(
-      (res) => res?.response?.libs ?? []
+      (res) => (res?.response?.libs ?? []).map((item: any) => item.lib ?? item)
     ),
 
   bookExist: (isbn: string, region: string) =>

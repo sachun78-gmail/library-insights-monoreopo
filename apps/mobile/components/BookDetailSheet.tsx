@@ -245,7 +245,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
               <View style={styles.reviewSection}>
                 <View style={styles.sectionTitleRow}>
                   <Ionicons name="chatbubble-ellipses-outline" size={15} color="#374151" />
-                  <Text style={styles.sectionTitle}>서평 & 감상평</Text>
+                  <Text style={styles.sectionTitle}>감상평</Text>
                 </View>
 
                 {isReviewLoading ? (
