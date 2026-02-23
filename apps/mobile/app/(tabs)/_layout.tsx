@@ -2,11 +2,24 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
+import { t } from "../../lib/i18n";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-function TabIcon({ name, color, size }: { name: IoniconName; color: string; size: number }) {
-  return <Ionicons name={name} size={size} color={color} />;
+function TabIcon({
+  name,
+  activeName,
+  color,
+  size,
+  focused,
+}: {
+  name: IoniconName;
+  activeName: IoniconName;
+  color: string;
+  size: number;
+  focused: boolean;
+}) {
+  return <Ionicons name={focused ? activeName : name} size={size} color={color} />;
 }
 
 function FloatingTabBarBackground() {
@@ -25,25 +38,47 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#D97706",
-        tabBarInactiveTintColor: "#475569",
+        tabBarActiveTintColor: "#E5F0FF",
+        tabBarInactiveTintColor: "#7F93AE",
+        tabBarActiveBackgroundColor: "rgba(59,130,246,0.18)",
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+          lineHeight: 12,
+          marginTop: 0,
+          paddingBottom: 0,
+        },
+        tabBarIconStyle: {
+          marginTop: 0,
+          marginBottom: 0,
+        },
         tabBarStyle: {
           position: "absolute",
-          bottom: 20,
-          left: 16,
-          right: 16,
-          borderRadius: 28,
+          bottom: 18,
+          left: 18,
+          right: 18,
+          borderRadius: 24,
           borderTopWidth: 0,
-          height: 64,
+          height: 56,
+          paddingHorizontal: 12,
+          paddingTop: 3,
+          paddingBottom: 3,
           elevation: 20,
           shadowColor: "#000",
-          shadowOpacity: 0.55,
-          shadowRadius: 24,
+          shadowOpacity: 0.5,
+          shadowRadius: 18,
           shadowOffset: { width: 0, height: 8 },
           overflow: "hidden",
         },
         tabBarItemStyle: {
-          paddingVertical: 6,
+          borderRadius: 18,
+          marginHorizontal: 2,
+          marginVertical: 3,
+          height: 44,
+          justifyContent: "center",
+          alignItems: "center",
+          paddingVertical: 0,
         },
         tabBarBackground: () => <FloatingTabBarBackground />,
         headerShown: false,
@@ -52,45 +87,75 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "홈",
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon name="home-outline" color={color} size={size} />
+          title: t("tab_home"),
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              name="home-outline"
+              activeName="home"
+              color={color}
+              size={size - 1}
+              focused={focused}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: "검색",
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon name="search-outline" color={color} size={size} />
+          title: t("tab_search"),
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              name="search-outline"
+              activeName="search"
+              color={color}
+              size={size - 1}
+              focused={focused}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="bestsellers"
         options={{
-          title: "인기",
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon name="bar-chart-outline" color={color} size={size} />
+          title: t("tab_rank"),
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              name="bar-chart-outline"
+              activeName="bar-chart"
+              color={color}
+              size={size - 1}
+              focused={focused}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="bookshelf"
         options={{
-          title: "내 서재",
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon name="bookmark-outline" color={color} size={size} />
+          title: t("tab_shelf"),
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              name="bookmark-outline"
+              activeName="bookmark"
+              color={color}
+              size={size - 1}
+              focused={focused}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="mypage"
         options={{
-          title: "마이",
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon name="person-outline" color={color} size={size} />
+          title: t("tab_my"),
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              name="person-outline"
+              activeName="person"
+              color={color}
+              size={size - 1}
+              focused={focused}
+            />
           ),
         }}
       />

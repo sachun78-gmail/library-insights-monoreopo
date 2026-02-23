@@ -2,6 +2,7 @@ const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4321";
 
 const TIMEOUT_MS = 10_000;
+const DEBUG_API = typeof __DEV__ !== "undefined" && __DEV__;
 
 type Params = Record<string, string | number | boolean | undefined | null>;
 
@@ -17,9 +18,20 @@ async function get(path: string, params: Params = {}): Promise<any> {
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
+    if (DEBUG_API) {
+      console.log("[API][GET][REQ]", url.toString());
+    }
     const res = await fetch(url.toString(), { signal: controller.signal });
+    if (DEBUG_API) {
+      console.log("[API][GET][RES]", path, res.status);
+    }
     if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
+  } catch (error) {
+    if (DEBUG_API) {
+      console.log("[API][GET][ERR]", path, error);
+    }
+    throw error;
   } finally {
     clearTimeout(timer);
   }
@@ -29,14 +41,25 @@ async function post(path: string, body: Record<string, any>): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
+    if (DEBUG_API) {
+      console.log("[API][POST][REQ]", `${BASE_URL}${path}`, body);
+    }
     const res = await fetch(`${BASE_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+    if (DEBUG_API) {
+      console.log("[API][POST][RES]", path, res.status);
+    }
     if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
+  } catch (error) {
+    if (DEBUG_API) {
+      console.log("[API][POST][ERR]", path, error);
+    }
+    throw error;
   } finally {
     clearTimeout(timer);
   }
@@ -46,14 +69,25 @@ async function del(path: string, body: Record<string, any>): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
+    if (DEBUG_API) {
+      console.log("[API][DELETE][REQ]", `${BASE_URL}${path}`, body);
+    }
     const res = await fetch(`${BASE_URL}${path}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
+    if (DEBUG_API) {
+      console.log("[API][DELETE][RES]", path, res.status);
+    }
     if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
+  } catch (error) {
+    if (DEBUG_API) {
+      console.log("[API][DELETE][ERR]", path, error);
+    }
+    throw error;
   } finally {
     clearTimeout(timer);
   }

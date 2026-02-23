@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   View,
   Text,
   TextInput,
@@ -14,6 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRecommend } from "../../hooks/useRecommend";
 import { useNewArrivals } from "../../hooks/useNewArrivals";
+import { useAuth } from "../../lib/auth-context";
+import { t } from "../../lib/i18n";
 import { Carousel } from "../../components/Carousel";
 import { BookDetailSheet } from "../../components/BookDetailSheet";
 import { AppBackground } from "../../components/AppBackground";
@@ -25,8 +28,13 @@ const PLACEHOLDER = "https://via.placeholder.com/80x110?text=No+Image";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const inputRef = useRef<TextInput>(null);
+
   const [keyword, setKeyword] = useState("");
   const [searchType, setSearchType] = useState<SearchType>("title");
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [pendingAiModeAfterLogin, setPendingAiModeAfterLogin] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   const {
@@ -41,188 +49,227 @@ export default function HomeScreen() {
     isError: isArrivalsError,
   } = useNewArrivals();
 
-  const handleSearch = () => {
-    const trimmed = keyword.trim();
-    if (trimmed) {
-      router.push({
-        pathname: "/(tabs)/search",
-        params: { q: trimmed, type: searchType },
-      });
-    }
+  const focusSearchInput = () => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 120);
   };
 
-  const handleAISearch = () => {
-    router.push({
-      pathname: "/(tabs)/search",
-      params: { q: keyword.trim(), ai: "1" },
-    });
+  const activateAiMode = () => {
+    setKeyword("");
+    setIsAiMode(true);
+    focusSearchInput();
+  };
+
+  useEffect(() => {
+    if (pendingAiModeAfterLogin && user) {
+      setPendingAiModeAfterLogin(false);
+      activateAiMode();
+    }
+  }, [pendingAiModeAfterLogin, user]);
+
+  const handleSearch = () => {
+    const trimmed = keyword.trim();
+    if (!trimmed) return;
+
+    router.push(
+      isAiMode
+        ? {
+            pathname: "/(tabs)/search",
+            params: { q: trimmed, ai: "1" },
+          }
+        : {
+            pathname: "/(tabs)/search",
+            params: { q: trimmed, type: searchType },
+          }
+    );
+  };
+
+  const handleAISearchPress = () => {
+    if (isAiMode) {
+      setKeyword("");
+      setIsAiMode(false);
+      setSearchType("title");
+      return;
+    }
+
+    if (!user) {
+      Alert.alert(t("home_login_required"), t("home_login_ai_desc"), [
+        { text: t("common_cancel"), style: "cancel" },
+        {
+          text: t("common_login"),
+          onPress: () => {
+            setPendingAiModeAfterLogin(true);
+            router.push("/login");
+          },
+        },
+      ]);
+      return;
+    }
+
+    activateAiMode();
   };
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <AppBackground>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* ── Hero Section ── */}
-        <View style={styles.hero}>
-          {/* Logo */}
-          <View style={styles.logoRow}>
-            <Ionicons name="book" size={22} color="#D97706" />
-            <Text style={styles.logoText}>LibraryInsights</Text>
-          </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.hero}>
+            <View style={styles.logoRow}>
+              <Ionicons name="book" size={22} color="#D97706" />
+              <Text style={styles.logoText}>LibraryInsights</Text>
+            </View>
 
-          {/* Headline */}
-          <Text style={styles.headline}>
-            오늘 한국이 읽고 있는{"\n"}책을 발견하세요
-          </Text>
-          <Text style={styles.subtitle}>
-            공공도서관 네트워크의 실시간 인사이트. 트렌드를 탐색하고 대출 가능
-            여부를 확인하세요.
-          </Text>
+            <Text style={styles.headline}>{t("home_headline")}</Text>
+            <Text style={styles.subtitle}>
+              {t("home_subtitle")}
+            </Text>
 
-          {/* Type buttons + AI 추천 */}
-          <View style={styles.typeRow}>
-            <TouchableOpacity
-              onPress={() => setSearchType("title")}
-              style={[
-                styles.typeBtn,
-                searchType === "title" && styles.typeBtnActive,
-              ]}
-            >
-              <Text style={styles.typeBtnText}>도서명</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setSearchType("author")}
-              style={[
-                styles.typeBtn,
-                searchType === "author" && styles.typeBtnActive,
-              ]}
-            >
-              <Text style={styles.typeBtnText}>저자명</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleAISearch}
-              style={styles.aiBtn}
-            >
-              <Ionicons name="sparkles" size={13} color="#D1D5DB" />
-              <Text style={styles.aiBtnText}>AI 추천</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Search bar */}
-          <View style={styles.searchRow}>
-            <View style={styles.inputWrap}>
-              <Ionicons name="search-outline" size={16} color="#9CA3AF" />
-              <TextInput
-                style={styles.input}
-                placeholder={
-                  searchType === "title"
-                    ? "도서명을 입력하세요..."
-                    : "저자명을 입력하세요..."
-                }
-                placeholderTextColor="#9CA3AF"
-                value={keyword}
-                onChangeText={setKeyword}
-                onSubmitEditing={handleSearch}
-                returnKeyType="search"
-              />
-              {keyword.length > 0 && (
-                <TouchableOpacity onPress={() => setKeyword("")}>
-                  <Ionicons name="close-circle" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
+            <View style={styles.typeRow}>
+              {!isAiMode && (
+                <>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setKeyword("");
+                      setIsAiMode(false);
+                      setSearchType("title");
+                    }}
+                    style={[styles.typeBtn, searchType === "title" && styles.typeBtnActive]}
+                  >
+                    <Text style={styles.typeBtnText}>{t("home_type_title")}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setKeyword("");
+                      setIsAiMode(false);
+                      setSearchType("author");
+                    }}
+                    style={[styles.typeBtn, searchType === "author" && styles.typeBtnActive]}
+                  >
+                    <Text style={styles.typeBtnText}>{t("home_type_author")}</Text>
+                  </TouchableOpacity>
+                </>
               )}
-            </View>
-            <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
-              <Text style={styles.searchBtnText}>검색</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* ── 이달의 추천 ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>이달의 추천</Text>
-
-          {isLoadingRecommend && (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color="#D97706" />
-            </View>
-          )}
-
-          {!isLoadingRecommend && isRecommendError && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>추천 데이터를 불러오지 못했습니다</Text>
-            </View>
-          )}
-
-          {!isLoadingRecommend && !isRecommendError && recommend?.book && (
-            <TouchableOpacity
-              onPress={() => setSelectedBook(recommend.book)}
-              style={styles.recommendCard}
-              activeOpacity={0.85}
-            >
-              <Image
-                source={{ uri: recommend.book.bookImageURL || PLACEHOLDER }}
-                style={styles.recommendImage}
-                resizeMode="cover"
-              />
-              <View style={styles.recommendInfo}>
-                <View style={styles.keywordBadge}>
-                  <Text style={styles.keywordText}>#{recommend.keyword}</Text>
-                </View>
-                <Text style={styles.recommendTitle} numberOfLines={3}>
-                  {recommend.book.bookname}
+              <TouchableOpacity
+                onPress={handleAISearchPress}
+                style={[styles.aiBtn, isAiMode && styles.aiBtnActive, isAiMode && styles.aiBtnSolo]}
+              >
+                <Ionicons name="sparkles" size={13} color={isAiMode ? "#E0E7FF" : "#D1D5DB"} />
+                <Text style={[styles.aiBtnText, isAiMode && styles.aiBtnTextActive]}>
+                  {t("home_ai_recommend")}
                 </Text>
-                <Text style={styles.recommendAuthor} numberOfLines={1}>
-                  {recommend.book.authors}
-                </Text>
-                {recommend.book.publication_year && (
-                  <Text style={styles.recommendYear}>
-                    {recommend.book.publication_year}
-                  </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchRow}>
+              <View style={styles.inputWrap}>
+                <Ionicons name="search-outline" size={16} color="#9CA3AF" />
+                <TextInput
+                  ref={inputRef}
+                  style={[styles.input, isAiMode && styles.inputAiMode]}
+                  multiline={false}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.72}
+                  placeholder={
+                    isAiMode
+                      ? t("home_placeholder_ai")
+                      : searchType === "title"
+                      ? t("home_placeholder_title")
+                      : t("home_placeholder_author")
+                  }
+                  placeholderTextColor="#9CA3AF"
+                  value={keyword}
+                  onChangeText={setKeyword}
+                  onSubmitEditing={handleSearch}
+                  returnKeyType="search"
+                />
+                {keyword.length > 0 && (
+                  <TouchableOpacity onPress={() => setKeyword("")}>
+                    <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+                  </TouchableOpacity>
                 )}
               </View>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* ── 신착 도서 ── */}
-        <View style={styles.sectionBlock}>
-          <Text style={[styles.sectionTitle, styles.sectionTitleHorizontal]}>
-            신착 도서
-          </Text>
-
-          {isLoadingArrivals && (
-            <View style={[styles.loadingBox, { height: 180 }]}>
-              <ActivityIndicator size="small" color="#D97706" />
+              <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
+                <Text style={styles.searchBtnText}>{isAiMode ? "AI" : t("home_btn_search")}</Text>
+              </TouchableOpacity>
             </View>
-          )}
+          </View>
 
-          {!isLoadingArrivals && isArrivalsError && (
-            <Text style={[styles.errorText, { paddingHorizontal: 20 }]}>
-              신착 도서를 불러오지 못했습니다
-            </Text>
-          )}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("home_monthly_pick")}</Text>
 
-          {!isLoadingArrivals && !isArrivalsError && (
-            <Carousel books={newArrivals ?? []} onPress={setSelectedBook} />
-          )}
-        </View>
-      </ScrollView>
+            {isLoadingRecommend && (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator size="small" color="#D97706" />
+              </View>
+            )}
+
+            {!isLoadingRecommend && isRecommendError && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{t("home_monthly_pick_error")}</Text>
+              </View>
+            )}
+
+            {!isLoadingRecommend && !isRecommendError && recommend?.book && (
+              <TouchableOpacity
+                onPress={() => setSelectedBook(recommend.book)}
+                style={styles.recommendCard}
+                activeOpacity={0.85}
+              >
+                <Image
+                  source={{ uri: recommend.book.bookImageURL || PLACEHOLDER }}
+                  style={styles.recommendImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.recommendInfo}>
+                  <View style={styles.keywordBadge}>
+                    <Text style={styles.keywordText}>#{recommend.keyword}</Text>
+                  </View>
+                  <Text style={styles.recommendTitle} numberOfLines={3}>
+                    {recommend.book.bookname}
+                  </Text>
+                  <Text style={styles.recommendAuthor} numberOfLines={1}>
+                    {recommend.book.authors}
+                  </Text>
+                  {recommend.book.publication_year && (
+                    <Text style={styles.recommendYear}>{recommend.book.publication_year}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.sectionBlock}>
+            <Text style={[styles.sectionTitle, styles.sectionTitleHorizontal]}>{t("home_new_arrivals")}</Text>
+
+            {isLoadingArrivals && (
+              <View style={[styles.loadingBox, { height: 180 }]}>
+                <ActivityIndicator size="small" color="#D97706" />
+              </View>
+            )}
+
+            {!isLoadingArrivals && isArrivalsError && (
+              <Text style={[styles.errorText, { paddingHorizontal: 20 }]}>{t("home_new_arrivals_error")}</Text>
+            )}
+
+            {!isLoadingArrivals && !isArrivalsError && (
+              <Carousel books={newArrivals ?? []} onPress={setSelectedBook} />
+            )}
+          </View>
+        </ScrollView>
       </AppBackground>
 
-      <BookDetailSheet
-        book={selectedBook}
-        onClose={() => setSelectedBook(null)}
-      />
+      <BookDetailSheet book={selectedBook} onClose={() => setSelectedBook(null)} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#071426" },
-
   scrollContent: { paddingBottom: 100 },
 
-  /* Hero */
   hero: {
     backgroundColor: "transparent",
     paddingHorizontal: 20,
@@ -240,7 +287,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "bold",
     color: "#FFFFFF",
-    lineHeight: 36,
+    lineHeight: 34,
     marginBottom: 10,
   },
   subtitle: {
@@ -250,7 +297,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  /* Type buttons */
   typeRow: {
     flexDirection: "row",
     gap: 8,
@@ -280,10 +326,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    backgroundColor: "transparent",
+  },
+  aiBtnActive: {
+    backgroundColor: "rgba(79,70,229,0.28)",
+    borderColor: "#818CF8",
+  },
+  aiBtnSolo: {
+    marginLeft: 0,
   },
   aiBtnText: { color: "#D1D5DB", fontSize: 13 },
+  aiBtnTextActive: { color: "#E0E7FF", fontWeight: "600" },
 
-  /* Search bar */
   searchRow: { flexDirection: "row", gap: 8 },
   inputWrap: {
     flex: 1,
@@ -300,16 +354,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginLeft: 8,
   },
+  inputAiMode: {
+    fontSize: 11,
+  },
   searchBtn: {
     backgroundColor: "#D97706",
     paddingHorizontal: 18,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    minWidth: 64,
   },
   searchBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
 
-  /* Sections */
   section: { paddingHorizontal: 20, marginTop: 8, marginBottom: 0 },
   sectionBlock: { marginTop: 28, marginBottom: 16 },
   sectionTitle: {
@@ -328,7 +385,6 @@ const styles = StyleSheet.create({
   },
   errorText: { fontSize: 12, color: "#F87171" },
 
-  /* Recommend card */
   recommendCard: {
     backgroundColor: "#92400E",
     borderRadius: 16,
