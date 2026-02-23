@@ -97,7 +97,7 @@ export const api = {
     ),
 
   bookAIInsight: (title: string, author?: string) =>
-    get("/api/book-ai-insight", { title, author }),
+    get("/api/book-ai-insight", { title, author }).then((res) => res?.insight ?? null),
 
   // ── 도서관 검색 ──
   libraryByBook: (isbn: string, region: string) =>
@@ -105,8 +105,8 @@ export const api = {
       (res) => (res?.response?.libs ?? []).map((item: any) => item.lib ?? item)
     ),
 
-  bookExist: (isbn: string, region: string) =>
-    get("/api/book-exist", { isbn, region }),
+  bookExist: (isbn: string, libCode: string) =>
+    get("/api/book-exist", { isbn, libCode }),
 
   // ── 북마크 ──
   bookmarks: (userId: string) =>

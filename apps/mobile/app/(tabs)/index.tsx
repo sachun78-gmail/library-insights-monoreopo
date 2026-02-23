@@ -16,6 +16,7 @@ import { useRecommend } from "../../hooks/useRecommend";
 import { useNewArrivals } from "../../hooks/useNewArrivals";
 import { Carousel } from "../../components/Carousel";
 import { BookDetailSheet } from "../../components/BookDetailSheet";
+import { AppBackground } from "../../components/AppBackground";
 import type { Book } from "../../lib/types";
 
 type SearchType = "title" | "author";
@@ -59,7 +60,8 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <AppBackground>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* ── Hero Section ── */}
         <View style={styles.hero}>
           {/* Logo */}
@@ -205,6 +207,7 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
+      </AppBackground>
 
       <BookDetailSheet
         book={selectedBook}
@@ -215,11 +218,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "#071426" },
 
   /* Hero */
   hero: {
-    backgroundColor: "#1A0C02",
+    backgroundColor: "transparent",
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 32,
@@ -309,12 +312,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#111827",
+    color: "#F1F5F9",
     marginBottom: 12,
   },
   loadingBox: { height: 100, alignItems: "center", justifyContent: "center" },
   errorBox: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: "#1E293B",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",

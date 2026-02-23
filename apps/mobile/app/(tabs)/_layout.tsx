@@ -1,5 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet } from "react-native";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -7,16 +9,43 @@ function TabIcon({ name, color, size }: { name: IoniconName; color: string; size
   return <Ionicons name={name} size={size} color={color} />;
 }
 
+function FloatingTabBarBackground() {
+  return (
+    <LinearGradient
+      colors={["#153A67", "#0B223E", "#091728"]}
+      locations={[0, 0.45, 1]}
+      start={{ x: 0.1, y: 0 }}
+      end={{ x: 0.95, y: 1 }}
+      style={StyleSheet.absoluteFillObject}
+    />
+  );
+}
+
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#D97706",
-        tabBarInactiveTintColor: "#9ca3af",
+        tabBarInactiveTintColor: "#475569",
         tabBarStyle: {
-          borderTopColor: "#f3f4f6",
-          backgroundColor: "#ffffff",
+          position: "absolute",
+          bottom: 20,
+          left: 16,
+          right: 16,
+          borderRadius: 28,
+          borderTopWidth: 0,
+          height: 64,
+          elevation: 20,
+          shadowColor: "#000",
+          shadowOpacity: 0.55,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 8 },
+          overflow: "hidden",
         },
+        tabBarItemStyle: {
+          paddingVertical: 6,
+        },
+        tabBarBackground: () => <FloatingTabBarBackground />,
         headerShown: false,
       }}
     >

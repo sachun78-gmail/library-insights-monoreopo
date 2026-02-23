@@ -91,7 +91,7 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={24} color="#111827" />
+              <Ionicons name="arrow-back" size={24} color="#F1F5F9" />
             </TouchableOpacity>
           </View>
 
@@ -244,15 +244,15 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: "#0F172A" },
   header: { paddingHorizontal: 20, paddingTop: 8 },
   backBtn: { padding: 4, alignSelf: "flex-start" },
   body: { flex: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32 },
 
   logoRow: { flexDirection: "row", alignItems: "center", marginBottom: 24 },
-  logoText: { fontSize: 20, fontWeight: "bold", color: "#111827", marginLeft: 8 },
-  title: { fontSize: 26, fontWeight: "bold", color: "#111827", marginBottom: 6 },
-  subtitle: { fontSize: 14, color: "#6B7280", marginBottom: 24 },
+  logoText: { fontSize: 20, fontWeight: "bold", color: "#F1F5F9", marginLeft: 8 },
+  title: { fontSize: 26, fontWeight: "bold", color: "#F1F5F9", marginBottom: 6 },
+  subtitle: { fontSize: 14, color: "#94A3B8", marginBottom: 24 },
 
   // Google 버튼
   googleBtn: {
@@ -261,13 +261,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#334155",
     borderRadius: 12,
     paddingVertical: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1E293B",
     marginBottom: 20,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 3,
     elevation: 1,
   },
@@ -280,48 +280,48 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   googleIconText: { color: "#FFFFFF", fontSize: 13, fontWeight: "bold" },
-  googleBtnText: { fontSize: 15, fontWeight: "600", color: "#374151" },
+  googleBtnText: { fontSize: 15, fontWeight: "600", color: "#CBD5E1" },
 
   // 구분선
   dividerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: "#E5E7EB" },
-  dividerText: { fontSize: 12, color: "#9CA3AF" },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#334155" },
+  dividerText: { fontSize: 12, color: "#64748B" },
 
   // Mode toggle
   modeRow: {
     flexDirection: "row",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#1E293B",
     borderRadius: 10,
     padding: 4,
     marginBottom: 20,
   },
   modeBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
   modeBtnActive: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#293548",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
-  modeBtnText: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
-  modeBtnTextActive: { color: "#111827", fontWeight: "600" },
+  modeBtnText: { fontSize: 14, color: "#94A3B8", fontWeight: "500" },
+  modeBtnTextActive: { color: "#F1F5F9", fontWeight: "600" },
 
   // Input
   inputGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: "600", color: "#CBD5E1", marginBottom: 6 },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#334155",
     borderRadius: 10,
     paddingHorizontal: 14,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#1E293B",
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: "#111827",
+    color: "#F1F5F9",
     paddingVertical: 13,
     marginLeft: 10,
   },
@@ -331,22 +331,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 6,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: "rgba(220,38,38,0.15)",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
-  errorText: { fontSize: 13, color: "#DC2626", flex: 1, lineHeight: 18 },
+  errorText: { fontSize: 13, color: "#F87171", flex: 1, lineHeight: 18 },
   successBox: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 6,
-    backgroundColor: "#ECFDF5",
+    backgroundColor: "rgba(5,150,105,0.15)",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
-  successText: { fontSize: 13, color: "#059669", flex: 1, lineHeight: 18 },
+  successText: { fontSize: 13, color: "#34D399", flex: 1, lineHeight: 18 },
 
   // Submit
   submitBtn: {
@@ -361,10 +361,10 @@ const styles = StyleSheet.create({
   devNote: {
     marginTop: 20,
     fontSize: 11,
-    color: "#9CA3AF",
+    color: "#64748B",
     textAlign: "center",
     lineHeight: 16,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#1E293B",
     padding: 12,
     borderRadius: 8,
   },

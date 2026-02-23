@@ -17,6 +17,7 @@ import { api } from "../../lib/api";
 import { useSearch } from "../../hooks/useSearch";
 import { BookCard } from "../../components/BookCard";
 import { BookDetailSheet } from "../../components/BookDetailSheet";
+import { AppBackground } from "../../components/AppBackground";
 import type { Book, AISearchResult } from "../../lib/types";
 
 type SearchType = "title" | "author";
@@ -103,19 +104,20 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#071426" }}>
+      <AppBackground>
       {/* Search Header */}
-      <View className="px-4 pt-5 pb-3 bg-white border-b border-gray-100">
-        <Text className="text-xl font-bold text-gray-900 mb-3">검색</Text>
+      <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#1E293B" }}>
+        <Text className="text-xl font-bold text-slate-100 mb-3">검색</Text>
 
         {/* Input row */}
         <View className="flex-row gap-2 mb-3">
-          <View className="flex-1 flex-row items-center bg-gray-100 rounded-xl px-3">
-            <Ionicons name="search-outline" size={18} color="#9ca3af" />
+          <View className="flex-1 flex-row items-center bg-slate-700 rounded-xl px-3">
+            <Ionicons name="search-outline" size={18} color="#475569" />
             <TextInput
-              className="flex-1 ml-2 text-sm text-gray-900 py-3"
+              className="flex-1 ml-2 text-sm text-slate-100 py-3"
               placeholder="도서명 또는 저자를 입력하세요"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#475569"
               value={keyword}
               onChangeText={setKeyword}
               onSubmitEditing={handleSearch}
@@ -123,7 +125,7 @@ export default function SearchScreen() {
             />
             {keyword.length > 0 && (
               <TouchableOpacity onPress={() => setKeyword("")}>
-                <Ionicons name="close-circle" size={18} color="#9ca3af" />
+                <Ionicons name="close-circle" size={18} color="#475569" />
               </TouchableOpacity>
             )}
           </View>
@@ -143,12 +145,12 @@ export default function SearchScreen() {
                 key={type}
                 onPress={() => setSearchType(type)}
                 className={`px-3 py-1.5 rounded-lg ${
-                  searchType === type ? "bg-indigo-600" : "bg-gray-100"
+                  searchType === type ? "bg-indigo-600" : "bg-slate-700"
                 }`}
               >
                 <Text
                   className={`text-xs font-medium ${
-                    searchType === type ? "text-white" : "text-gray-600"
+                    searchType === type ? "text-white" : "text-slate-300"
                   }`}
                 >
                   {type === "title" ? "도서명" : "저자명"}
@@ -158,12 +160,12 @@ export default function SearchScreen() {
           </View>
 
           <View className="flex-row items-center gap-2">
-            <Text className="text-xs text-gray-600">AI 검색</Text>
+            <Text className="text-xs text-slate-300">AI 검색</Text>
             <Switch
               value={aiMode}
               onValueChange={setAiMode}
-              trackColor={{ false: "#e5e7eb", true: "#c7d2fe" }}
-              thumbColor={aiMode ? "#6366f1" : "#d1d5db"}
+              trackColor={{ false: "#334155", true: "#4338CA" }}
+              thumbColor={aiMode ? "#818CF8" : "#475569"}
             />
           </View>
         </View>
@@ -171,9 +173,9 @@ export default function SearchScreen() {
 
       {/* AI mode banner */}
       {aiMode && (
-        <View className="mx-4 mt-3 bg-indigo-50 rounded-xl p-3 flex-row items-center gap-2">
-          <Ionicons name="sparkles" size={16} color="#6366f1" />
-          <Text className="text-xs text-indigo-700 flex-1">
+        <View className="mx-4 mt-3 bg-indigo-950 rounded-xl p-3 flex-row items-center gap-2">
+          <Ionicons name="sparkles" size={16} color="#818CF8" />
+          <Text className="text-xs text-indigo-400 flex-1">
             AI가 위치 기반으로 소장 가능한 도서를 추천합니다
           </Text>
         </View>
@@ -182,8 +184,8 @@ export default function SearchScreen() {
       {/* States */}
       {isLoading && (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#6366f1" />
-          <Text className="text-sm text-gray-500 mt-3">
+          <ActivityIndicator size="large" color="#818CF8" />
+          <Text className="text-sm text-slate-400 mt-3">
             {aiMode ? "AI가 분석 중입니다..." : "검색 중..."}
           </Text>
         </View>
@@ -191,8 +193,8 @@ export default function SearchScreen() {
 
       {!isLoading && !hasSearched && (
         <View className="flex-1 items-center justify-center">
-          <Ionicons name="search-outline" size={52} color="#d1d5db" />
-          <Text className="text-gray-400 mt-3 text-sm">
+          <Ionicons name="search-outline" size={52} color="#334155" />
+          <Text className="text-slate-500 mt-3 text-sm">
             검색어를 입력해주세요
           </Text>
         </View>
@@ -200,8 +202,8 @@ export default function SearchScreen() {
 
       {!isLoading && hasSearched && !hasResults && (
         <View className="flex-1 items-center justify-center">
-          <Ionicons name="book-outline" size={52} color="#d1d5db" />
-          <Text className="text-gray-400 mt-3 text-sm">
+          <Ionicons name="book-outline" size={52} color="#334155" />
+          <Text className="text-slate-500 mt-3 text-sm">
             검색 결과가 없습니다
           </Text>
           {isAiError && (
@@ -216,7 +218,7 @@ export default function SearchScreen() {
         <FlatList
           data={books}
           keyExtractor={(item, i) => `${item.isbn13 ?? i}-${i}`}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           renderItem={({ item }) => (
             <BookCard book={item} onPress={setSelectedBook} />
           )}
@@ -227,7 +229,7 @@ export default function SearchScreen() {
           ListFooterComponent={
             isFetchingNextPage ? (
               <View className="py-4 items-center">
-                <ActivityIndicator size="small" color="#6366f1" />
+                <ActivityIndicator size="small" color="#D97706" />
               </View>
             ) : null
           }
@@ -238,6 +240,7 @@ export default function SearchScreen() {
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
       />
+      </AppBackground>
     </SafeAreaView>
   );
 }

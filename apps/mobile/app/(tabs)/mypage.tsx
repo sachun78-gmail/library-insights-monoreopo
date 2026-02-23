@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
+import { AppBackground } from "../../components/AppBackground";
 import type { UserProfile } from "../../lib/types";
 
 const REGIONS = [
@@ -104,6 +105,7 @@ export default function MyPageScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
+        <AppBackground>
         <View style={styles.centerBox}>
           <Ionicons name="person-outline" size={64} color="#D97706" />
           <Text style={styles.emptyTitle}>마이페이지</Text>
@@ -117,12 +119,14 @@ export default function MyPageScreen() {
             <Text style={styles.loginBtnText}>로그인하기</Text>
           </TouchableOpacity>
         </View>
+        </AppBackground>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppBackground>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -250,14 +254,14 @@ export default function MyPageScreen() {
           style={styles.menuRow}
           onPress={() => router.push("/(tabs)/bookshelf")}
         >
-          <Ionicons name="bookmark-outline" size={20} color="#374151" />
+          <Ionicons name="bookmark-outline" size={20} color="#94A3B8" />
           <Text style={styles.menuText}>내 서재</Text>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" style={{ marginLeft: "auto" }} />
+          <Ionicons name="chevron-forward" size={18} color="#475569" style={{ marginLeft: "auto" }} />
         </TouchableOpacity>
 
         {/* 로그아웃 */}
         <TouchableOpacity style={styles.menuRow} onPress={handleSignOut}>
-          <Ionicons name="log-out-outline" size={20} color="#374151" />
+          <Ionicons name="log-out-outline" size={20} color="#94A3B8" />
           <Text style={styles.menuText}>로그아웃</Text>
         </TouchableOpacity>
 
@@ -270,17 +274,18 @@ export default function MyPageScreen() {
           <Text style={[styles.menuText, { color: "#DC2626" }]}>계정 삭제</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
+      </AppBackground>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "#071426" },
   centerBox: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
-  emptyTitle: { fontSize: 18, fontWeight: "600", color: "#374151", marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { fontSize: 14, color: "#9CA3AF", textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontSize: 18, fontWeight: "600", color: "#F1F5F9", marginTop: 16, marginBottom: 8 },
+  emptySubtitle: { fontSize: 14, color: "#64748B", textAlign: "center", lineHeight: 20 },
   loginBtn: {
     marginTop: 24,
     backgroundColor: "#D97706",
@@ -297,11 +302,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#0F172A",
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: "#1E293B",
   },
-  headerTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
+  headerTitle: { fontSize: 20, fontWeight: "700", color: "#F1F5F9" },
   editBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -318,65 +323,65 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1E293B",
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: "#334155",
     elevation: 1,
     shadowColor: "#000",
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
   },
   avatarCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#292524",
     alignItems: "center",
     justifyContent: "center",
   },
-  emailText: { fontSize: 15, fontWeight: "600", color: "#111827" },
-  regionText: { fontSize: 13, color: "#6B7280", marginTop: 4 },
+  emailText: { fontSize: 15, fontWeight: "600", color: "#F1F5F9" },
+  regionText: { fontSize: 13, color: "#94A3B8", marginTop: 4 },
 
   section: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1E293B",
     marginHorizontal: 16,
     marginTop: 8,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: "#334155",
   },
-  sectionLabel: { fontSize: 12, fontWeight: "600", color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 },
-  sectionValue: { fontSize: 15, color: "#374151" },
+  sectionLabel: { fontSize: 12, fontWeight: "600", color: "#64748B", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 },
+  sectionValue: { fontSize: 15, color: "#CBD5E1" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
+    borderColor: "#334155",
+    backgroundColor: "#0F172A",
   },
-  chipActive: { borderColor: "#D97706", backgroundColor: "#FEF3C7" },
-  chipText: { fontSize: 13, color: "#6B7280" },
-  chipTextActive: { color: "#92400E", fontWeight: "600" },
+  chipActive: { borderColor: "#D97706", backgroundColor: "#292524" },
+  chipText: { fontSize: 13, color: "#94A3B8" },
+  chipTextActive: { color: "#FCD34D", fontWeight: "600" },
 
   menuRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1E293B",
     marginHorizontal: 16,
     marginTop: 8,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: "#334155",
   },
-  menuText: { fontSize: 15, color: "#374151", fontWeight: "500" },
+  menuText: { fontSize: 15, color: "#CBD5E1", fontWeight: "500" },
 });

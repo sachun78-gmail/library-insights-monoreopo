@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
 import { BookDetailSheet } from "../../components/BookDetailSheet";
+import { AppBackground } from "../../components/AppBackground";
 import type { Bookmark, Book } from "../../lib/types";
 
 const PLACEHOLDER = "https://via.placeholder.com/52x74?text=No";
@@ -66,6 +67,7 @@ export default function BookshelfScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
+        <AppBackground>
         <View style={styles.centerBox}>
           <Ionicons name="bookmark-outline" size={64} color="#D97706" />
           <Text style={styles.emptyTitle}>내 서재</Text>
@@ -79,12 +81,14 @@ export default function BookshelfScreen() {
             <Text style={styles.loginBtnText}>로그인하기</Text>
           </TouchableOpacity>
         </View>
+        </AppBackground>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppBackground>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>내 서재</Text>
@@ -101,7 +105,7 @@ export default function BookshelfScreen() {
 
       {!isLoading && (!bookmarks || bookmarks.length === 0) && (
         <View style={styles.centerBox}>
-          <Ionicons name="book-outline" size={56} color="#D1D5DB" />
+          <Ionicons name="book-outline" size={56} color="#334155" />
           <Text style={styles.emptyTitle}>아직 찜한 도서가 없습니다</Text>
           <Text style={styles.emptySubtitle}>
             도서 상세화면에서 하트를 눌러 서재에 추가하세요
@@ -113,7 +117,7 @@ export default function BookshelfScreen() {
         <FlatList
           data={bookmarks}
           keyExtractor={(item) => item.isbn13}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.card}
@@ -152,12 +156,13 @@ export default function BookshelfScreen() {
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
       />
+      </AppBackground>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "#071426" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -165,15 +170,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#0F172A",
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: "#1E293B",
   },
-  headerTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
-  headerCount: { fontSize: 14, color: "#6B7280" },
+  headerTitle: { fontSize: 20, fontWeight: "700", color: "#F1F5F9" },
+  headerCount: { fontSize: 14, color: "#94A3B8" },
   centerBox: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
-  emptyTitle: { fontSize: 18, fontWeight: "600", color: "#374151", marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { fontSize: 14, color: "#9CA3AF", textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontSize: 18, fontWeight: "600", color: "#F1F5F9", marginTop: 16, marginBottom: 8 },
+  emptySubtitle: { fontSize: 14, color: "#64748B", textAlign: "center", lineHeight: 20 },
   loginBtn: {
     marginTop: 24,
     backgroundColor: "#D97706",
@@ -184,22 +189,22 @@ const styles = StyleSheet.create({
   loginBtnText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
   card: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#1E293B",
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: "#334155",
     elevation: 1,
     shadowColor: "#000",
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
   },
   cardImage: { width: 52, height: 74, borderRadius: 6 },
   cardInfo: { flex: 1, marginHorizontal: 12 },
-  cardTitle: { fontSize: 14, fontWeight: "600", color: "#111827", marginBottom: 4, lineHeight: 20 },
-  cardAuthor: { fontSize: 12, color: "#6B7280", marginBottom: 2 },
-  cardPublisher: { fontSize: 11, color: "#9CA3AF" },
+  cardTitle: { fontSize: 14, fontWeight: "600", color: "#F1F5F9", marginBottom: 4, lineHeight: 20 },
+  cardAuthor: { fontSize: 12, color: "#94A3B8", marginBottom: 2 },
+  cardPublisher: { fontSize: 11, color: "#64748B" },
   removeBtn: { padding: 6 },
 });

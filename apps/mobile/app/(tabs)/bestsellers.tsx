@@ -346,7 +346,7 @@ export default function BestsellersScreen() {
         <FlatList
           data={books}
           keyExtractor={(item, i) => `${item.isbn13 ?? i}-${i}`}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           renderItem={({ item, index }) => (
             <BookCard book={item} onPress={setSelectedBook} rank={index + 1} />
           )}

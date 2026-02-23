@@ -35,7 +35,7 @@ export function Carousel({ books, onPress }: Props) {
             style={{
               fontSize: 12,
               marginTop: 6,
-              color: "#374151",
+              color: "#CBD5E1",
               fontWeight: "500",
               lineHeight: 16,
             }}
@@ -44,7 +44,7 @@ export function Carousel({ books, onPress }: Props) {
           </Text>
           <Text
             numberOfLines={1}
-            style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}
+            style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}
           >
             {item.authors}
           </Text>

@@ -14,13 +14,13 @@ export function BookCard({ book, onPress, rank }: Props) {
   return (
     <TouchableOpacity
       onPress={() => onPress(book)}
-      className="flex-row gap-3 p-3 bg-white rounded-xl mb-2 border border-gray-100"
-      style={{ shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}
+      className="flex-row gap-3 p-3 bg-slate-800 rounded-xl mb-2 border border-slate-700"
+      style={{ shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 4, elevation: 1 }}
     >
       {rank !== undefined && (
         <View className="w-6 items-center justify-center">
           <Text
-            className={`text-sm font-bold ${rank <= 3 ? "text-indigo-600" : "text-gray-400"}`}
+            className={`text-sm font-bold ${rank <= 3 ? "text-indigo-400" : "text-slate-500"}`}
           >
             {rank}
           </Text>
@@ -33,20 +33,20 @@ export function BookCard({ book, onPress, rank }: Props) {
       />
       <View className="flex-1 justify-center">
         <Text
-          className="text-sm font-semibold text-gray-900 mb-1"
+          className="text-sm font-semibold text-slate-100 mb-1"
           numberOfLines={2}
         >
           {book.bookname}
         </Text>
-        <Text className="text-xs text-gray-500 mb-1" numberOfLines={1}>
+        <Text className="text-xs text-slate-400 mb-1" numberOfLines={1}>
           {book.authors}
         </Text>
-        <Text className="text-xs text-gray-400" numberOfLines={1}>
+        <Text className="text-xs text-slate-500" numberOfLines={1}>
           {book.publisher}
           {book.publication_year ? ` · ${book.publication_year}` : ""}
         </Text>
         {book.loan_count != null && (
-          <Text className="text-xs text-indigo-500 mt-1">
+          <Text className="text-xs text-indigo-400 mt-1">
             대출 {book.loan_count}회
           </Text>
         )}

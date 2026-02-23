@@ -10,10 +10,17 @@ function getEnvVar(locals: any, key: string): string | undefined {
   return (import.meta.env as any)[key];
 }
 
-// HTML 태그 제거 함수
+// HTML 엔티티 디코딩 후 태그 제거 (Naver API는 &lt;b&gt; 형태로 반환)
 function stripHtml(str: string | undefined): string {
   if (!str) return '';
-  return str.replace(/<[^>]*>/g, '');
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/<[^>]*>/g, '');
 }
 
 export const GET: APIRoute = async ({ request, locals }) => {
