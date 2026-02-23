@@ -8,6 +8,7 @@ import React, {
 import type { Session, User } from "@supabase/supabase-js";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
+import { Platform } from "react-native";
 import { supabase } from "./supabase";
 
 // OAuth 완료 처리 (앱으로 돌아올 때)
@@ -16,9 +17,16 @@ WebBrowser.maybeCompleteAuthSession();
 // Google OAuth 리다이렉트 URI (app.json의 scheme)
 const REDIRECT_URI = "libraryinsights://login-callback";
 
+function authLog(...args: any[]) {
+  if (__DEV__) {
+    console.log("[AUTH][GOOGLE]", ...args);
+  }
+}
+
 // OAuth 리다이렉트 URL에서 세션 처리 (공통 유틸)
 async function handleOAuthUrl(url: string): Promise<boolean> {
   try {
+    authLog("handleOAuthUrl:start", url);
     const hashParams = new URLSearchParams(url.split("#")[1] ?? "");
     const queryParams = new URLSearchParams(url.split("?")[1] ?? "");
 
@@ -29,20 +37,29 @@ async function handleOAuthUrl(url: string): Promise<boolean> {
     const code = hashParams.get("code") ?? queryParams.get("code");
 
     if (access_token) {
+      authLog("handleOAuthUrl:token_found", {
+        hasAccessToken: !!access_token,
+        hasRefreshToken: !!refresh_token,
+      });
       const { error } = await supabase.auth.setSession({
         access_token,
         refresh_token: refresh_token ?? "",
       });
+      authLog("handleOAuthUrl:setSession", error ? error.message : "ok");
       return !error;
     }
 
     if (code) {
+      authLog("handleOAuthUrl:code_found");
       const { error } = await supabase.auth.exchangeCodeForSession(url);
+      authLog("handleOAuthUrl:exchangeCodeForSession", error ? error.message : "ok");
       return !error;
     }
 
+    authLog("handleOAuthUrl:no_token_or_code");
     return false;
-  } catch {
+  } catch (e: any) {
+    authLog("handleOAuthUrl:error", e?.message ?? String(e));
     return false;
   }
 }
@@ -88,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Android: 딥링크로 OAuth 콜백 처리
     const linkingSub = Linking.addEventListener("url", ({ url }) => {
       if (url.startsWith(REDIRECT_URI)) {
+        authLog("linking:event", url);
         handleOAuthUrl(url);
       }
     });
@@ -95,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 앱이 딥링크로 시작된 경우 처리
     Linking.getInitialURL().then((url) => {
       if (url?.startsWith(REDIRECT_URI)) {
+        authLog("linking:initialUrl", url);
         handleOAuthUrl(url);
       }
     });
@@ -130,12 +149,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     try {
+      authLog("signInWithGoogle:start", { redirectUri: REDIRECT_URI });
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: REDIRECT_URI,
           skipBrowserRedirect: true,
         },
+      });
+      authLog("signInWithGoogle:oauthResponse", {
+        hasUrl: !!data?.url,
+        error: error?.message ?? null,
       });
 
       if (error || !data?.url) {
@@ -144,11 +168,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 브라우저에서 OAuth 진행
       // Android에서는 result.type이 'cancel'/'dismiss'로 올 수 있음 (정상)
+      authLog("signInWithGoogle:oauthUrl", data.url);
+      if (Platform.OS === "android") {
+        authLog("signInWithGoogle:androidFallback", "Linking.openURL");
+        await Linking.openURL(data.url);
+        return { error: null };
+      }
       const result = await WebBrowser.openAuthSessionAsync(data.url, REDIRECT_URI);
+      authLog("signInWithGoogle:webBrowserResult", result);
 
       // iOS: 브라우저가 URL을 직접 반환하는 경우
       if (result.type === "success") {
         const ok = await handleOAuthUrl(result.url);
+        authLog("signInWithGoogle:iosSuccessHandled", ok);
         if (ok) return { error: null };
       }
 
@@ -156,6 +188,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // (브라우저가 닫힌 후 세션이 설정되었을 수 있음)
       await new Promise((r) => setTimeout(r, 800));
       const { data: { session: currentSession } } = await supabase.auth.getSession();
+      authLog("signInWithGoogle:sessionAfterBrowser", {
+        hasSession: !!currentSession,
+        userId: currentSession?.user?.id ?? null,
+      });
       if (currentSession) return { error: null };
 
       // 사용자가 취소한 경우
@@ -165,6 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { error: "Google 로그인이 완료되지 않았습니다." };
     } catch (e: any) {
+      authLog("signInWithGoogle:catch", e?.message ?? String(e));
       return { error: e?.message ?? "Google 로그인 중 오류가 발생했습니다." };
     }
   }, []);

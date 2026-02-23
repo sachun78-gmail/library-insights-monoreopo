@@ -53,7 +53,24 @@ async function post(path: string, body: Record<string, any>): Promise<any> {
     if (DEBUG_API) {
       console.log("[API][POST][RES]", path, res.status);
     }
-    if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
+    if (!res.ok) {
+      let errorBody: any = null;
+      try {
+        errorBody = await res.json();
+      } catch {
+        try {
+          errorBody = await res.text();
+        } catch {
+          errorBody = null;
+        }
+      }
+      if (DEBUG_API) {
+        console.log("[API][POST][ERR_BODY]", path, errorBody);
+      }
+      throw new Error(
+        `API error ${res.status} on ${path}${errorBody?.error ? `: ${errorBody.error}` : ""}`
+      );
+    }
     return res.json();
   } catch (error) {
     if (DEBUG_API) {
@@ -86,6 +103,33 @@ async function del(path: string, body: Record<string, any>): Promise<any> {
   } catch (error) {
     if (DEBUG_API) {
       console.log("[API][DELETE][ERR]", path, error);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function postForm(path: string, formData: FormData): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    if (DEBUG_API) {
+      console.log("[API][FORM][REQ]", `${BASE_URL}${path}`);
+    }
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+    if (DEBUG_API) {
+      console.log("[API][FORM][RES]", path, res.status);
+    }
+    if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
+    return res.json();
+  } catch (error) {
+    if (DEBUG_API) {
+      console.log("[API][FORM][ERR]", path, error);
     }
     throw error;
   } finally {
@@ -176,9 +220,38 @@ export const api = {
     gender?: string;
     region_code?: string;
     region_name?: string;
+    sub_region_code?: string;
+    sub_region_name?: string;
+    avatar_url?: string;
   }) =>
-    post("/api/profile", { userId, ...data }).then((res) => res?.profile ?? null),
+    post("/api/profile", {
+      userId,
+      birthDate: data.birth_date,
+      gender: data.gender,
+      regionCode: data.region_code,
+      regionName: data.region_name,
+      subRegionCode: data.sub_region_code,
+      subRegionName: data.sub_region_name,
+      avatarUrl: data.avatar_url,
+    }).then((res) => res?.profile ?? null),
 
   deleteAccount: (userId: string) =>
     post("/api/delete-account", { userId }),
+
+  uploadProfileImage: async (userId: string, file: {
+    uri: string;
+    name?: string;
+    type?: string;
+  }) => {
+    const form = new FormData();
+    form.append("userId", userId);
+    form.append("file", {
+      uri: file.uri,
+      name: file.name ?? `profile_${Date.now()}.jpg`,
+      type: file.type ?? "image/jpeg",
+    } as any);
+
+    const res = await postForm("/api/upload-image", form);
+    return res?.url as string;
+  },
 };

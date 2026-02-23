@@ -13,6 +13,16 @@ function createAdminClient(url: string, serviceKey: string) {
   });
 }
 
+function normalizeGenderInput(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const v = value.trim();
+  if (!v) return null;
+  if (v === 'M' || v.toLowerCase() === 'male') return 'male';
+  if (v === 'F' || v.toLowerCase() === 'female') return 'female';
+  if (v.toLowerCase() === 'other') return 'other';
+  return v;
+}
+
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const userId = url.searchParams.get('userId');
@@ -96,7 +106,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const profileData = {
       id: userId,
       birth_date: birthDate || null,
-      gender: gender || null,
+      gender: normalizeGenderInput(gender),
       region_code: regionCode || null,
       region_name: regionName || null,
       sub_region_code: subRegionCode || null,
