@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useBestsellers, useHotTrend } from "../../hooks/useBestsellers";
 import { BookCard } from "../../components/BookCard";
 import { BookDetailSheet } from "../../components/BookDetailSheet";
+import { AppBackground } from "../../components/AppBackground";
 import type { Book } from "../../lib/types";
 
 type TabType = "popular" | "hot";
@@ -29,46 +30,46 @@ function getDateRange(days: number): { startDt: string; endDt: string } {
 }
 
 const PERIOD_OPTIONS = [
-  { label: "7일", value: "7" },
-  { label: "14일", value: "14" },
-  { label: "30일", value: "30" },
-  { label: "90일", value: "90" },
+  { label: "7 days", value: "7" },
+  { label: "14 days", value: "14" },
+  { label: "30 days", value: "30" },
+  { label: "90 days", value: "90" },
 ];
 
 const GENDER_OPTIONS = [
-  { label: "전체", value: "" },
-  { label: "남성", value: "1" },
-  { label: "여성", value: "2" },
+  { label: "?�체", value: "" },
+  { label: "?�성", value: "1" },
+  { label: "?�성", value: "2" },
 ];
 
 const AGE_OPTIONS = [
-  { label: "전체", from: "", to: "" },
-  { label: "10대", from: "10", to: "19" },
-  { label: "20대", from: "20", to: "29" },
-  { label: "30대", from: "30", to: "39" },
-  { label: "40대", from: "40", to: "49" },
-  { label: "50대+", from: "50", to: "59" },
+  { label: "?�체", from: "", to: "" },
+  { label: "10?�", from: "10", to: "19" },
+  { label: "20?�", from: "20", to: "29" },
+  { label: "30?�", from: "30", to: "39" },
+  { label: "40?�", from: "40", to: "49" },
+  { label: "50?�+", from: "50", to: "59" },
 ];
 
 const REGION_OPTIONS = [
-  { code: "", name: "전국" },
-  { code: "11", name: "서울" },
-  { code: "21", name: "부산" },
-  { code: "22", name: "대구" },
-  { code: "23", name: "인천" },
+  { code: "", name: "?�국" },
+  { code: "11", name: "?�울" },
+  { code: "21", name: "Busan" },
+  { code: "22", name: "Daegu" },
+  { code: "23", name: "?�천" },
   { code: "24", name: "광주" },
-  { code: "25", name: "대전" },
-  { code: "26", name: "울산" },
-  { code: "29", name: "세종" },
+  { code: "25", name: "Daejeon" },
+  { code: "26", name: "?�산" },
+  { code: "29", name: "?�종" },
   { code: "31", name: "경기" },
   { code: "32", name: "강원" },
   { code: "33", name: "충북" },
   { code: "34", name: "충남" },
-  { code: "35", name: "전북" },
-  { code: "36", name: "전남" },
+  { code: "35", name: "?�북" },
+  { code: "36", name: "?�남" },
   { code: "37", name: "경북" },
   { code: "38", name: "경남" },
-  { code: "39", name: "제주" },
+  { code: "39", name: "?�주" },
 ];
 
 // --- Filter Modal ---
@@ -117,7 +118,7 @@ function FilterModal({
           style={{ maxHeight: "80%", paddingBottom: 32 }}
         >
           <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-lg font-bold text-gray-900">필터</Text>
+            <Text className="text-lg font-bold text-gray-900">?�터</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
@@ -150,7 +151,7 @@ function FilterModal({
 
             {/* Gender */}
             <Text className="text-sm font-semibold text-gray-700 mb-2">
-              성별
+              ?�별
             </Text>
             <View className="flex-row gap-2 mb-4">
               {GENDER_OPTIONS.map((opt) => (
@@ -174,7 +175,7 @@ function FilterModal({
 
             {/* Age */}
             <Text className="text-sm font-semibold text-gray-700 mb-2">
-              연령
+              ?�령
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-4">
               {AGE_OPTIONS.map((opt) => (
@@ -205,7 +206,7 @@ function FilterModal({
 
             {/* Region */}
             <Text className="text-sm font-semibold text-gray-700 mb-2">
-              지역
+              지??
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-4">
               {REGION_OPTIONS.map((r) => (
@@ -231,7 +232,7 @@ function FilterModal({
               onPress={onClose}
               className="bg-indigo-600 rounded-2xl py-3 items-center mt-2 mb-2"
             >
-              <Text className="text-white font-semibold">적용하기</Text>
+              <Text className="text-white font-semibold">?�용?�기</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -275,29 +276,32 @@ export default function BestsellersScreen() {
   const hasFilters = !!(region || gender || ageFrom || ageTo || period !== "30");
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#071426" }}>
+      <AppBackground>
       {/* Header */}
-      <View className="px-5 pt-5 pb-3 bg-white border-b border-gray-100">
+      <View
+        className="px-5 pt-5 pb-3 border-b"
+        style={{ backgroundColor: "rgba(8,20,38,0.78)", borderBottomColor: "#1E293B" }}
+      >
         <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-xl font-bold text-gray-900">인기도서</Text>
+          <Text className="text-xl font-bold text-slate-100">Bestsellers</Text>
           {tab === "popular" && (
             <TouchableOpacity
               onPress={() => setFilterVisible(true)}
-              className={`flex-row items-center gap-1 px-3 py-1.5 rounded-lg ${
-                hasFilters ? "bg-indigo-100" : "bg-gray-100"
-              }`}
+              className="flex-row items-center gap-1 px-3 py-1.5 rounded-lg"
+              style={{
+                backgroundColor: hasFilters ? "rgba(99,102,241,0.2)" : "rgba(30,41,59,0.9)",
+                borderWidth: 1,
+                borderColor: hasFilters ? "rgba(129,140,248,0.45)" : "#334155",
+              }}
             >
               <Ionicons
                 name="options-outline"
                 size={14}
-                color={hasFilters ? "#6366f1" : "#6b7280"}
+                color={hasFilters ? "#A5B4FC" : "#94A3B8"}
               />
-              <Text
-                className={`text-xs font-medium ${
-                  hasFilters ? "text-indigo-700" : "text-gray-600"
-                }`}
-              >
-                필터{hasFilters ? " ●" : ""}
+              <Text className="text-xs font-medium" style={{ color: hasFilters ? "#C7D2FE" : "#CBD5E1" }}>
+                {`Filters${hasFilters ? " On" : ""}`}
               </Text>
             </TouchableOpacity>
           )}
@@ -307,22 +311,21 @@ export default function BestsellersScreen() {
         <View className="flex-row gap-2">
           {(
             [
-              ["popular", "인기 대출"],
-              ["hot", "급상승"],
+              ["popular", "Popular"],
+              ["hot", "Hot"],
             ] as const
           ).map(([key, label]) => (
             <TouchableOpacity
               key={key}
               onPress={() => setTab(key)}
-              className={`flex-1 py-2 rounded-xl items-center ${
-                tab === key ? "bg-indigo-600" : "bg-gray-100"
-              }`}
+              className="flex-1 py-2 rounded-xl items-center"
+              style={{
+                backgroundColor: tab === key ? "#4F46E5" : "rgba(30,41,59,0.9)",
+                borderWidth: tab === key ? 0 : 1,
+                borderColor: tab === key ? "transparent" : "#334155",
+              }}
             >
-              <Text
-                className={`text-sm font-medium ${
-                  tab === key ? "text-white" : "text-gray-600"
-                }`}
-              >
+              <Text className={`text-sm font-medium ${tab === key ? "text-white" : "text-slate-300"}`}>
                 {label}
               </Text>
             </TouchableOpacity>
@@ -337,9 +340,9 @@ export default function BestsellersScreen() {
         </View>
       ) : books.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <Ionicons name="bar-chart-outline" size={52} color="#d1d5db" />
-          <Text className="text-gray-400 mt-3 text-sm">
-            데이터를 불러올 수 없습니다
+          <Ionicons name="bar-chart-outline" size={52} color="#475569" />
+          <Text className="text-slate-400 mt-3 text-sm">
+            ?�이?��? 불러?????�습?�다
           </Text>
         </View>
       ) : (
@@ -372,6 +375,7 @@ export default function BestsellersScreen() {
         book={selectedBook}
         onClose={() => setSelectedBook(null)}
       />
+      </AppBackground>
     </SafeAreaView>
   );
 }

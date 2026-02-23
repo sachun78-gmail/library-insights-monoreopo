@@ -61,7 +61,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <AppBackground>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* ── Hero Section ── */}
         <View style={styles.hero}>
           {/* Logo */}
@@ -185,8 +185,8 @@ export default function HomeScreen() {
         </View>
 
         {/* ── 신착 도서 ── */}
-        <View style={{ marginBottom: 32 }}>
-          <Text style={[styles.sectionTitle, { paddingHorizontal: 20 }]}>
+        <View style={styles.sectionBlock}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleHorizontal]}>
             신착 도서
           </Text>
 
@@ -220,12 +220,14 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#071426" },
 
+  scrollContent: { paddingBottom: 100 },
+
   /* Hero */
   hero: {
     backgroundColor: "transparent",
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 32,
+    paddingBottom: 24,
   },
   logoRow: { flexDirection: "row", alignItems: "center", marginBottom: 28 },
   logoText: {
@@ -308,13 +310,15 @@ const styles = StyleSheet.create({
   searchBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
 
   /* Sections */
-  section: { paddingHorizontal: 20, marginTop: 24, marginBottom: 8 },
+  section: { paddingHorizontal: 20, marginTop: 8, marginBottom: 0 },
+  sectionBlock: { marginTop: 28, marginBottom: 16 },
   sectionTitle: {
     fontSize: 17,
     fontWeight: "600",
     color: "#F1F5F9",
-    marginBottom: 12,
+    marginBottom: 14,
   },
+  sectionTitleHorizontal: { paddingHorizontal: 20 },
   loadingBox: { height: 100, alignItems: "center", justifyContent: "center" },
   errorBox: {
     backgroundColor: "#1E293B",
