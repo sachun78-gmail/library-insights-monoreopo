@@ -268,12 +268,7 @@ export default function BestsellersScreen() {
     pageSize: 50,
   });
 
-  const { data: hotTrendData, isLoading: isLoadingHot } = useHotTrend();
-
-  const hotBooks: Book[] =
-    hotTrendData?.results?.result ??
-    hotTrendData?.response?.results?.result ??
-    [];
+  const { data: hotBooks = [], isLoading: isLoadingHot } = useHotTrend();
 
   const books: Book[] = tab === "popular" ? (popularBooks ?? []) : hotBooks;
   const isLoading = tab === "popular" ? isLoadingPopular : isLoadingHot;

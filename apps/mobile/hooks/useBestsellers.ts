@@ -2,10 +2,22 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { Book } from "../lib/types";
 
-function extractBooks(data: any): Book[] {
+// 인기 대출: { response: { docs: [{ doc: {...} }, ...] } }
+function extractPopularBooks(data: any): Book[] {
   if (!data) return [];
-  const docs = data.docs ?? data.response?.docs ?? (Array.isArray(data) ? data : []);
+  const docs: any[] = data.response?.docs ?? [];
   return docs.map((d: any) => d?.doc ?? d) as Book[];
+}
+
+// 급상승: { response: { results: [{ result: { docs: [{ doc: {...} }, ...] } }] } }
+function extractHotBooks(data: any): Book[] {
+  if (!data) return [];
+  const results: any[] = data.response?.results ?? [];
+  const resultWithDocs = results.find(
+    (r: any) => r.result?.docs?.length > 0
+  );
+  const docs: any[] = resultWithDocs?.result?.docs ?? [];
+  return docs.map((item: any) => item.doc ?? item) as Book[];
 }
 
 export interface BestsellerParams {
@@ -23,16 +35,19 @@ export function useBestsellers(params: BestsellerParams) {
     queryKey: ["popular-books", params],
     queryFn: async () => {
       const data = await api.popularBooks(params);
-      return extractBooks(data);
+      return extractPopularBooks(data);
     },
     staleTime: 60 * 60 * 1000, // 1 hour
   });
 }
 
 export function useHotTrend(searchDt?: string) {
-  return useQuery({
+  return useQuery<Book[]>({
     queryKey: ["hot-trend", searchDt],
-    queryFn: () => api.hotTrend(searchDt),
+    queryFn: async () => {
+      const data = await api.hotTrend(searchDt);
+      return extractHotBooks(data);
+    },
     staleTime: 6 * 60 * 60 * 1000, // 6 hours
   });
 }
