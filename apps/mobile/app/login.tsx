@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,14 @@ type Mode = "signin" | "signup";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+
+  // 로그인 성공 시 (Google OAuth 딥링크 포함) 자동으로 화면 닫기
+  useEffect(() => {
+    if (user) {
+      router.back();
+    }
+  }, [user]);
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
