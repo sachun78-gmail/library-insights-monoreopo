@@ -265,7 +265,7 @@ export default function BestsellersScreen() {
     from_age: ageFrom || undefined,
     to_age: ageTo || undefined,
     region: region || undefined,
-    pageSize: 50,
+    pageSize: 30,
   });
 
   const { data: hotBooks = [], isLoading: isLoadingHot } = useHotTrend();

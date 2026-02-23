@@ -1049,7 +1049,7 @@ sachun78@gmail.com
   const resultsInfo = document.getElementById('results-info');
 
   let currentPage = 1;
-  const pageSize = 10;
+  const pageSize = 30;
   let totalPages = 1;
 
   // Default placeholder image
@@ -1144,9 +1144,9 @@ sachun78@gmail.com
 
       popularLoading?.classList.add('hidden');
 
-      const books = data.response?.docs || [];
+      const books = (data.response?.docs || []).slice(0, 30);
       const numFound = data.response?.numFound || 0;
-      totalPages = Math.ceil(numFound / pageSize);
+      totalPages = 1; // 상위 30위 고정, 페이지네이션 없음
 
       if (books.length === 0) {
         popularEmpty?.classList.remove('hidden');
@@ -1164,7 +1164,7 @@ sachun78@gmail.com
 
       const booksHtml = books.map((item, index) => {
         const book = item.doc;
-        const rank = (currentPage - 1) * pageSize + index + 1;
+        const rank = index + 1;
         const hasImage = book.bookImageURL && book.bookImageURL.trim() !== '';
         const bm = window.__bookmarks || {};
         const bookmarked = bm.isBookmarked && book.isbn13 && bm.isBookmarked(book.isbn13);
@@ -1209,12 +1209,10 @@ sachun78@gmail.com
 
       resultsInfo?.classList.remove('hidden');
       if (resultsInfo) {
-        const start = (currentPage - 1) * pageSize + 1;
-        const end = Math.min(currentPage * pageSize, numFound);
-        resultsInfo.textContent = `총 ${numFound.toLocaleString()}권 중 ${start}-${end}권 표시`;
+        resultsInfo.textContent = `총 ${numFound.toLocaleString()}권 중 상위 ${books.length}위까지 표시`;
       }
 
-      renderPagination();
+      paginationContainer?.classList.add('hidden');
 
       if (!resetPage) {
         popularBooksGrid?.scrollIntoView({ behavior: 'smooth', block: 'start' });
