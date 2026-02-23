@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Modal,
   View,
@@ -39,13 +39,69 @@ function formatPostDate(raw?: string): string {
   return `${raw.slice(0, 4)}.${raw.slice(4, 6)}.${raw.slice(6, 8)}`;
 }
 
+// 도서관별 대출가능여부 아이템
+function LibraryItem({ lib, isbn }: { lib: Library; isbn: string }) {
+  const { data, isLoading } = useQuery<{ hasBook: boolean; loanAvailable: boolean }>({
+    queryKey: ["book-exist", isbn, lib.libCode],
+    queryFn: () => api.bookExist(isbn, lib.libCode),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  return (
+    <View style={libItemStyles.row}>
+      <View style={libItemStyles.dot} />
+      <View style={{ flex: 1 }}>
+        <Text style={libItemStyles.name}>{lib.libName}</Text>
+        <Text style={libItemStyles.addr} numberOfLines={1}>{lib.address}</Text>
+      </View>
+      {isLoading ? (
+        <ActivityIndicator size="small" color="#D97706" style={{ marginLeft: 8 }} />
+      ) : data ? (
+        <View style={[
+          libItemStyles.badge,
+          data.loanAvailable ? libItemStyles.badgeAvail : libItemStyles.badgeUnavail,
+        ]}>
+          <Text style={[
+            libItemStyles.badgeText,
+            data.loanAvailable ? libItemStyles.badgeTextAvail : libItemStyles.badgeTextUnavail,
+          ]}>
+            {data.loanAvailable ? "대출가능" : "대출중"}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const libItemStyles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D97706", marginTop: 2, flexShrink: 0 },
+  name: { fontSize: 13, fontWeight: "600", color: "#374151" },
+  addr: { fontSize: 11, color: "#9CA3AF", marginTop: 1 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginLeft: 4, flexShrink: 0 },
+  badgeAvail: { backgroundColor: "#D1FAE5" },
+  badgeUnavail: { backgroundColor: "#FEE2E2" },
+  badgeText: { fontSize: 11, fontWeight: "600" },
+  badgeTextAvail: { color: "#065F46" },
+  badgeTextUnavail: { color: "#991B1B" },
+});
+
 export function BookDetailSheet({ book, onClose }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const scrollRef = useRef<ScrollView>(null);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("11");
+
+  // 도서관 섹션 열릴 때 스크롤 맨 아래로
+  useEffect(() => {
+    if (showLibrary) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+    }
+  }, [showLibrary, selectedRegion]);
 
   // ── 북마크 목록 ──
   const { data: bookmarks } = useQuery<Bookmark[]>({
@@ -125,7 +181,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
-        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} bounces={false}>
           {book && (
             <>
               {/* ── 도서 헤더 ── */}
@@ -348,17 +404,11 @@ export function BookDetailSheet({ book, onClose }: Props) {
                     )}
                     {!isLibLoading && libraries && libraries.length > 0 && (
                       <View style={styles.libraryList}>
-                        {libraries.slice(0, 5).map((lib) => (
-                          <View key={lib.libCode} style={styles.libraryItem}>
-                            <View style={styles.libraryDot} />
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.libraryName}>{lib.libName}</Text>
-                              <Text style={styles.libraryAddr} numberOfLines={1}>{lib.address}</Text>
-                            </View>
-                          </View>
+                        {libraries.slice(0, 10).map((lib) => (
+                          <LibraryItem key={lib.libCode} lib={lib} isbn={book.isbn13} />
                         ))}
-                        {libraries.length > 5 && (
-                          <Text style={styles.moreLibText}>외 {libraries.length - 5}개 도서관</Text>
+                        {libraries.length > 10 && (
+                          <Text style={styles.moreLibText}>외 {libraries.length - 10}개 도서관</Text>
                         )}
                       </View>
                     )}
@@ -499,11 +549,7 @@ const styles = StyleSheet.create({
   regionChipTextActive: { color: "#92400E", fontWeight: "600" },
   noLibText: { fontSize: 13, color: "#9CA3AF", paddingHorizontal: 14, paddingBottom: 14 },
   libraryList: { paddingHorizontal: 14, paddingBottom: 14 },
-  libraryItem: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 10 },
-  libraryDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D97706", marginTop: 6 },
-  libraryName: { fontSize: 13, fontWeight: "600", color: "#374151" },
-  libraryAddr: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
-  moreLibText: { fontSize: 12, color: "#9CA3AF", marginTop: 4 },
+  moreLibText: { fontSize: 12, color: "#9CA3AF", marginTop: 4, paddingHorizontal: 14, paddingBottom: 8 },
 
   // 닫기
   closeBtn: {
