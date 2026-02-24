@@ -861,6 +861,13 @@ export function openBookModal(book: any): void {
     }
   }
 
+  // Update purchase links
+  const searchQuery = encodeURIComponent(book.bookname || '');
+  const coupangLink = getEl('coupang-link') as HTMLAnchorElement | null;
+  const aladinLink = getEl('aladin-link') as HTMLAnchorElement | null;
+  if (coupangLink) coupangLink.href = `https://www.coupang.com/np/search?q=${searchQuery}`;
+  if (aladinLink) aladinLink.href = `https://www.aladin.co.kr/search/wsearchresult.aspx?SearchWord=${searchQuery}`;
+
   resetAiInsightState();
   resetReviewState();
   resetLibraryState();
