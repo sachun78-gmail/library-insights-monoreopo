@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import { useAuth } from "../lib/auth-context";
 import { api } from "../lib/api";
+import { regions as REGIONS_DATA } from "../lib/regions-data.js";
 import type { Book, Library, Bookmark } from "../lib/types";
 
 interface Props {
@@ -93,11 +94,6 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 }
 
 /** 주소에서 두 번째 토큰(구/시/군) 추출 */
-function extractDistrict(address: string): string {
-  const parts = address.trim().split(/\s+/);
-  return parts.length >= 2 ? parts[1] : "";
-}
-
 /** 한국 좌표 범위 체크 */
 function isInKorea(lat: number, lon: number): boolean {
   return lat >= 33 && lat <= 39 && lon >= 124 && lon <= 132;
@@ -165,7 +161,7 @@ function PickerModal({ visible, onClose, title, options, value, onChange }: Pick
                   <Ionicons name="close" size={20} color="#6B7280" />
                 </TouchableOpacity>
               </View>
-              <ScrollView style={pickerStyles.list}>
+              <ScrollView contentContainerStyle={pickerStyles.list}>
                 {options.map((opt) => (
                   <TouchableOpacity
                     key={opt.value}
@@ -204,7 +200,7 @@ const pickerStyles = StyleSheet.create({
     backgroundColor: "#1E293B",
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
-    maxHeight: "55%",
+    maxHeight: "75%",
   },
   header: {
     flexDirection: "row",
@@ -548,8 +544,8 @@ export function BookDetailSheet({ book, onClose }: Props) {
     !!book && showLibrary && (locationStatus === "ok" || locationStatus === "denied");
 
   const { data: rawLibraries = [], isLoading: isLibLoading } = useQuery<Library[]>({
-    queryKey: ["libraries", book?.isbn13, selectedRegion],
-    queryFn: () => api.libraryByBook(book!.isbn13, selectedRegion),
+    queryKey: ["libraries", book?.isbn13, selectedRegion, selectedSubRegion],
+    queryFn: () => api.libraryByBook(book!.isbn13, selectedRegion, selectedSubRegion || undefined),
     enabled: libQueryEnabled,
     staleTime: 10 * 60 * 1000,
   });
@@ -572,23 +568,19 @@ export function BookDetailSheet({ book, onClose }: Props) {
     });
   }, [rawLibraries, userLocation]);
 
-  // 세부지역 목록 (주소 두 번째 토큰 추출)
+  // 세부지역 목록 (선택된 광역 지역의 정적 목록 사용)
   const subRegions = useMemo(() => {
-    const set = new Set(librariesWithDist.map((l) => extractDistrict(l.address)).filter(Boolean));
-    return Array.from(set).sort();
-  }, [librariesWithDist]);
+    const region = REGIONS_DATA.find((r: any) => r.code === selectedRegion);
+    return region?.subRegions ?? [];
+  }, [selectedRegion]);
 
   // 유효한 한국 내 GPS 좌표를 얻은 경우 3km 필터 적용 (지역 코드 일치 불필요)
   const isGpsRegion = locationStatus === "ok" && userLocation !== null;
 
-  // 표시할 라이브러리 목록: 세부지역 필터 → 거리순 정렬 → 3km 필터(GPS 지역만)
+  // 표시할 라이브러리 목록: 거리순 정렬 → 3km 필터(GPS 지역만)
+  // 세부지역 필터링은 API(dtl_region)에서 처리
   const displayedLibraries = useMemo<LibraryWithDist[]>(() => {
     let libs = [...librariesWithDist];
-
-    // 세부지역 필터
-    if (selectedSubRegion) {
-      libs = libs.filter((l) => extractDistrict(l.address) === selectedSubRegion);
-    }
 
     // 거리 있는 항목은 거리순, 없는 항목은 뒤로
     libs.sort((a, b) => {
@@ -603,16 +595,13 @@ export function BookDetailSheet({ book, onClose }: Props) {
     }
 
     return libs;
-  }, [librariesWithDist, selectedSubRegion, isGpsRegion]);
+  }, [librariesWithDist, isGpsRegion]);
 
   const within3kmCount = useMemo(() => {
     return librariesWithDist.filter(
-      (l) =>
-        l.distance !== undefined &&
-        l.distance <= 3 &&
-        (!selectedSubRegion || extractDistrict(l.address) === selectedSubRegion)
+      (l) => l.distance !== undefined && l.distance <= 3
     ).length;
-  }, [librariesWithDist, selectedSubRegion]);
+  }, [librariesWithDist]);
 
   const regionName = ALL_REGIONS.find((r) => r.code === selectedRegion)?.name ?? selectedRegion;
   const isMutating = addMutation.isPending || removeMutation.isPending;
@@ -620,7 +609,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const subRegionOptions = useMemo(
     () => [
       { label: "전체", value: "" },
-      ...subRegions.map((s) => ({ label: s, value: s })),
+      ...subRegions.map((s: any) => ({ label: s.name, value: s.code })),
     ],
     [subRegions]
   );
@@ -876,7 +865,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
                           disabled={subRegionOptions.length <= 1}
                         >
                           <Text style={styles.dropdownValue}>
-                            {selectedSubRegion || "전체"}
+                            {subRegionOptions.find(o => o.value === selectedSubRegion)?.label || "전체"}
                           </Text>
                           <Ionicons name="chevron-down" size={12} color="#6B7280" />
                         </TouchableOpacity>

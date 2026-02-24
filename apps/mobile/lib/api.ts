@@ -178,8 +178,8 @@ export const api = {
     get("/api/book-ai-insight", { title, author }).then((res) => res?.insight ?? null),
 
   // ── 도서관 검색 ──
-  libraryByBook: (isbn: string, region: string) =>
-    get("/api/library-by-book", { isbn, region }).then(
+  libraryByBook: (isbn: string, region: string, dtlRegion?: string) =>
+    get("/api/library-by-book", { isbn, region, dtl_region: dtlRegion || undefined }).then(
       (res) => (res?.response?.libs ?? []).map((item: any) => item.lib ?? item)
     ),
 
