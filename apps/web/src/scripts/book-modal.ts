@@ -106,6 +106,7 @@ async function fetchAiInsight(): Promise<void> {
 
   const title = _currentBook.bookname || '';
   const author = _currentBook.authors || '';
+  const isbn13 = _currentBook.isbn13 || '';
   if (!title) return;
 
   getEl('ai-insight-btn')?.classList.add('hidden');
@@ -119,6 +120,7 @@ async function fetchAiInsight(): Promise<void> {
   try {
     let apiUrl = `/api/book-ai-insight?title=${encodeURIComponent(title)}`;
     if (author) apiUrl += `&author=${encodeURIComponent(author)}`;
+    if (isbn13) apiUrl += `&isbn13=${encodeURIComponent(isbn13)}`;
 
     const response = await fetch(apiUrl);
     const data = await response.json();

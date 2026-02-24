@@ -174,8 +174,8 @@ export const api = {
       (res) => res?.response?.detail?.[0]?.book ?? null
     ),
 
-  bookAIInsight: (title: string, author?: string) =>
-    get("/api/book-ai-insight", { title, author }).then((res) => res?.insight ?? null),
+  bookAIInsight: (title: string, author?: string, isbn13?: string) =>
+    get("/api/book-ai-insight", { title, author, isbn13 }).then((res) => res?.insight ?? null),
 
   // ── 도서관 검색 ──
   libraryByBook: (isbn: string, region: string, dtlRegion?: string) =>
