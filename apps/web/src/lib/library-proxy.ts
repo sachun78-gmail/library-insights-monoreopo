@@ -1,4 +1,4 @@
-const DEFAULT_TIMEOUT_MS = 5000;
+const DEFAULT_TIMEOUT_MS = 15000;
 
 function getEnvVar(locals: any, key: string): string | undefined {
   if (locals?.runtime?.env?.[key]) {

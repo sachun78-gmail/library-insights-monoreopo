@@ -27,14 +27,13 @@ export interface BestsellerParams {
   from_age?: string;
   to_age?: string;
   region?: string;
-  pageSize?: number;
 }
 
 export function useBestsellers(params: BestsellerParams) {
   return useQuery<Book[]>({
     queryKey: ["popular-books", params],
     queryFn: async () => {
-      const data = await api.popularBooks(params);
+      const data = await api.popularBooks({ ...params, pageNo: 1, pageSize: 30 });
       return extractPopularBooks(data);
     },
     staleTime: 60 * 60 * 1000, // 1 hour
