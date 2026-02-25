@@ -88,21 +88,22 @@ export const GET: APIRoute = async ({ request, locals }) => {
     const openai = new OpenAI({ apiKey: openaiKey });
     const userInput = author ? `${title} (${author})` : title;
 
-    const aiResponse = await openai.responses.create({
-      model: 'gpt-4.1-mini',
-      input: [
-        { role: 'developer', content: [{ type: 'input_text', text: SYSTEM_PROMPT }] },
-        { role: 'user', content: [{ type: 'input_text', text: userInput }] },
+    const aiResponse = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userInput },
       ],
       temperature: 0.7,
-      max_output_tokens: 1024,
+      max_tokens: 1024,
+      response_format: { type: 'json_object' },
     });
 
     let insight: any;
     try {
-      insight = JSON.parse(aiResponse.output_text);
+      insight = JSON.parse(aiResponse.choices[0].message.content ?? '{}');
     } catch {
-      insight = { raw: aiResponse.output_text };
+      insight = { raw: aiResponse.choices[0].message.content };
     }
 
     // 4. Supabase에 결과 저장
@@ -128,10 +129,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Book AI insight error:', error);
     return new Response(JSON.stringify({
       error: 'AI 분석 중 오류가 발생했습니다.',
+      detail: error?.message ?? String(error),
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
