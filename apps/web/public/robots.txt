@@ -3,6 +3,7 @@ User-agent: *
 Allow: /
 Disallow: /search
 Disallow: /mypage
+Disallow: /mybookshelf
 
 # Sitemap location
-Sitemap: https://library-insights.pages.dev/sitemap.xml
+Sitemap: https://library-insights.work/sitemap.xml
