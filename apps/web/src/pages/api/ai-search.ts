@@ -181,25 +181,26 @@ export const GET: APIRoute = async ({ request, locals }) => {
     console.log('[AI-Search] Step 1: OpenAI request');
     const openai = new OpenAI({ apiKey: openaiKey });
     const aiResponse = await withTimeout(
-      openai.responses.create({
-        model: 'gpt-4.1-mini',
-        input: [
-          { role: 'developer', content: [{ type: 'input_text', text: SYSTEM_PROMPT }] },
-          { role: 'user', content: [{ type: 'input_text', text: keyword }] },
+      openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: keyword },
         ],
         temperature: 0.2,
-        max_output_tokens: 420,
+        max_tokens: 420,
       }),
       OPENAI_TIMEOUT_MS,
       'OpenAI request timeout'
     );
 
+    const rawContent = aiResponse.choices[0].message.content ?? '[]';
     let aiBooks: Array<{ title: string; author: string }>;
     try {
-      aiBooks = JSON.parse(aiResponse.output_text);
+      aiBooks = JSON.parse(rawContent);
       if (!Array.isArray(aiBooks)) throw new Error('AI output is not array');
     } catch {
-      console.error('[AI-Search] Failed to parse AI output:', aiResponse.output_text);
+      console.error('[AI-Search] Failed to parse AI output:', rawContent);
       return jsonResponse({ error: 'Failed to parse AI response' }, 500);
     }
     const aiSeen = new Set<string>();
