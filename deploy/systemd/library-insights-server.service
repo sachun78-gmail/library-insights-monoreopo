@@ -1,14 +1,14 @@
 [Unit]
-Description=BookReserch Fastify Server
+Description=LibraryInsights Fastify Server
 After=network.target
 
 [Service]
 Type=simple
 User=sachun78
-WorkingDirectory=/opt/bookReserch
+WorkingDirectory=/opt/library-insights
 Environment=NODE_ENV=production
-EnvironmentFile=-/opt/bookReserch/apps/server/.env
-ExecStart=/usr/bin/npm run start -w @bookreserch/server
+EnvironmentFile=-/opt/library-insights/apps/server/.env
+ExecStart=/usr/bin/npm run start -w @library-insights/server
 Restart=always
 RestartSec=3
 StandardOutput=journal

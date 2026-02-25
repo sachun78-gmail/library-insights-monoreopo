@@ -1,5 +1,5 @@
 {
-  "name": "bookreserch-monorepo",
+  "name": "library-insights-monorepo",
   "private": true,
   "version": "1.0.0",
   "workspaces": [
@@ -8,17 +8,17 @@
   ],
   "scripts": {
     "dev": "concurrently -n web,server -c cyan,green \"npm run dev:web\" \"npm run dev:server\"",
-    "dev:web": "npm run dev -w @bookreserch/web",
-    "dev:server": "npm run dev -w @bookreserch/server",
-    "dev:mobile": "npm run dev -w @bookreserch/mobile",
-    "dev:cf": "npm run dev:cf -w @bookreserch/web",
+    "dev:web": "npm run dev -w @library-insights/web",
+    "dev:server": "npm run dev -w @library-insights/server",
+    "dev:mobile": "npm run dev -w @library-insights/mobile",
+    "dev:cf": "npm run dev:cf -w @library-insights/web",
     "build": "npm run build -ws --if-present",
     "check:server": "powershell -ExecutionPolicy Bypass -File scripts/check-server.ps1",
     "check:web": "powershell -ExecutionPolicy Bypass -File scripts/check-web.ps1",
     "check:local": "npm run check:server && npm run check:web",
     "deploy:server": "powershell -ExecutionPolicy Bypass -File scripts/deploy-server.ps1",
-    "preview": "npm run preview -w @bookreserch/web",
-    "preview:cf": "npm run preview:cf -w @bookreserch/web"
+    "preview": "npm run preview -w @library-insights/web",
+    "preview:cf": "npm run preview:cf -w @library-insights/web"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

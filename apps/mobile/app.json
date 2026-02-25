@@ -8,10 +8,10 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bookreserch.libraryinsights"
+      "bundleIdentifier": "work.libraryinsights"
     },
     "android": {
-      "package": "com.bookreserch.libraryinsights",
+      "package": "work.libraryinsights",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"

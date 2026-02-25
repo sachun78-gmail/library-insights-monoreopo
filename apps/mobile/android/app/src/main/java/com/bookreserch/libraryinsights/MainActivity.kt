@@ -1,4 +1,4 @@
-package com.bookreserch.libraryinsights
+package work.libraryinsights
 
 import android.os.Build
 import android.os.Bundle

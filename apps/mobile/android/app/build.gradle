@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.bookreserch.libraryinsights'
+    namespace 'work.libraryinsights'
     defaultConfig {
-        applicationId 'com.bookreserch.libraryinsights'
+        applicationId 'work.libraryinsights'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

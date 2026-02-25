@@ -1,5 +1,4 @@
 import type { APIRoute } from 'astro';
-import OpenAI from 'openai';
 import { getCachedResponse, setCachedResponse } from '../../lib/cache';
 import { fetchLibraryProxy } from '../../lib/library-proxy';
 
@@ -163,11 +162,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
     return jsonResponse({ error: 'keyword is required' }, 400);
   }
 
-  const openaiKey = getEnvVar(locals, 'OPENAI_API_KEY');
-
-  if (!openaiKey) {
-    return jsonResponse({ error: 'OpenAI API key not configured' }, 500);
-  }
   const cacheKey = buildCacheKey(url, keyword, lat, lon);
   const cached = await getCachedResponse(cacheKey);
   if (cached) return cached;
@@ -178,29 +172,20 @@ export const GET: APIRoute = async ({ request, locals }) => {
   };
 
   try {
-    console.log('[AI-Search] Step 1: OpenAI request');
-    const openai = new OpenAI({ apiKey: openaiKey });
-    const aiResponse = await withTimeout(
-      openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: keyword },
-        ],
-        temperature: 0.2,
-        max_tokens: 420,
-      }),
+    console.log('[AI-Search] Step 1: VPS AI recommend request');
+    const aiData = await withTimeout(
+      fetchLibraryProxy(locals, '/v1/ai-recommend', { keyword }),
       OPENAI_TIMEOUT_MS,
-      'OpenAI request timeout'
+      'AI recommend timeout'
     );
 
-    const rawContent = aiResponse.choices[0].message.content ?? '[]';
+    const rawBooks = aiData?.books;
     let aiBooks: Array<{ title: string; author: string }>;
     try {
-      aiBooks = JSON.parse(rawContent);
+      aiBooks = Array.isArray(rawBooks) ? rawBooks : JSON.parse(rawBooks ?? '[]');
       if (!Array.isArray(aiBooks)) throw new Error('AI output is not array');
     } catch {
-      console.error('[AI-Search] Failed to parse AI output:', rawContent);
+      console.error('[AI-Search] Failed to parse AI output:', rawBooks);
       return jsonResponse({ error: 'Failed to parse AI response' }, 500);
     }
     const aiSeen = new Set<string>();

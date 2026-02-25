@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
-import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { getCachedResponse, setCachedResponse } from '../../lib/cache';
+import { fetchLibraryProxy } from '../../lib/library-proxy';
 
 export const prerender = false;
 
@@ -13,21 +13,6 @@ function getEnvVar(locals: any, key: string): string | undefined {
   }
   return (import.meta.env as any)[key];
 }
-
-const SYSTEM_PROMPT = `너는 전 세계 출판 트렌드와 독자들의 니즈를 꿰뚫고 있는 '글로벌 북 큐레이션 전문가'야
-입력으로 받은 도서에 대해서 아래 정보를 줘
-1. 3줄 요약
-2. 핵심 메시지
-3. 이런 사람에게 추천
-4. 난이도 평가
-
-반드시 아래 JSON 형식으로만 응답해. 다른 텍스트는 절대 포함하지 마.
-{
-  "summary": "3줄 요약 텍스트",
-  "keyMessage": "핵심 메시지 텍스트",
-  "recommendFor": "이런 사람에게 추천 텍스트",
-  "difficulty": "난이도 평가 텍스트"
-}`;
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
@@ -75,36 +60,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
   }
 
-  // 3. OpenAI 호출
-  const openaiKey = getEnvVar(locals, 'OPENAI_API_KEY');
-  if (!openaiKey) {
-    return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
+  // 3. VPS 경유 OpenAI 호출
   try {
-    const openai = new OpenAI({ apiKey: openaiKey });
-    const userInput = author ? `${title} (${author})` : title;
-
-    const aiResponse = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userInput },
-      ],
-      temperature: 0.7,
-      max_tokens: 1024,
-      response_format: { type: 'json_object' },
-    });
-
-    let insight: any;
-    try {
-      insight = JSON.parse(aiResponse.choices[0].message.content ?? '{}');
-    } catch {
-      insight = { raw: aiResponse.choices[0].message.content };
-    }
+    const aiData = await fetchLibraryProxy(locals, '/v1/ai-insight', { title, author, isbn13 });
+    const insight = aiData?.insight;
+    if (!insight) throw new Error('No insight in response');
 
     // 4. Supabase에 결과 저장
     if (supabaseUrl && supabaseKey) {

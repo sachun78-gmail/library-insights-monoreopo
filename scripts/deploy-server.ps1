@@ -1,6 +1,6 @@
 param(
   [string]$Remote = "sachun78@163.245.214.222",
-  [string]$RemotePath = "/opt/bookReserch",
+  [string]$RemotePath = "/opt/library-insights",
   [string]$ProcessManager = "none",
   [string]$CopyMode = "auto",
   [switch]$UseSudo
@@ -77,6 +77,7 @@ if ($CopyMode -eq "rsync") {
     "--exclude", ".git",
     "--exclude", "node_modules",
     "--exclude", "apps/web",
+    "--exclude", "apps/mobile",
     "--exclude", ".astro",
     "--exclude", "dist",
     "./",
@@ -87,7 +88,7 @@ if ($CopyMode -eq "rsync") {
     throw "CopyMode is scp, but scp and/or tar are not installed."
   }
   Write-Output "Syncing project with tar+scp (server-focused)..."
-  $archiveName = "bookreserch-deploy-$([Guid]::NewGuid().ToString('N')).tar"
+  $archiveName = "library-insights-deploy-$([Guid]::NewGuid().ToString('N')).tar"
   $archivePath = Join-Path (Get-Location) $archiveName
   try {
     Invoke-Native -Command "tar" -Args @(
@@ -95,6 +96,7 @@ if ($CopyMode -eq "rsync") {
       "--exclude=.git",
       "--exclude=node_modules",
       "--exclude=apps/web",
+      "--exclude=apps/mobile",
       "--exclude=.astro",
       "--exclude=dist",
       "--exclude=$archiveName",
@@ -122,14 +124,14 @@ $buildCmd = @"
 set -e
 cd $RemotePath
 npm install
-npm run build -w @bookreserch/server
+npm run build -w @library-insights/server
 "@
 if ($UseSudo) {
   $buildCmd = @"
 set -e
 cd $RemotePath
 npm install
-npm run build -w @bookreserch/server
+npm run build -w @library-insights/server
 "@
 }
 Invoke-Remote -RemoteHost $Remote -RemoteCommand $buildCmd
@@ -139,21 +141,21 @@ if ($ProcessManager -eq "pm2") {
   $pm2Cmd = @"
 set -e
 cd $RemotePath
-pm2 describe bookreserch-server >/dev/null 2>&1 && pm2 restart bookreserch-server || pm2 start "npm -- run start -w @bookreserch/server" --name bookreserch-server
+pm2 describe library-insights-server >/dev/null 2>&1 && pm2 restart library-insights-server || pm2 start "npm -- run start -w @library-insights/server" --name library-insights-server
 pm2 save
 "@
   if ($UseSudo) {
     $pm2Cmd = @"
 set -e
 cd $RemotePath
-pm2 describe bookreserch-server >/dev/null 2>&1 && pm2 restart bookreserch-server || pm2 start "npm -- run start -w @bookreserch/server" --name bookreserch-server
+pm2 describe library-insights-server >/dev/null 2>&1 && pm2 restart library-insights-server || pm2 start "npm -- run start -w @library-insights/server" --name library-insights-server
 pm2 save
 "@
   }
   Invoke-Remote -RemoteHost $Remote -RemoteCommand $pm2Cmd
 } else {
   Write-Output "Deployment done. Start server manually on remote:"
-  Write-Output "cd $RemotePath && npm run start -w @bookreserch/server"
+  Write-Output "cd $RemotePath && npm run start -w @library-insights/server"
 }
 
 Write-Output "DEPLOY_SERVER_OK"
