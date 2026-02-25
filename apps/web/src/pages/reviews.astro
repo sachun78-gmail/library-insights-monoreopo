@@ -1,0 +1,561 @@
+---
+import Auth from '../components/Auth.astro';
+import Analytics from '../components/Analytics.astro';
+import BookDetailModal from '../components/BookDetailModal.astro';
+---
+<html lang="ko" class=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script is:inline>
+  (function(){
+    var t = localStorage.getItem('theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  })();
+</script>
+<meta name="description" content="LibraryInsights 회원들의 도서 한줄평을 모아 볼 수 있습니다."/>
+<link rel="canonical" href="https://library-insights.pages.dev/reviews"/>
+<meta property="og:site_name" content="LibraryInsights"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="한줄평 - LibraryInsights"/>
+<meta property="og:description" content="LibraryInsights 회원들의 도서 한줄평을 모아 볼 수 있습니다."/>
+<meta property="og:url" content="https://library-insights.pages.dev/reviews"/>
+<meta property="og:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+<meta property="og:locale" content="ko_KR"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="한줄평 - LibraryInsights"/>
+<meta name="twitter:description" content="LibraryInsights 회원들의 도서 한줄평을 모아 볼 수 있습니다."/>
+<meta name="twitter:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
+<title>한줄평 - LibraryInsights</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<Analytics />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="/fonts.css" rel="stylesheet"/>
+<style>
+    body {
+        font-family: 'YUniverse', sans-serif;
+    }
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-charcoal dark:text-white transition-colors duration-300">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="border-b border-solid border-charcoal/10 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center justify-between max-w-[1200px] mx-auto w-full px-4 py-2 sm:py-4">
+<a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0">
+<span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
+<span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
+</a>
+<div class="flex items-center justify-end gap-2 sm:gap-8 ml-auto">
+<nav class="hidden md:flex items-center gap-3 sm:gap-9">
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/">Home</a>
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+<a class="text-primary text-xs sm:text-sm font-bold leading-normal" href="/reviews">한줄평</a>
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+</nav>
+<button id="theme-toggle" class="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-label="다크모드 전환">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl dark:hidden">dark_mode</span>
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl hidden dark:inline">light_mode</span>
+</button>
+<button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
+</button>
+<!-- Sign In Button (shown when logged out) -->
+<button id="signin-btn" class="hidden md:flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
+<span class="truncate">Sign In</span>
+</button>
+<!-- Profile Button (shown when logged in) -->
+<div id="profile-container" class="hidden relative md:block md:hidden">
+<button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+<img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+<span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
+<span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
+</button>
+<!-- Dropdown Menu -->
+<div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
+<!-- Profile Header -->
+<div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
+<img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
+<p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
+</div>
+<!-- Menu Items -->
+<div class="py-2">
+<a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">person</span>
+마이 페이지
+</a>
+<button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">logout</span>
+로그아웃
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-[70] bg-black/60">
+  <div class="h-full w-[78%] max-w-xs bg-white dark:bg-charcoal-900 shadow-2xl">
+    <div class="flex items-center justify-end px-4 py-3">
+      <button id="mobile-menu-close" class="w-8 h-8 rounded-full border border-charcoal/10 dark:border-white/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-lg">close</span>
+      </button>
+    </div>
+    <div class="px-4 pb-4 border-b border-charcoal/10 dark:border-white/10">
+      <div class="flex items-center justify-center">
+        <div class="w-14 h-14 rounded-full bg-primary/90 text-charcoal flex items-center justify-center">
+          <span class="material-symbols-outlined text-2xl">person</span>
+        </div>
+      </div>
+      <div id="mobile-auth-logged-out" class="mt-4 flex items-center justify-between">
+        <button id="mobile-signup-btn" class="px-4 py-2 rounded-full bg-charcoal text-white text-xs font-bold">회원가입</button>
+        <button id="mobile-signin-btn" class="text-xs font-bold text-charcoal dark:text-white">로그인 &gt;</button>
+      </div>
+      <div id="mobile-auth-logged-in" class="hidden mt-4">
+        <div class="flex items-center gap-3">
+          <img id="mobile-profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border border-primary" />
+          <div class="min-w-0">
+            <p id="mobile-profile-name" class="text-sm font-semibold text-charcoal dark:text-white truncate"></p>
+            <a class="text-xs text-primary hover:underline" href="/mypage">마이페이지</a>
+          </div>
+        </div>
+        <button id="mobile-signout-btn" class="mt-3 w-full rounded-lg border border-charcoal/20 dark:border-white/20 py-2 text-xs font-bold text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5">로그아웃</button>
+      </div>
+    </div>
+    <div class="px-4 py-4 space-y-2">
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/">Home</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+      <a class="block text-sm font-bold text-primary transition-colors" href="/reviews">한줄평</a>
+      <a class="block text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+      <button id="mobile-theme-toggle" class="flex items-center gap-2 w-full text-sm font-medium text-charcoal dark:text-white hover:text-primary transition-colors pt-2 border-t border-charcoal/10 dark:border-white/10 mt-2">
+        <span class="material-symbols-outlined text-lg dark:hidden">dark_mode</span>
+        <span class="material-symbols-outlined text-lg hidden dark:inline">light_mode</span>
+        <span class="dark:hidden">다크모드</span>
+        <span class="hidden dark:inline">라이트모드</span>
+      </button>
+    </div>
+  </div>
+</div>
+</header>
+
+<main class="flex-1">
+<!-- Page Header -->
+<div class="w-full flex justify-center py-10 sm:py-16 relative overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1920&q=80');"></div>
+<div class="absolute inset-0 bg-gradient-to-r from-charcoal/90 via-charcoal/80 to-charcoal/70 dark:from-charcoal/95 dark:via-charcoal/90 dark:to-charcoal/85"></div>
+<div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10 relative z-10">
+  <div class="flex items-center gap-2 mb-3">
+    <a href="/" class="text-white/70 hover:text-primary transition-colors text-sm flex items-center gap-1">
+      <span class="material-symbols-outlined text-sm">home</span>홈
+    </a>
+    <span class="text-white/50">/</span>
+    <span class="text-white text-sm">한줄평</span>
+  </div>
+  <h1 class="text-white text-3xl sm:text-5xl font-bold leading-tight tracking-[-0.015em] font-display drop-shadow-lg">독자 한줄평</h1>
+  <p class="text-white/80 text-sm sm:text-lg mt-3 max-w-2xl">LibraryInsights 회원들의 솔직한 도서 한줄평을 만나보세요.</p>
+</div>
+</div>
+
+<!-- Content Section -->
+<div class="w-full flex justify-center py-6 sm:py-10">
+<div class="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 lg:px-10">
+
+  <!-- Sort Tabs -->
+  <div class="flex border-b border-charcoal/10 dark:border-white/10 mb-6">
+    <button id="sort-recent" class="sort-tab flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary transition-colors">
+      <span class="material-symbols-outlined text-lg">schedule</span>최신순
+    </button>
+    <button id="sort-rating" class="sort-tab flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-medium border-b-2 border-transparent text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white transition-colors">
+      <span class="material-symbols-outlined text-lg">star</span>별점순
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div id="reviews-loading" class="flex flex-col items-center justify-center py-20 gap-3">
+    <div class="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent"></div>
+    <p class="text-sm text-charcoal/50 dark:text-white/50">한줄평을 불러오는 중...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div id="reviews-empty" class="hidden flex flex-col items-center justify-center py-20 gap-3">
+    <span class="material-symbols-outlined text-5xl text-charcoal/20 dark:text-white/20">chat_bubble_outline</span>
+    <p class="text-charcoal/50 dark:text-white/50">아직 등록된 한줄평이 없습니다.</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="reviews-error" class="hidden flex flex-col items-center justify-center py-20 gap-3">
+    <span class="material-symbols-outlined text-5xl text-red-400">error_outline</span>
+    <p class="text-charcoal/60 dark:text-white/60">한줄평을 불러오는 중 오류가 발생했습니다.</p>
+  </div>
+
+  <!-- Reviews Grid -->
+  <div id="reviews-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+  </div>
+
+  <!-- Pagination -->
+  <div id="pagination" class="hidden flex items-center justify-center gap-2">
+    <button id="prev-page" class="px-4 py-2 rounded-lg border border-charcoal/20 dark:border-white/20 text-sm font-medium text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+      <span class="material-symbols-outlined text-sm align-middle">chevron_left</span>이전
+    </button>
+    <span id="page-info" class="text-sm text-charcoal/60 dark:text-white/60"></span>
+    <button id="next-page" class="px-4 py-2 rounded-lg border border-charcoal/20 dark:border-white/20 text-sm font-medium text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+      다음<span class="material-symbols-outlined text-sm align-middle">chevron_right</span>
+    </button>
+  </div>
+
+</div>
+</div>
+</main>
+
+<footer class="bg-[#1a1a1a] text-white/70">
+<div class="border-b border-white/10">
+<div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+<nav class="flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm">
+<button id="terms-btn" class="hover:text-white transition-colors">이용약관</button>
+<button id="privacy-btn" class="hover:text-white transition-colors">개인정보처리방침</button>
+<button id="sitemap-btn" class="hover:text-white transition-colors">사이트맵</button>
+</nav>
+</div>
+</div>
+<div class="max-w-[1200px] mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
+<div class="w-6 h-6 bg-white rounded-full"></div>
+</div>
+<div class="flex flex-col text-xs sm:text-sm">
+<span class="text-white font-bold text-base sm:text-lg">LibraryInsights</span>
+<span class="text-white/50">도서관 정보 서비스</span>
+</div>
+</div>
+<p class="text-xs sm:text-sm text-white/50">
+© 2024 LibraryInsights. Data provided by 도서관 정보나루. All rights reserved.
+</p>
+</div>
+</footer>
+</div>
+</div>
+
+<BookDetailModal />
+
+<!-- Terms Modal -->
+<div id="terms-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">LibraryInsights 이용약관</h2>
+      <button id="close-terms-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+        <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+      <p class="mb-3">본 약관은 LibraryInsights(이하 "서비스")의 이용 조건과 절차, 운영자와 이용자의 권리·의무를 규정합니다.</p>
+      <p class="mt-6 text-xs text-charcoal/60 dark:text-white/60">시행일: 2026년 2월 7일</p>
+    </div>
+  </div>
+</div>
+
+<!-- Sitemap Modal -->
+<div id="sitemap-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-lg w-full relative">
+    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">사이트맵</h2>
+      <button id="close-sitemap-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+        <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6">
+      <nav class="space-y-4">
+        <a href="/" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors"><span class="material-symbols-outlined">home</span>홈</a>
+        <a href="/bestsellers" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors"><span class="material-symbols-outlined">star</span>인기 도서</a>
+        <a href="/reviews" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors"><span class="material-symbols-outlined">rate_review</span>한줄평</a>
+        <a href="/search" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors"><span class="material-symbols-outlined">search</span>검색</a>
+        <a href="/mybookshelf" class="flex items-center gap-2 text-charcoal dark:text-white font-bold hover:text-primary transition-colors"><span class="material-symbols-outlined">collections_bookmark</span>내 서재</a>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<!-- Privacy Modal -->
+<div id="privacy-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-start pt-4 sm:pt-10 pb-4 z-[60] px-2 sm:px-4">
+  <div class="bg-white dark:bg-charcoal-800 rounded-lg shadow-xl max-w-3xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h2 class="text-lg sm:text-xl font-bold text-charcoal dark:text-white">개인정보처리방침</h2>
+      <button id="close-privacy-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1">
+        <span class="material-symbols-outlined text-xl sm:text-2xl">close</span>
+      </button>
+    </div>
+    <div class="p-4 sm:p-6 overflow-y-auto text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">
+      <p class="mb-3">LibraryInsights는 개인정보 보호법 등 관련 법령을 준수하며 이용자의 개인정보를 안전하게 처리합니다.</p>
+      <p class="mt-6 text-xs text-charcoal/60 dark:text-white/60">시행일: 2026년 2월 7일</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { getUserId } from '../scripts/bookmarks';
+  window.__getUserId = getUserId;
+</script>
+<script>
+  import '../scripts/theme';
+</script>
+<script>
+  import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
+  initBookModal();
+  (window as any).__openBookModal = sharedOpenModal;
+</script>
+<Auth />
+
+<script>
+  // ========================================
+  // Reviews Board
+  // ========================================
+
+  const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='120' viewBox='0 0 80 120'%3E%3Crect fill='%23e2e8f0' width='80' height='120'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='28' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3C/svg%3E";
+  const LIMIT = 20;
+  let currentPage = 1;
+  let totalPages = 1;
+  let currentSort: 'recent' | 'rating' = 'recent';
+  let allReviews: any[] = [];
+
+  function makeDisplayName(userId: string): string {
+    return '독자_' + userId.replace(/-/g, '').slice(0, 8).toUpperCase();
+  }
+
+  function starsHtml(rating: number): string {
+    return Array.from({ length: 5 }, (_, i) =>
+      `<span class="${i < rating ? 'text-yellow-400' : 'text-charcoal/20 dark:text-white/20'}">${i < rating ? '★' : '☆'}</span>`
+    ).join('');
+  }
+
+  function renderReviews(reviews: any[]): void {
+    const grid = document.getElementById('reviews-grid');
+    if (!grid) return;
+
+    grid.innerHTML = reviews.map(r => {
+      const displayName = r.display_name || makeDisplayName(r.user_id);
+      const dateStr = new Date(r.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const hasImage = r.book_image_url && r.book_image_url.trim() !== '';
+      const imgSrc = hasImage ? r.book_image_url : PLACEHOLDER;
+
+      const bookData = JSON.stringify({
+        isbn13: r.isbn13,
+        bookname: r.bookname,
+        authors: r.authors,
+        publisher: r.publisher,
+        bookImageURL: r.book_image_url,
+      }).replace(/"/g, '&quot;');
+
+      return `
+        <div class="bg-white dark:bg-charcoal-800 rounded-xl border border-charcoal/10 dark:border-white/10 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+          <!-- Book Info (clickable) -->
+          <button class="open-book-btn flex gap-3 p-3 sm:p-4 text-left hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors" data-book="${bookData}">
+            <img
+              src="${imgSrc}"
+              alt="${r.bookname.replace(/"/g, '&quot;')}"
+              class="w-16 h-24 object-cover rounded-lg flex-shrink-0"
+              onerror="this.src='${PLACEHOLDER}'"
+            />
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-charcoal dark:text-white text-sm line-clamp-2 mb-1">${r.bookname.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
+              <p class="text-xs text-charcoal/60 dark:text-white/60 line-clamp-1">${(r.authors || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+              <p class="text-xs text-charcoal/40 dark:text-white/40 line-clamp-1 mt-0.5">${(r.publisher || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+            </div>
+          </button>
+          <!-- Review Body -->
+          <div class="px-3 sm:px-4 pb-3 sm:pb-4 flex-1 flex flex-col">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-yellow-400 text-sm leading-none">${starsHtml(r.rating)}</span>
+              <span class="text-[10px] text-charcoal/40 dark:text-white/40">${dateStr}</span>
+            </div>
+            <p class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed flex-1">${r.review_text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+            <p class="text-[10px] text-charcoal/40 dark:text-white/40 mt-2">${displayName}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach open-modal handlers
+    grid.querySelectorAll('.open-book-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        try {
+          const bookStr = (btn as HTMLElement).dataset.book || '{}';
+          const book = JSON.parse(bookStr.replace(/&quot;/g, '"'));
+          const openModal = (window as any).__openBookModal;
+          if (openModal) openModal(book);
+        } catch (e) {
+          console.error('Failed to open book modal', e);
+        }
+      });
+    });
+  }
+
+  function getSortedReviews(): any[] {
+    const sorted = [...allReviews];
+    if (currentSort === 'rating') {
+      sorted.sort((a, b) => b.rating - a.rating || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else {
+      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return sorted;
+  }
+
+  function getPageReviews(): any[] {
+    const sorted = getSortedReviews();
+    const start = (currentPage - 1) * LIMIT;
+    return sorted.slice(start, start + LIMIT);
+  }
+
+  function updatePagination(): void {
+    totalPages = Math.max(1, Math.ceil(allReviews.length / LIMIT));
+    const pagination = document.getElementById('pagination');
+    const pageInfo = document.getElementById('page-info');
+    const prevBtn = document.getElementById('prev-page') as HTMLButtonElement | null;
+    const nextBtn = document.getElementById('next-page') as HTMLButtonElement | null;
+
+    if (totalPages <= 1) {
+      pagination?.classList.add('hidden');
+      return;
+    }
+
+    pagination?.classList.remove('hidden');
+    if (pageInfo) pageInfo.textContent = `${currentPage} / ${totalPages}`;
+    if (prevBtn) prevBtn.disabled = currentPage <= 1;
+    if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+  }
+
+  function showReviews(): void {
+    const loading = document.getElementById('reviews-loading');
+    const empty = document.getElementById('reviews-empty');
+    const error = document.getElementById('reviews-error');
+    const grid = document.getElementById('reviews-grid');
+
+    loading?.classList.add('hidden');
+    error?.classList.add('hidden');
+
+    const pageReviews = getPageReviews();
+    if (pageReviews.length === 0) {
+      empty?.classList.remove('hidden');
+      grid?.classList.add('hidden');
+      document.getElementById('pagination')?.classList.add('hidden');
+    } else {
+      empty?.classList.add('hidden');
+      grid?.classList.remove('hidden');
+      renderReviews(pageReviews);
+      updatePagination();
+    }
+  }
+
+  async function fetchReviews(): Promise<void> {
+    const loading = document.getElementById('reviews-loading');
+    const empty = document.getElementById('reviews-empty');
+    const error = document.getElementById('reviews-error');
+    const grid = document.getElementById('reviews-grid');
+
+    loading?.classList.remove('hidden');
+    empty?.classList.add('hidden');
+    error?.classList.add('hidden');
+    grid?.classList.add('hidden');
+
+    try {
+      // Fetch all reviews (up to 1000)
+      const res = await fetch(`/api/book-reviews?page=1&limit=1000`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      allReviews = data.reviews || [];
+      currentPage = 1;
+      showReviews();
+    } catch (err) {
+      console.error('Reviews fetch error:', err);
+      loading?.classList.add('hidden');
+      error?.classList.remove('hidden');
+    }
+  }
+
+  // Sort tabs
+  document.getElementById('sort-recent')?.addEventListener('click', () => {
+    currentSort = 'recent';
+    currentPage = 1;
+    document.getElementById('sort-recent')?.classList.add('border-primary', 'text-primary', 'font-bold');
+    document.getElementById('sort-recent')?.classList.remove('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+    document.getElementById('sort-rating')?.classList.remove('border-primary', 'text-primary', 'font-bold');
+    document.getElementById('sort-rating')?.classList.add('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+    showReviews();
+  });
+
+  document.getElementById('sort-rating')?.addEventListener('click', () => {
+    currentSort = 'rating';
+    currentPage = 1;
+    document.getElementById('sort-rating')?.classList.add('border-primary', 'text-primary', 'font-bold');
+    document.getElementById('sort-rating')?.classList.remove('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+    document.getElementById('sort-recent')?.classList.remove('border-primary', 'text-primary', 'font-bold');
+    document.getElementById('sort-recent')?.classList.add('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+    showReviews();
+  });
+
+  // Pagination
+  document.getElementById('prev-page')?.addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; showReviews(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+  document.getElementById('next-page')?.addEventListener('click', () => {
+    if (currentPage < totalPages) { currentPage++; showReviews(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+
+  // Footer modals
+  const termsBtn = document.getElementById('terms-btn');
+  const termsModal = document.getElementById('terms-modal');
+  const closeTermsModal = document.getElementById('close-terms-modal');
+  const privacyBtn = document.getElementById('privacy-btn');
+  const privacyModal = document.getElementById('privacy-modal');
+  const closePrivacyModal = document.getElementById('close-privacy-modal');
+  const sitemapBtn = document.getElementById('sitemap-btn');
+  const sitemapModal = document.getElementById('sitemap-modal');
+  const closeSitemapModal = document.getElementById('close-sitemap-modal');
+
+  termsBtn?.addEventListener('click', () => termsModal?.classList.remove('hidden'));
+  closeTermsModal?.addEventListener('click', () => termsModal?.classList.add('hidden'));
+  termsModal?.addEventListener('click', (e) => { if (e.target === termsModal) termsModal.classList.add('hidden'); });
+
+  privacyBtn?.addEventListener('click', () => privacyModal?.classList.remove('hidden'));
+  closePrivacyModal?.addEventListener('click', () => privacyModal?.classList.add('hidden'));
+  privacyModal?.addEventListener('click', (e) => { if (e.target === privacyModal) privacyModal.classList.add('hidden'); });
+
+  sitemapBtn?.addEventListener('click', () => sitemapModal?.classList.remove('hidden'));
+  closeSitemapModal?.addEventListener('click', () => sitemapModal?.classList.add('hidden'));
+  sitemapModal?.addEventListener('click', (e) => { if (e.target === sitemapModal) sitemapModal.classList.add('hidden'); });
+
+  // Mobile Menu
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileMenuClose = document.getElementById('mobile-menu-close');
+  const mobileSigninBtn = document.getElementById('mobile-signin-btn');
+
+  mobileMenuBtn?.addEventListener('click', () => {
+    const isOpen = mobileMenu && !mobileMenu.classList.contains('hidden');
+    mobileMenu?.classList.toggle('hidden');
+    mobileMenuBtn?.setAttribute('aria-expanded', String(!isOpen));
+  });
+  mobileMenuClose?.addEventListener('click', () => {
+    mobileMenu?.classList.add('hidden');
+    mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+  });
+  mobileMenu?.addEventListener('click', (e) => {
+    if (e.target === mobileMenu) {
+      mobileMenu.classList.add('hidden');
+      mobileMenuBtn?.setAttribute('aria-expanded', 'false');
+    }
+  });
+  mobileSigninBtn?.addEventListener('click', () => {
+    const signinBtn = document.getElementById('signin-btn');
+    signinBtn?.click();
+  });
+
+  // Initial load
+  fetchReviews();
+</script>
+</body></html>

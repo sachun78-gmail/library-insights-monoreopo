@@ -302,6 +302,297 @@ async function fetchBookDetails(isbn: string, title: string): Promise<void> {
 }
 
 // ========================================
+// User Reviews Section
+// ========================================
+
+let _currentUserRating = 0;
+
+function makeDisplayName(userId: string): string {
+  return '독자_' + userId.replace(/-/g, '').slice(0, 8).toUpperCase();
+}
+
+function getLoginDisplayName(): string {
+  // Auth 컴포넌트가 이미 DOM에 설정해 둔 이름을 읽음
+  return document.getElementById('profile-name')?.textContent?.trim() || '';
+}
+
+function starsHtml(rating: number, filled = true): string {
+  return Array.from({ length: 5 }, (_, i) =>
+    `<span class="${i < rating ? 'text-yellow-400' : 'text-charcoal/20 dark:text-white/20'}">${i < rating && filled ? '★' : '☆'}</span>`
+  ).join('');
+}
+
+const REVIEWS_PREVIEW = 3; // 모달에서 기본 표시 개수
+let _allReviews: any[] = [];
+
+function resetUserReviewsState(): void {
+  _currentUserRating = 0;
+  _allReviews = [];
+  getEl('reviews-summary')?.classList.add('hidden');
+  getEl('my-review-form')?.classList.add('hidden');
+  getEl('my-review-login-prompt')?.classList.add('hidden');
+  getEl('user-reviews-loading')?.classList.add('hidden');
+  getEl('reviews-empty')?.classList.add('hidden');
+  getEl('reviews-show-more')?.classList.add('hidden');
+  getEl('reviews-all-link')?.classList.add('hidden');
+  const reviewsList = getEl('reviews-list');
+  if (reviewsList) reviewsList.innerHTML = '';
+  const textarea = getEl('review-textarea') as HTMLTextAreaElement | null;
+  if (textarea) textarea.value = '';
+  const charCount = getEl('review-char-count');
+  if (charCount) charCount.textContent = '0/100';
+  const deleteBtn = getEl('review-delete-btn');
+  deleteBtn?.classList.add('hidden');
+  const submitBtn = getEl('review-submit-btn');
+  if (submitBtn) submitBtn.textContent = '등록';
+  renderStarSelector(0);
+  const errEl = getEl('review-submit-error');
+  errEl?.classList.add('hidden');
+}
+
+function renderStarSelector(rating: number): void {
+  _currentUserRating = rating;
+  const buttons = document.querySelectorAll('#star-selector .star-btn');
+  buttons.forEach((btn, i) => {
+    const el = btn as HTMLElement;
+    if (i < rating) {
+      el.classList.add('text-yellow-400');
+      el.classList.remove('text-charcoal/20', 'dark:text-white/20');
+    } else {
+      el.classList.remove('text-yellow-400');
+      el.classList.add('text-charcoal/20', 'dark:text-white/20');
+    }
+  });
+}
+
+function buildReviewCard(r: any, currentUserId: string | null): string {
+  const isOwn = r.user_id === currentUserId;
+  const displayName = r.display_name || makeDisplayName(r.user_id);
+  const dateStr = new Date(r.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return `
+    <div class="p-3 rounded-lg ${isOwn ? 'bg-primary/5 border border-primary/20 dark:border-primary/30' : 'bg-charcoal/5 dark:bg-white/5 border border-charcoal/5 dark:border-white/5'}">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-1.5">
+          ${isOwn ? '<span class="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded font-bold">나</span>' : ''}
+          <span class="text-xs font-bold text-charcoal/70 dark:text-white/70">${displayName}</span>
+          <span class="text-yellow-400 text-xs leading-none">${starsHtml(r.rating)}</span>
+        </div>
+        <span class="text-[10px] text-charcoal/40 dark:text-white/40">${dateStr}</span>
+      </div>
+      <p class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed">${r.review_text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+    </div>
+  `;
+}
+
+function renderReviewList(reviews: any[], expanded: boolean): void {
+  const listEl = getEl('reviews-list');
+  const showMoreBtn = getEl('reviews-show-more');
+  const showMoreText = getEl('reviews-show-more-text');
+  const allLinkEl = getEl('reviews-all-link');
+  if (!listEl) return;
+
+  const userId = getUserId();
+  const visible = expanded ? reviews : reviews.slice(0, REVIEWS_PREVIEW);
+  listEl.innerHTML = visible.map(r => buildReviewCard(r, userId)).join('');
+
+  const hidden = reviews.length - REVIEWS_PREVIEW;
+  if (!expanded && hidden > 0) {
+    if (showMoreText) showMoreText.textContent = `${hidden}개 더 보기`;
+    showMoreBtn?.classList.remove('hidden');
+    allLinkEl?.classList.add('hidden');
+  } else {
+    showMoreBtn?.classList.add('hidden');
+    // 전체 리뷰가 많으면 게시판 링크 노출
+    if (reviews.length >= REVIEWS_PREVIEW) {
+      allLinkEl?.classList.remove('hidden');
+    }
+  }
+}
+
+async function fetchBookReviews(isbn13: string): Promise<void> {
+  const loadingEl = getEl('user-reviews-loading');
+  const emptyEl = getEl('reviews-empty');
+  const summaryEl = getEl('reviews-summary');
+
+  loadingEl?.classList.remove('hidden');
+  emptyEl?.classList.add('hidden');
+  summaryEl?.classList.add('hidden');
+  getEl('reviews-show-more')?.classList.add('hidden');
+  getEl('reviews-all-link')?.classList.add('hidden');
+  const listEl = getEl('reviews-list');
+  if (listEl) listEl.innerHTML = '';
+
+  try {
+    const res = await fetch(`/api/book-reviews?isbn13=${encodeURIComponent(isbn13)}`);
+    const data = await res.json();
+    loadingEl?.classList.add('hidden');
+
+    _allReviews = data.reviews || [];
+
+    // 내 리뷰 폼 pre-fill
+    const userId = getUserId();
+    if (userId) {
+      const myReview = _allReviews.find(r => r.user_id === userId);
+      const textarea = getEl('review-textarea') as HTMLTextAreaElement | null;
+      const deleteBtn = getEl('review-delete-btn');
+      const submitBtn = getEl('review-submit-btn');
+      if (myReview) {
+        renderStarSelector(myReview.rating);
+        if (textarea) textarea.value = myReview.review_text;
+        const charCount = getEl('review-char-count');
+        if (charCount) charCount.textContent = `${myReview.review_text.length}/100`;
+        deleteBtn?.classList.remove('hidden');
+        if (submitBtn) submitBtn.textContent = '수정';
+      } else {
+        deleteBtn?.classList.add('hidden');
+        if (submitBtn) submitBtn.textContent = '등록';
+      }
+    }
+
+    // 평균 별점 요약
+    if (_allReviews.length > 0) {
+      const avg = _allReviews.reduce((sum, r) => sum + r.rating, 0) / _allReviews.length;
+      const avgStarsEl = getEl('reviews-avg-stars');
+      const avgScoreEl = getEl('reviews-avg-score');
+      const countTextEl = getEl('reviews-count-text');
+      if (avgStarsEl) avgStarsEl.innerHTML = starsHtml(Math.round(avg));
+      if (avgScoreEl) avgScoreEl.textContent = avg.toFixed(1);
+      if (countTextEl) countTextEl.textContent = `(${_allReviews.length}개의 한줄평)`;
+      summaryEl?.classList.remove('hidden');
+    }
+
+    if (_allReviews.length === 0) {
+      emptyEl?.classList.remove('hidden');
+    } else {
+      renderReviewList(_allReviews, false);
+    }
+  } catch (err) {
+    console.error('Review fetch error:', err);
+    loadingEl?.classList.add('hidden');
+    emptyEl?.classList.remove('hidden');
+  }
+}
+
+async function submitReview(): Promise<void> {
+  const userId = getUserId();
+  if (!userId || !_currentBook) return;
+
+  const textarea = getEl('review-textarea') as HTMLTextAreaElement | null;
+  const reviewText = textarea?.value.trim() || '';
+  const errEl = getEl('review-submit-error');
+
+  if (_currentUserRating === 0) {
+    if (errEl) { errEl.textContent = '별점을 선택해주세요.'; errEl.classList.remove('hidden'); }
+    return;
+  }
+  if (reviewText.length === 0) {
+    if (errEl) { errEl.textContent = '한줄평을 입력해주세요.'; errEl.classList.remove('hidden'); }
+    return;
+  }
+  errEl?.classList.add('hidden');
+
+  const submitBtn = getEl('review-submit-btn') as HTMLButtonElement | null;
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
+
+  try {
+    const res = await fetch('/api/book-reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        isbn13: _currentBook.isbn13 || '',
+        bookname: _currentBook.bookname || '',
+        authors: _currentBook.authors || '',
+        publisher: _currentBook.publisher || '',
+        book_image_url: _currentBook.bookImageURL || '',
+        display_name: getLoginDisplayName(),
+        rating: _currentUserRating,
+        review_text: reviewText,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    // Reload reviews
+    await fetchBookReviews(_currentBook.isbn13 || '');
+  } catch (err: any) {
+    console.error('Review submit error:', err);
+    if (errEl) { errEl.textContent = '저장 중 오류가 발생했습니다.'; errEl.classList.remove('hidden'); }
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; }
+  }
+}
+
+async function deleteReview(): Promise<void> {
+  const userId = getUserId();
+  if (!userId || !_currentBook) return;
+
+  const deleteBtn = getEl('review-delete-btn') as HTMLButtonElement | null;
+  if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = '삭제 중...'; }
+
+  try {
+    const res = await fetch('/api/book-reviews', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, isbn13: _currentBook.isbn13 || '' }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    // Reset form and reload
+    const textarea = getEl('review-textarea') as HTMLTextAreaElement | null;
+    if (textarea) textarea.value = '';
+    const charCount = getEl('review-char-count');
+    if (charCount) charCount.textContent = '0/100';
+    renderStarSelector(0);
+    deleteBtn?.classList.add('hidden');
+    const submitBtn = getEl('review-submit-btn');
+    if (submitBtn) submitBtn.textContent = '등록';
+    await fetchBookReviews(_currentBook.isbn13 || '');
+  } catch (err: any) {
+    console.error('Review delete error:', err);
+  } finally {
+    if (deleteBtn) { deleteBtn.disabled = false; }
+  }
+}
+
+function initReviewSection(): void {
+  // Star selector buttons
+  document.querySelectorAll('#star-selector .star-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const star = parseInt((btn as HTMLElement).dataset.star || '0', 10);
+      renderStarSelector(star);
+    });
+  });
+
+  // Textarea char count
+  const textarea = getEl('review-textarea') as HTMLTextAreaElement | null;
+  textarea?.addEventListener('input', () => {
+    const charCount = getEl('review-char-count');
+    if (charCount) charCount.textContent = `${textarea.value.length}/100`;
+  });
+
+  // Submit button
+  getEl('review-submit-btn')?.addEventListener('click', () => {
+    submitReview();
+  });
+
+  // Delete button
+  getEl('review-delete-btn')?.addEventListener('click', () => {
+    deleteReview();
+  });
+
+  // 더보기 버튼 — 전체 펼치기
+  getEl('reviews-show-more')?.addEventListener('click', () => {
+    renderReviewList(_allReviews, true);
+  });
+
+  // Login button in review section
+  getEl('review-login-btn')?.addEventListener('click', () => {
+    const signinBtn = document.getElementById('signin-btn');
+    signinBtn?.click();
+  });
+}
+
+// ========================================
 // GPS Utilities
 // ========================================
 
@@ -811,6 +1102,9 @@ export function initBookModal(callbacks?: BookModalCallbacks): void {
     switchToRegionMode();
   });
 
+  // Review section
+  initReviewSection();
+
   // AI Insight button
   getEl('ai-insight-btn')?.addEventListener('click', () => {
     handleAiInsightClick();
@@ -870,11 +1164,27 @@ export function openBookModal(book: any): void {
 
   resetAiInsightState();
   resetReviewState();
+  resetUserReviewsState();
   resetLibraryState();
   _callbacks.onOpen?.(book);
 
+  // Show login prompt or review form based on auth state
+  const userId = getUserId();
+  if (userId) {
+    getEl('my-review-form')?.classList.remove('hidden');
+    getEl('my-review-login-prompt')?.classList.add('hidden');
+  } else {
+    getEl('my-review-form')?.classList.add('hidden');
+    getEl('my-review-login-prompt')?.classList.remove('hidden');
+  }
+
   modal?.classList.remove('hidden');
   fetchBookDetails(book.isbn13 || '', book.bookname || '');
+
+  // Fetch user reviews for this book
+  if (book.isbn13) {
+    fetchBookReviews(book.isbn13);
+  }
 
   // Auto-start library search with GPS/region fallback
   startLibrarySearch();
@@ -884,6 +1194,7 @@ export function closeBookModal(): void {
   getEl('book-modal')?.classList.add('hidden');
   resetAiInsightState();
   resetReviewState();
+  resetUserReviewsState();
   resetLibraryState();
   _currentBook = null;
   _callbacks.onClose?.();

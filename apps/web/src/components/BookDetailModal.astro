@@ -182,6 +182,91 @@ import { regions as regionsData } from '../data/regions.js';
       </div>
     </div>
 
+    <!-- 한줄평 섹션 -->
+    <div id="user-reviews-section" class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-3 sm:mb-4">
+        <span class="material-symbols-outlined text-primary text-lg sm:text-xl">rate_review</span>
+        독자 한줄평
+      </h3>
+
+      <!-- 별점 평균 요약 -->
+      <div id="reviews-summary" class="hidden mb-3 flex items-center gap-2">
+        <span id="reviews-avg-stars" class="text-yellow-400 text-base sm:text-lg leading-none"></span>
+        <span id="reviews-avg-score" class="text-sm font-bold text-charcoal dark:text-white"></span>
+        <span id="reviews-count-text" class="text-xs text-charcoal/50 dark:text-white/50"></span>
+      </div>
+
+      <!-- 내 한줄평 작성/수정 폼 (로그인 시) -->
+      <div id="my-review-form" class="hidden mb-4 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-xl border border-charcoal/10 dark:border-white/10">
+        <p class="text-xs sm:text-sm font-bold text-charcoal dark:text-white mb-2">내 한줄평</p>
+        <!-- 별점 선택 -->
+        <div id="star-selector" class="flex gap-1 mb-3" role="group" aria-label="별점 선택">
+          <button type="button" data-star="1" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="2" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="3" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="4" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="5" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+        </div>
+        <!-- 한줄평 텍스트 -->
+        <div class="relative mb-2">
+          <textarea
+            id="review-textarea"
+            maxlength="100"
+            rows="2"
+            placeholder="이 책에 대한 한줄평을 남겨보세요 (최대 100자)"
+            class="w-full px-3 py-2 text-xs sm:text-sm text-charcoal dark:text-white bg-white dark:bg-charcoal-700 border border-charcoal/20 dark:border-white/20 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary placeholder-charcoal/30 dark:placeholder-white/30"
+          ></textarea>
+          <span id="review-char-count" class="absolute bottom-2 right-3 text-[10px] text-charcoal/30 dark:text-white/30">0/100</span>
+        </div>
+        <!-- 등록/삭제 버튼 -->
+        <div class="flex gap-2">
+          <button id="review-submit-btn" class="flex-1 py-2 bg-primary text-charcoal text-xs sm:text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            등록
+          </button>
+          <button id="review-delete-btn" class="hidden px-4 py-2 bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-xs sm:text-sm font-bold rounded-lg hover:bg-red-500/20 dark:hover:bg-red-500/30 transition-colors border border-red-300/30 dark:border-red-500/30">
+            삭제
+          </button>
+        </div>
+        <p id="review-submit-error" class="hidden mt-2 text-xs text-red-500"></p>
+      </div>
+
+      <!-- 비로그인 안내 -->
+      <div id="my-review-login-prompt" class="hidden mb-4 flex items-center gap-2 p-3 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
+        <span class="material-symbols-outlined text-charcoal/30 dark:text-white/30 text-lg">lock</span>
+        <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">로그인 후 한줄평을 남겨보세요.</p>
+        <button id="review-login-btn" class="ml-auto px-3 py-1.5 bg-primary text-charcoal text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors flex-shrink-0">
+          로그인
+        </button>
+      </div>
+
+      <!-- 리뷰 로딩 -->
+      <div id="user-reviews-loading" class="hidden flex items-center gap-2 py-3">
+        <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+        <span class="text-xs text-charcoal/50 dark:text-white/50">한줄평을 불러오는 중...</span>
+      </div>
+
+      <!-- 전체 리뷰 목록 (기본 3개) -->
+      <div id="reviews-list" class="space-y-2"></div>
+
+      <!-- 더보기 버튼 -->
+      <button id="reviews-show-more" class="hidden w-full mt-2 py-2 text-xs text-charcoal/50 dark:text-white/50 hover:text-primary dark:hover:text-primary transition-colors flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-sm">expand_more</span>
+        <span id="reviews-show-more-text"></span>
+      </button>
+
+      <!-- 전체 보기 링크 -->
+      <a id="reviews-all-link" href="/reviews" class="hidden mt-2 w-full py-2 text-xs text-primary/70 hover:text-primary transition-colors flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-sm">open_in_new</span>
+        한줄평 게시판에서 전체 보기
+      </a>
+
+      <!-- 빈 상태 -->
+      <div id="reviews-empty" class="hidden text-center py-4">
+        <span class="material-symbols-outlined text-3xl text-charcoal/20 dark:text-white/20 mb-1">chat_bubble_outline</span>
+        <p class="text-xs sm:text-sm text-charcoal/50 dark:text-white/50">아직 한줄평이 없습니다.</p>
+      </div>
+    </div>
+
     <!-- Purchase Links Section -->
     <div class="px-3 sm:px-6 py-3 border-b border-charcoal/10 dark:border-white/10">
       <div class="flex gap-2">
