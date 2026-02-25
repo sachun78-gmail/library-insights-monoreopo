@@ -312,8 +312,12 @@ function makeDisplayName(userId: string): string {
 }
 
 function getLoginDisplayName(): string {
-  // Auth 컴포넌트가 이미 DOM에 설정해 둔 이름을 읽음
-  return document.getElementById('profile-name')?.textContent?.trim() || '';
+  // 데스크탑은 #profile-name, 모바일은 #mobile-profile-name에 이름이 세팅됨
+  return (
+    document.getElementById('profile-name')?.textContent?.trim() ||
+    document.getElementById('mobile-profile-name')?.textContent?.trim() ||
+    ''
+  );
 }
 
 function starsHtml(rating: number, filled = true): string {

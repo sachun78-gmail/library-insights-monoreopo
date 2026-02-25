@@ -5,6 +5,7 @@ import {
   Text,
   Image,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   ActivityIndicator,
@@ -19,7 +20,7 @@ import * as Location from "expo-location";
 import { useAuth } from "../lib/auth-context";
 import { api } from "../lib/api";
 import { regions as REGIONS_DATA } from "../lib/regions-data.js";
-import type { Book, Library, Bookmark } from "../lib/types";
+import type { Book, Library, Bookmark, BookReview } from "../lib/types";
 
 interface Props {
   book: Book | null;
@@ -377,6 +378,11 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showAI, setShowAI] = useState(false);
 
+  // 한줄평
+  const [myRating, setMyRating] = useState(0);
+  const [myReviewText, setMyReviewText] = useState("");
+  const [reviewsExpanded, setReviewsExpanded] = useState(false);
+
   // GPS – ref로 중복 fetch 완전 차단
   const gpsFetchedRef = useRef(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
@@ -394,6 +400,9 @@ export function BookDetailSheet({ book, onClose }: Props) {
     setShowLibrary(false);
     setShowAI(false);
     setSelectedSubRegion("");
+    setMyRating(0);
+    setMyReviewText("");
+    setReviewsExpanded(false);
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [book?.isbn13]);
 
@@ -605,6 +614,88 @@ export function BookDetailSheet({ book, onClose }: Props) {
 
   const regionName = ALL_REGIONS.find((r) => r.code === selectedRegion)?.name ?? selectedRegion;
   const isMutating = addMutation.isPending || removeMutation.isPending;
+
+  // ── 한줄평 ──
+  const { data: reviews = [], isLoading: isReviewsLoading } = useQuery<BookReview[]>({
+    queryKey: ["book-reviews", book?.isbn13],
+    queryFn: () => api.bookReviews(book!.isbn13),
+    enabled: !!book,
+    staleTime: 60 * 1000,
+  });
+
+  // 내 리뷰 찾기 & 폼 초기화
+  useEffect(() => {
+    if (!user || reviews.length === 0) return;
+    const mine = reviews.find((r) => r.user_id === user.id);
+    if (mine) {
+      setMyRating(mine.rating);
+      setMyReviewText(mine.review_text);
+    }
+  }, [reviews, user]);
+
+  const myExistingReview = user ? reviews.find((r) => r.user_id === user.id) : undefined;
+
+  const upsertMutation = useMutation({
+    mutationFn: () =>
+      api.upsertReview({
+        userId: user!.id,
+        isbn13: book!.isbn13,
+        bookname: book!.bookname,
+        authors: book!.authors,
+        publisher: book!.publisher,
+        book_image_url: book!.bookImageURL,
+        display_name: (user as any)?.user_metadata?.name ?? (user as any)?.email?.split("@")[0] ?? "",
+        rating: myRating,
+        review_text: myReviewText.trim(),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["book-reviews", book?.isbn13] });
+      queryClient.invalidateQueries({ queryKey: ["all-reviews"] });
+    },
+  });
+
+  const deleteReviewMutation = useMutation({
+    mutationFn: () => api.deleteReview(user!.id, book!.isbn13),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["book-reviews", book?.isbn13] });
+      queryClient.invalidateQueries({ queryKey: ["all-reviews"] });
+      setMyRating(0);
+      setMyReviewText("");
+    },
+  });
+
+  const handleSubmitReview = () => {
+    if (!user) {
+      Alert.alert("로그인 필요", "한줄평은 로그인 후 이용 가능합니다.", [
+        { text: "취소", style: "cancel" },
+        { text: "로그인", onPress: () => { onClose(); router.push("/login"); } },
+      ]);
+      return;
+    }
+    if (myRating === 0) {
+      Alert.alert("별점 선택", "별점을 선택해주세요.");
+      return;
+    }
+    if (myReviewText.trim().length === 0) {
+      Alert.alert("내용 입력", "한줄평을 입력해주세요.");
+      return;
+    }
+    upsertMutation.mutate();
+  };
+
+  const handleDeleteReview = () => {
+    Alert.alert("삭제 확인", "한줄평을 삭제할까요?", [
+      { text: "취소", style: "cancel" },
+      { text: "삭제", style: "destructive", onPress: () => deleteReviewMutation.mutate() },
+    ]);
+  };
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
+
+  const REVIEWS_PREVIEW = 3;
+  const displayedReviews = reviewsExpanded ? reviews : reviews.slice(0, REVIEWS_PREVIEW);
 
   const subRegionOptions = useMemo(
     () => [
@@ -830,6 +921,127 @@ export function BookDetailSheet({ book, onClose }: Props) {
                     <Ionicons name="open-outline" size={13} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
+              </View>
+
+              {/* ── 독자 한줄평 ── */}
+              <View style={styles.reviewSection}>
+                <View style={styles.reviewSectionHeader}>
+                  <Text style={styles.reviewSectionIcon}>★</Text>
+                  <Text style={styles.reviewSectionTitle}>독자 한줄평</Text>
+                  {avgRating !== null && (
+                    <View style={styles.avgBadge}>
+                      <Text style={styles.avgBadgeText}>★ {avgRating}</Text>
+                      <Text style={styles.avgBadgeCount}> ({reviews.length})</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* 내 한줄평 작성 폼 */}
+                {user ? (
+                  <View style={styles.myReviewForm}>
+                    <Text style={styles.myReviewLabel}>
+                      {myExistingReview ? "내 한줄평 수정" : "한줄평 작성"}
+                    </Text>
+                    {/* 별점 선택 */}
+                    <View style={styles.starRow}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <TouchableOpacity key={star} onPress={() => setMyRating(star)} hitSlop={8}>
+                          <Text style={[styles.starBtn, myRating >= star && styles.starBtnActive]}>
+                            ★
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      {myRating > 0 && (
+                        <Text style={styles.ratingLabel}>{myRating}점</Text>
+                      )}
+                    </View>
+                    <TextInput
+                      style={styles.reviewInput}
+                      placeholder="한줄평을 입력하세요 (최대 100자)"
+                      placeholderTextColor="#475569"
+                      value={myReviewText}
+                      onChangeText={(t) => setMyReviewText(t.slice(0, 100))}
+                      multiline
+                      maxLength={100}
+                    />
+                    <Text style={styles.charCount}>{myReviewText.length}/100</Text>
+                    <View style={styles.reviewBtnRow}>
+                      <TouchableOpacity
+                        style={styles.reviewSubmitBtn}
+                        onPress={handleSubmitReview}
+                        disabled={upsertMutation.isPending}
+                      >
+                        {upsertMutation.isPending ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.reviewSubmitBtnText}>
+                            {myExistingReview ? "수정" : "등록"}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                      {myExistingReview && (
+                        <TouchableOpacity
+                          style={styles.reviewDeleteBtn}
+                          onPress={handleDeleteReview}
+                          disabled={deleteReviewMutation.isPending}
+                        >
+                          <Text style={styles.reviewDeleteBtnText}>삭제</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.loginPrompt}
+                    onPress={() => { onClose(); router.push("/login"); }}
+                  >
+                    <Ionicons name="person-circle-outline" size={16} color="#64748B" />
+                    <Text style={styles.loginPromptText}>로그인 후 한줄평을 남겨보세요</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* 리뷰 목록 */}
+                {isReviewsLoading ? (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator size="small" color="#6366F1" />
+                    <Text style={styles.loadingText}>한줄평 불러오는 중...</Text>
+                  </View>
+                ) : reviews.length === 0 ? (
+                  <Text style={styles.reviewsEmptyText}>아직 한줄평이 없습니다.</Text>
+                ) : (
+                  <>
+                    {displayedReviews.map((r) => (
+                      <View key={r.id} style={styles.reviewCard}>
+                        <View style={styles.reviewCardHeader}>
+                          <Text style={styles.reviewerName}>
+                            {r.display_name || `독자_${r.user_id.replace(/-/g, "").slice(0, 8).toUpperCase()}`}
+                          </Text>
+                          {user && r.user_id === user.id && (
+                            <View style={styles.meBadge}>
+                              <Text style={styles.meBadgeText}>나</Text>
+                            </View>
+                          )}
+                          <Text style={styles.reviewStars}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</Text>
+                        </View>
+                        <Text style={styles.reviewText}>{r.review_text}</Text>
+                        <Text style={styles.reviewDate}>
+                          {new Date(r.created_at).toLocaleDateString("ko-KR")}
+                        </Text>
+                      </View>
+                    ))}
+                    {reviews.length > REVIEWS_PREVIEW && !reviewsExpanded && (
+                      <TouchableOpacity
+                        style={styles.showMoreBtn}
+                        onPress={() => setReviewsExpanded(true)}
+                      >
+                        <Text style={styles.showMoreText}>
+                          {reviews.length - REVIEWS_PREVIEW}개 더 보기
+                        </Text>
+                        <Ionicons name="chevron-down" size={13} color="#818CF8" />
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
               </View>
 
               {/* ── 도서 소장 도서관 ── */}
@@ -1069,6 +1281,68 @@ const styles = StyleSheet.create({
   coupangBtn: { backgroundColor: "#E42424" },
   aladinBtn: { backgroundColor: "#00498A" },
   purchaseBtnText: { fontSize: 13, fontWeight: "600", color: "#FFFFFF" },
+
+  // 독자 한줄평
+  reviewSection: {
+    marginHorizontal: 16, marginTop: 12, marginBottom: 4,
+    backgroundColor: "#0F172A",
+    borderRadius: 12,
+    borderWidth: 1, borderColor: "#334155",
+    padding: 14,
+  },
+  reviewSectionHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
+  reviewSectionIcon: { fontSize: 15, color: "#FBBF24" },
+  reviewSectionTitle: { fontSize: 14, fontWeight: "700", color: "#CBD5E1" },
+  avgBadge: { flexDirection: "row", alignItems: "center", marginLeft: "auto" as any, backgroundColor: "#1E293B", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  avgBadgeText: { fontSize: 13, fontWeight: "700", color: "#FBBF24" },
+  avgBadgeCount: { fontSize: 12, color: "#64748B" },
+  myReviewForm: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 12 },
+  myReviewLabel: { fontSize: 12, fontWeight: "700", color: "#94A3B8", marginBottom: 8 },
+  starRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 10 },
+  starBtn: { fontSize: 24, color: "#334155" },
+  starBtnActive: { color: "#FBBF24" },
+  ratingLabel: { fontSize: 13, color: "#94A3B8", marginLeft: 4 },
+  reviewInput: {
+    backgroundColor: "#0F172A", borderRadius: 8,
+    borderWidth: 1, borderColor: "#334155",
+    color: "#F1F5F9", fontSize: 13, lineHeight: 20,
+    padding: 10, minHeight: 60, textAlignVertical: "top",
+  },
+  charCount: { fontSize: 11, color: "#475569", textAlign: "right", marginTop: 4 },
+  reviewBtnRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+  reviewSubmitBtn: {
+    flex: 1, backgroundColor: "#4F46E5", borderRadius: 8,
+    paddingVertical: 10, alignItems: "center",
+  },
+  reviewSubmitBtnText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  reviewDeleteBtn: {
+    backgroundColor: "#7F1D1D", borderRadius: 8,
+    paddingVertical: 10, paddingHorizontal: 16, alignItems: "center",
+  },
+  reviewDeleteBtnText: { fontSize: 13, fontWeight: "700", color: "#FCA5A5" },
+  loginPrompt: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    padding: 10, marginBottom: 10, justifyContent: "center",
+  },
+  loginPromptText: { fontSize: 13, color: "#64748B" },
+  reviewsEmptyText: { fontSize: 12, color: "#64748B", textAlign: "center", paddingVertical: 10 },
+  reviewCard: {
+    backgroundColor: "#1E293B", borderRadius: 10,
+    borderWidth: 1, borderColor: "#293548",
+    padding: 12, marginBottom: 8,
+  },
+  reviewCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
+  reviewerName: { fontSize: 12, fontWeight: "700", color: "#94A3B8" },
+  meBadge: { backgroundColor: "#1D4ED8", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
+  meBadgeText: { fontSize: 10, fontWeight: "700", color: "#BFDBFE" },
+  reviewStars: { fontSize: 12, color: "#FBBF24", marginLeft: "auto" as any },
+  reviewText: { fontSize: 13, color: "#CBD5E1", lineHeight: 19, marginBottom: 4 },
+  reviewDate: { fontSize: 11, color: "#475569" },
+  showMoreBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 4, paddingVertical: 8,
+  },
+  showMoreText: { fontSize: 13, color: "#818CF8", fontWeight: "600" },
 
   // 도서 소장 도서관
   librarySection: {

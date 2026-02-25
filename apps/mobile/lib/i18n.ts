@@ -9,6 +9,7 @@ const dict: Dict = {
   tab_search: { ko: "검색", en: "Search" },
   tab_rank: { ko: "인기", en: "Rank" },
   tab_shelf: { ko: "서재", en: "Shelf" },
+  tab_reviews: { ko: "한줄평", en: "Reviews" },
   tab_my: { ko: "마이", en: "My" },
 
   home_headline: { ko: "오늘 한국이 읽고 있는 책을 발견하세요", en: "Discover what Korea is reading today" },

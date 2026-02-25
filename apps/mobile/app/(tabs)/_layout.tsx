@@ -56,12 +56,12 @@ export default function TabLayout() {
         tabBarStyle: {
           position: "absolute",
           bottom: 18,
-          left: 18,
-          right: 18,
+          left: 10,
+          right: 10,
           borderRadius: 24,
           borderTopWidth: 0,
           height: 56,
-          paddingHorizontal: 12,
+          paddingHorizontal: 4,
           paddingTop: 3,
           paddingBottom: 3,
           elevation: 20,
@@ -73,7 +73,7 @@ export default function TabLayout() {
         },
         tabBarItemStyle: {
           borderRadius: 18,
-          marginHorizontal: 2,
+          marginHorizontal: 1,
           marginVertical: 3,
           height: 44,
           justifyContent: "center",
@@ -137,6 +137,21 @@ export default function TabLayout() {
             <TabIcon
               name="bookmark-outline"
               activeName="bookmark"
+              color={color}
+              size={size - 1}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="reviews"
+        options={{
+          title: t("tab_reviews"),
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon
+              name="star-outline"
+              activeName="star"
               color={color}
               size={size - 1}
               focused={focused}

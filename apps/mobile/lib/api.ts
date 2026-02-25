@@ -238,6 +238,28 @@ export const api = {
   deleteAccount: (userId: string) =>
     post("/api/delete-account", { userId }),
 
+  // ── 한줄평 ──
+  bookReviews: (isbn13: string) =>
+    get("/api/book-reviews", { isbn13 }).then((res) => res?.reviews ?? []),
+
+  allReviews: (page = 1, limit = 20) =>
+    get("/api/book-reviews", { page, limit }),
+
+  upsertReview: (params: {
+    userId: string;
+    isbn13: string;
+    bookname: string;
+    authors: string;
+    publisher: string;
+    book_image_url: string;
+    display_name: string;
+    rating: number;
+    review_text: string;
+  }) => post("/api/book-reviews", params),
+
+  deleteReview: (userId: string, isbn13: string) =>
+    del("/api/book-reviews", { userId, isbn13 }),
+
   uploadProfileImage: async (userId: string, file: {
     uri: string;
     name?: string;

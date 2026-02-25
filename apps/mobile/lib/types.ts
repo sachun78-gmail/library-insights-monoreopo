@@ -64,3 +64,18 @@ export interface UserProfile {
   sub_region_name: string | null;
   avatar_url: string | null;
 }
+
+export interface BookReview {
+  id: string;
+  user_id: string;
+  isbn13: string;
+  bookname: string;
+  authors: string;
+  publisher: string;
+  book_image_url: string;
+  display_name: string;
+  rating: number;
+  review_text: string;
+  created_at: string;
+  updated_at: string;
+}
