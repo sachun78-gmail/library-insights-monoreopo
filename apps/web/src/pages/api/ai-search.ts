@@ -400,8 +400,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
       recommendations: libCheckResults.slice(0, MAX_RETURN_BOOKS),
       regions: nearestRegions.map((r) => r.name),
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AI-Search] Fatal error:', error);
-    return jsonResponse({ error: 'AI recommendation failed' }, 500);
+    return jsonResponse({ error: 'AI recommendation failed', detail: error?.message ?? String(error) }, 500);
   }
 };
