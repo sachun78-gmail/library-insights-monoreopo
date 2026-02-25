@@ -898,29 +898,6 @@ export function BookDetailSheet({ book, onClose }: Props) {
                   </TouchableOpacity>
                 ) : null}
 
-                {/* 구매 링크 */}
-                <View style={styles.purchaseRow}>
-                  <TouchableOpacity
-                    style={[styles.purchaseBtn, styles.coupangBtn]}
-                    onPress={() => {
-                      const q = encodeURIComponent(book.bookname || '');
-                      Linking.openURL(`https://www.coupang.com/np/search?q=${q}`);
-                    }}
-                  >
-                    <Text style={styles.purchaseBtnText}>쿠팡에서 구매</Text>
-                    <Ionicons name="open-outline" size={13} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.purchaseBtn, styles.aladinBtn]}
-                    onPress={() => {
-                      const q = encodeURIComponent(book.bookname || '');
-                      Linking.openURL(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchWord=${q}`);
-                    }}
-                  >
-                    <Text style={styles.purchaseBtnText}>알라딘에서 구매</Text>
-                    <Ionicons name="open-outline" size={13} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
               </View>
 
               {/* ── 독자 한줄평 ── */}
@@ -1273,14 +1250,6 @@ const styles = StyleSheet.create({
   },
   naverBtnN: { fontSize: 14, fontWeight: "900", color: "#FFFFFF" },
   naverBtnLabel: { fontSize: 13, fontWeight: "600", color: "#FFFFFF" },
-  purchaseRow: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 4 },
-  purchaseBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 6, borderRadius: 12, paddingVertical: 11,
-  },
-  coupangBtn: { backgroundColor: "#E42424" },
-  aladinBtn: { backgroundColor: "#00498A" },
-  purchaseBtnText: { fontSize: 13, fontWeight: "600", color: "#FFFFFF" },
 
   // 독자 한줄평
   reviewSection: {
