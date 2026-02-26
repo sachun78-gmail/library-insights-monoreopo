@@ -34,20 +34,20 @@ function bookmarkToBook(b: Bookmark): Book {
 
 export default function BookshelfScreen() {
   const router = useRouter();
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   const { data: bookmarks, isLoading } = useQuery<Bookmark[]>({
     queryKey: ["bookmarks", user?.id],
-    queryFn: () => api.bookmarks(session!.access_token),
+    queryFn: () => api.bookmarks(),
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
   });
 
   const removeMutation = useMutation({
     mutationFn: ({ isbn13 }: { isbn13: string }) =>
-      api.removeBookmark(session!.access_token, isbn13),
+      api.removeBookmark(isbn13),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["bookmarks", user?.id] }),
   });

@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import dotenv from "dotenv";
 import OpenAI from "openai";
@@ -24,6 +25,22 @@ if (!DATA4LIBRARY_API_KEY) {
 if (!PROXY_SHARED_SECRET) {
   throw new Error("PROXY_SHARED_SECRET is required");
 }
+
+// CORS: 브라우저 직접 접근 차단 (서버는 Cloudflare Workers에서만 호출됨)
+const ALLOWED_ORIGINS = [
+  "https://library-insights.work",
+  "https://www.library-insights.work",
+];
+await app.register(cors, {
+  origin: (origin, cb) => {
+    // origin이 없으면 서버-서버 요청 (Cloudflare Workers 등) → 허용
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error("CORS: origin not allowed"), false);
+  },
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "x-proxy-key"],
+});
 
 // Rate limiting: IP 기반, 엔드포인트별로 다른 제한 적용
 await app.register(rateLimit, {

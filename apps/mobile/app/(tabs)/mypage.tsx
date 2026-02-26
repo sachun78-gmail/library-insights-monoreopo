@@ -108,7 +108,7 @@ function isValidBirthDate(value: string): boolean {
 
 export default function MyPageScreen() {
   const router = useRouter();
-  const { user, session, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -131,7 +131,7 @@ export default function MyPageScreen() {
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
     queryKey: ["profile", user?.id],
-    queryFn: () => api.profile(session!.access_token),
+    queryFn: () => api.profile(),
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
@@ -164,7 +164,7 @@ export default function MyPageScreen() {
       }
 
       const asset = result.assets[0];
-      const uploadedUrl = await api.uploadProfileImage(session!.access_token, {
+      const uploadedUrl = await api.uploadProfileImage({
         uri: asset.uri,
         name: asset.fileName ?? `profile_${Date.now()}.jpg`,
         type: asset.mimeType ?? "image/jpeg",
@@ -189,7 +189,7 @@ export default function MyPageScreen() {
         throw new Error(isKorean ? "생년월일 형식은 YYYY-MM-DD로 입력해주세요." : "Birth date must be in YYYY-MM-DD format.");
       }
 
-      return api.updateProfile(session!.access_token, {
+      return api.updateProfile({
         birth_date: normalizedBirthDate || undefined,
         gender: selectedGender ?? undefined,
         region_code: selectedRegion ?? undefined,
@@ -238,7 +238,7 @@ export default function MyPageScreen() {
           text: isKorean ? "삭제" : "Delete",
           style: "destructive",
           onPress: async () => {
-            await api.deleteAccount(session!.access_token);
+            await api.deleteAccount();
             await signOut();
           },
         },
