@@ -124,19 +124,45 @@ export default function SearchScreen() {
     }
   }, [aiData]);
 
-  const books: Book[] = aiMode
-    ? [
-        ...normalizeAiRecommendations(aiData?.recommendations as AIRecommendationItem[] | undefined),
-        ...(aiData?.seedBook ? [aiData.seedBook] : []),
-      ]
-    : (searchData?.pages.flatMap((p) => p.books) ?? []);
+  const [aiBooks, setAiBooks] = useState<Book[]>([]);
 
   useEffect(() => {
-    if (typeof __DEV__ !== "undefined" && __DEV__ && aiMode) {
-      console.log("[AI][BOOKS_NORMALIZED_COUNT]", books.length);
-      console.log("[AI][BOOKS_NORMALIZED_SAMPLE]", books[0]);
+    if (!aiMode || !aiData) {
+      setAiBooks([]);
+      return;
     }
-  }, [aiMode, books]);
+
+    const normalized = [
+      ...normalizeAiRecommendations(aiData.recommendations as AIRecommendationItem[] | undefined),
+      ...(aiData.seedBook ? [aiData.seedBook] : []),
+    ];
+    setAiBooks(normalized);
+
+    // isbn 있고 이미지 없는 책들만 이미지 보강
+    const missing = normalized.filter((b) => b.isbn13 && !b.bookImageURL);
+    if (missing.length === 0) return;
+
+    Promise.all(
+      missing.map(async (book) => {
+        try {
+          const data = await api.search(book.isbn13, "isbn", 1, 1);
+          const docs = data?.docs ?? data?.response?.docs ?? [];
+          const doc = docs[0]?.doc ?? docs[0];
+          if (doc?.bookImageURL) {
+            book.bookImageURL = doc.bookImageURL;
+          }
+        } catch {
+          // 무시
+        }
+      })
+    ).then(() => {
+      setAiBooks([...normalized]);
+    });
+  }, [aiData, aiMode]);
+
+  const books: Book[] = aiMode
+    ? aiBooks
+    : (searchData?.pages.flatMap((p) => p.books) ?? []);
 
   const isLoading = aiMode ? isAiLoading : isSearchLoading;
   const hasResults = books.length > 0;

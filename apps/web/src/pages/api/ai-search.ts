@@ -421,7 +421,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         publisher: primarySeed.publisher || '',
         publication_year: primarySeed.publication_year || '',
       },
-      recommendations: libCheckResults.slice(0, MAX_RETURN_BOOKS),
+      recommendations: finalRecs,
       regions: nearestRegions.map((r) => r.name),
     });
   } catch (error: any) {
