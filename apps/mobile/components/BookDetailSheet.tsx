@@ -638,7 +638,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const { data: reviews = [], isLoading: isReviewsLoading } = useQuery<BookReview[]>({
     queryKey: ["book-reviews", book?.isbn13],
     queryFn: () => api.bookReviews(book!.isbn13),
-    enabled: !!book,
+    enabled: !!book?.isbn13,
     staleTime: 60 * 1000,
   });
 
@@ -916,7 +916,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
               </View>
 
               {/* ── 독자 한줄평 ── */}
-              <View style={styles.reviewSection}>
+              <View style={[styles.reviewSection, !book.isbn13 && { display: "none" }]}>
                 <View style={styles.reviewSectionHeader}>
                   <Text style={styles.reviewSectionIcon}>★</Text>
                   <Text style={styles.reviewSectionTitle}>독자 한줄평</Text>
