@@ -2,11 +2,12 @@ const BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4321";
 
 const TIMEOUT_MS = 10_000;
+const AI_TIMEOUT_MS = 40_000;
 const DEBUG_API = typeof __DEV__ !== "undefined" && __DEV__;
 
 type Params = Record<string, string | number | boolean | undefined | null>;
 
-async function get(path: string, params: Params = {}): Promise<any> {
+async function get(path: string, params: Params = {}, timeoutMs = TIMEOUT_MS): Promise<any> {
   const url = new URL(`${BASE_URL}${path}`);
   for (const [key, value] of Object.entries(params)) {
     if (value != null) {
@@ -15,7 +16,7 @@ async function get(path: string, params: Params = {}): Promise<any> {
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     if (DEBUG_API) {
@@ -143,7 +144,7 @@ export const api = {
     get("/api/search", { keyword, type, pageNo, pageSize }),
 
   aiSearch: (keyword: string, lat?: number, lon?: number) =>
-    get("/api/ai-search", { keyword, lat, lon }),
+    get("/api/ai-search", { keyword, lat, lon }, AI_TIMEOUT_MS),
 
   // ── 홈 ──
   newArrivals: () => get("/api/new-arrivals"),

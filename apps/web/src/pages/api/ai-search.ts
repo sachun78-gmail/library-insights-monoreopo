@@ -4,9 +4,9 @@ import { fetchLibraryProxy } from '../../lib/library-proxy';
 
 export const prerender = false;
 
-const CACHE_TTL = 10 * 60; // 10 minutes
+const CACHE_TTL = 24 * 60 * 60; // 24 hours
 const OPENAI_TIMEOUT_MS = 8000;
-const FETCH_TIMEOUT_MS = 2500;
+const FETCH_TIMEOUT_MS = 5000;
 const MAX_AI_BOOKS = 12;
 const MAX_SEED_LOOKUPS = 12;
 const MAX_SEED_ISBNS = 5;
@@ -206,14 +206,17 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const keyword = url.searchParams.get('keyword') || '';
   const lat = parseFloat(url.searchParams.get('lat') || '');
   const lon = parseFloat(url.searchParams.get('lon') || '');
+  const nocache = url.searchParams.get('nocache') === '1';
 
   if (!keyword) {
     return jsonResponse({ error: 'keyword is required' }, 400);
   }
 
   const cacheKey = buildCacheKey(url, keyword, lat, lon);
-  const cached = await getCachedResponse(cacheKey);
-  if (cached) return cached;
+  if (!nocache) {
+    const cached = await getCachedResponse(cacheKey);
+    if (cached) return cached;
+  }
 
   const respondWithCache = async (payload: any) => {
     await setCachedResponse(cacheKey, payload, CACHE_TTL);

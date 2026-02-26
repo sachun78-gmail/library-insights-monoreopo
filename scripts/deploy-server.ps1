@@ -1,7 +1,7 @@
 param(
   [string]$Remote = "sachun78@163.245.214.222",
   [string]$RemotePath = "/opt/library-insights",
-  [string]$ProcessManager = "none",
+  [string]$ProcessManager = "systemd",
   [string]$CopyMode = "auto",
   [switch]$UseSudo
 )
@@ -136,7 +136,11 @@ npm run build -w @library-insights/server
 }
 Invoke-Remote -RemoteHost $Remote -RemoteCommand $buildCmd
 
-if ($ProcessManager -eq "pm2") {
+if ($ProcessManager -eq "systemd") {
+  Write-Output "Restarting server with systemd..."
+  # -tt: 가상 터미널 할당 (sudo 패스워드 입력 허용)
+  Invoke-Native -Command "ssh" -Args @("-tt", $Remote, "sudo systemctl restart library-insights-server && sudo systemctl status library-insights-server --no-pager -l")
+} elseif ($ProcessManager -eq "pm2") {
   Write-Output "Restarting server with pm2..."
   $pm2Cmd = @"
 set -e
@@ -144,14 +148,6 @@ cd $RemotePath
 pm2 describe library-insights-server >/dev/null 2>&1 && pm2 restart library-insights-server || pm2 start "npm -- run start -w @library-insights/server" --name library-insights-server
 pm2 save
 "@
-  if ($UseSudo) {
-    $pm2Cmd = @"
-set -e
-cd $RemotePath
-pm2 describe library-insights-server >/dev/null 2>&1 && pm2 restart library-insights-server || pm2 start "npm -- run start -w @library-insights/server" --name library-insights-server
-pm2 save
-"@
-  }
   Invoke-Remote -RemoteHost $Remote -RemoteCommand $pm2Cmd
 } else {
   Write-Output "Deployment done. Start server manually on remote:"

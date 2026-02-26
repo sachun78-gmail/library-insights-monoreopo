@@ -87,7 +87,7 @@ app.get<{ Querystring: { keyword?: string } }>(
           { role: "system", content: AI_RECOMMEND_PROMPT },
           { role: "user", content: keyword },
         ],
-        temperature: 0.2,
+        temperature: 0,
         max_tokens: 420,
       });
       const content = response.choices[0].message.content ?? "[]";
