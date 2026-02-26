@@ -7,16 +7,21 @@ let bookmarkedIsbns: Set<string> = new Set();
 let currentUserId: string | null = null;
 let loaded = false;
 
+async function getAuthToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
+
 export async function initBookmarks(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
       currentUserId = null;
       bookmarkedIsbns.clear();
       loaded = true;
       return;
     }
-    currentUserId = user.id;
+    currentUserId = session.user.id;
     await loadBookmarks();
   } catch {
     loaded = true;
@@ -26,7 +31,11 @@ export async function initBookmarks(): Promise<void> {
 async function loadBookmarks(): Promise<void> {
   if (!currentUserId) return;
   try {
-    const res = await fetch(`/api/bookmarks?userId=${currentUserId}`);
+    const token = await getAuthToken();
+    if (!token) return;
+    const res = await fetch('/api/bookmarks', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     const data = await res.json();
     bookmarkedIsbns = new Set((data.bookmarks || []).map((b: any) => b.isbn13));
   } catch {
@@ -64,13 +73,17 @@ export async function toggleBookmark(book: {
   const isbn = book.isbn13;
   if (!isbn) return false;
 
+  const token = await getAuthToken();
+  if (!token) return false;
+  const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
   if (bookmarkedIsbns.has(isbn)) {
     // Remove
     try {
       await fetch('/api/bookmarks', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, isbn13: isbn }),
+        headers: authHeaders,
+        body: JSON.stringify({ isbn13: isbn }),
       });
       bookmarkedIsbns.delete(isbn);
       return false; // not bookmarked now
@@ -82,9 +95,8 @@ export async function toggleBookmark(book: {
     try {
       await fetch('/api/bookmarks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
-          userId: currentUserId,
           isbn13: isbn,
           bookname: book.bookname || '',
           authors: book.authors || '',

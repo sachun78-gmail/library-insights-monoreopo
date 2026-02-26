@@ -4,6 +4,12 @@
 
 import { regions as regionsData } from '../data/regions.js';
 import { getUserId } from './bookmarks';
+import { supabase } from '../lib/supabase';
+
+async function getAuthToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
 
 const PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='192' viewBox='0 0 128 192'%3E%3Crect fill='%23e2e8f0' width='128' height='192'/%3E%3Ctext x='50%25' y='45%25' font-family='Arial' font-size='48' fill='%2394a3b8' text-anchor='middle'%3E📚%3C/text%3E%3Ctext x='50%25' y='58%25' font-family='Arial' font-size='12' fill='%2394a3b8' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
@@ -498,12 +504,18 @@ async function submitReview(): Promise<void> {
   const submitBtn = getEl('review-submit-btn') as HTMLButtonElement | null;
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '저장 중...'; }
 
+  const token = await getAuthToken();
+  if (!token) {
+    if (errEl) { errEl.textContent = '로그인이 필요합니다.'; errEl.classList.remove('hidden'); }
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '등록'; }
+    return;
+  }
+
   try {
     const res = await fetch('/api/book-reviews', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        userId,
         isbn13: _currentBook.isbn13 || '',
         bookname: _currentBook.bookname || '',
         authors: _currentBook.authors || '',
@@ -527,17 +539,22 @@ async function submitReview(): Promise<void> {
 }
 
 async function deleteReview(): Promise<void> {
-  const userId = getUserId();
-  if (!userId || !_currentBook) return;
+  if (!_currentBook) return;
 
   const deleteBtn = getEl('review-delete-btn') as HTMLButtonElement | null;
   if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = '삭제 중...'; }
 
+  const token = await getAuthToken();
+  if (!token) {
+    if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = '삭제'; }
+    return;
+  }
+
   try {
     const res = await fetch('/api/book-reviews', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, isbn13: _currentBook.isbn13 || '' }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isbn13: _currentBook.isbn13 || '' }),
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
