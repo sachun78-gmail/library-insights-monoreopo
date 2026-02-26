@@ -315,9 +315,10 @@ import Analytics from '../components/Analytics.astro';
   });
 
   async function loadMyPage() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
 
-    if (user) {
+    if (user && session) {
       mypageLoginRequired?.classList.add('hidden');
       mypageContent?.classList.remove('hidden');
 
@@ -330,9 +331,11 @@ import Analytics from '../components/Analytics.astro';
         day: 'numeric'
       });
 
+      const authHeaders = { Authorization: `Bearer ${session.access_token}` };
+
       // Load profile from database
       try {
-        const response = await fetch(`/api/profile?userId=${user.id}`);
+        const response = await fetch('/api/profile', { headers: authHeaders });
         const result = await response.json();
 
         if (result.profile) {
@@ -406,12 +409,14 @@ import Analytics from '../components/Analytics.astro';
     editProfileBtn.addEventListener('click', async () => {
       localStorage.removeItem('profileSkipped');
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
 
       // Load existing profile data
       try {
-        const response = await fetch(`/api/profile?userId=${user.id}`);
+        const response = await fetch('/api/profile', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
         const result = await response.json();
 
         const profileCompleteModal = document.getElementById('profile-complete-modal');

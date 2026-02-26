@@ -238,7 +238,7 @@ export default function MyPageScreen() {
           text: isKorean ? "삭제" : "Delete",
           style: "destructive",
           onPress: async () => {
-            await api.deleteAccount(user!.id, session!.access_token);
+            await api.deleteAccount(session!.access_token);
             await signOut();
           },
         },

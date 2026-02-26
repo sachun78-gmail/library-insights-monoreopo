@@ -247,15 +247,17 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user;
 
-    if (!user) {
+    if (!user || !session) {
       notLoggedIn?.classList.remove('hidden');
       return;
     }
 
     bookshelfLoading?.classList.remove('hidden');
 
+    const authHeaders = { Authorization: `Bearer ${session.access_token}` };
+
     try {
-      const res = await fetch(`/api/bookmarks?userId=${user.id}`);
+      const res = await fetch('/api/bookmarks', { headers: authHeaders });
       const data = await res.json();
       allBookmarks = data.bookmarks || [];
 
@@ -269,14 +271,14 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
       if (bookshelfCount) bookshelfCount.textContent = `찜한 도서 ${allBookmarks.length}권`;
 
-      renderBookmarks(user.id);
+      renderBookmarks(authHeaders);
     } catch {
       bookshelfLoading?.classList.add('hidden');
       bookshelfEmpty?.classList.remove('hidden');
     }
   }
 
-  function renderBookmarks(userId: string) {
+  function renderBookmarks(authHeaders: Record<string, string>) {
     if (!bookshelfGrid) return;
 
     bookshelfGrid.innerHTML = allBookmarks.map((bm: any, index: number) => {
@@ -341,8 +343,8 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         try {
           await fetch('/api/bookmarks', {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, isbn13: isbn }),
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            body: JSON.stringify({ isbn13: isbn }),
           });
           allBookmarks = allBookmarks.filter((b: any) => b.isbn13 !== isbn);
           if (allBookmarks.length === 0) {
@@ -351,7 +353,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
             if (bookshelfCount) bookshelfCount.textContent = '찜한 도서 0권';
           } else {
             if (bookshelfCount) bookshelfCount.textContent = `찜한 도서 ${allBookmarks.length}권`;
-            renderBookmarks(userId);
+            renderBookmarks(authHeaders);
           }
         } catch {
           (btn as HTMLButtonElement).disabled = false;

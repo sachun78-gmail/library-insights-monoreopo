@@ -243,8 +243,8 @@ export const api = {
       avatarUrl: data.avatar_url,
     }, authHeader(token)).then((res) => res?.profile ?? null),
 
-  deleteAccount: (userId: string, accessToken: string) =>
-    post("/api/delete-account", { userId, accessToken }),
+  deleteAccount: (token: string) =>
+    post("/api/delete-account", {}, authHeader(token)),
 
   // ── 한줄평 ──
   bookReviews: (isbn13: string) =>

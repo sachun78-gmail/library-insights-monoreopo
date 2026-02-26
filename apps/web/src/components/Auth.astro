@@ -296,13 +296,15 @@ import { regions } from '../data/regions.js';
       e.preventDefault();
       profileCompleteMessage?.classList.add('hidden');
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
         profileCompleteMessage.textContent = '로그인이 필요합니다.';
         profileCompleteMessage?.classList.remove('hidden');
         profileCompleteMessage?.classList.add('text-red-500');
         return;
       }
+
+      const authHeaders = { Authorization: `Bearer ${session.access_token}` };
 
       const birthDate = profileBirthdate?.value || null;
       const gender = profileGender?.value || null;
@@ -323,10 +325,10 @@ import { regions } from '../data/regions.js';
 
           const formData = new FormData();
           formData.append('file', profileImageFile);
-          formData.append('userId', user.id);
 
           const uploadResponse = await fetch('/api/upload-image', {
             method: 'POST',
+            headers: authHeaders,
             body: formData,
           });
 
@@ -343,9 +345,8 @@ import { regions } from '../data/regions.js';
 
         const response = await fetch('/api/profile', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
           body: JSON.stringify({
-            userId: user.id,
             birthDate,
             gender,
             regionCode,
@@ -387,14 +388,16 @@ import { regions } from '../data/regions.js';
   async function checkProfileCompletion() {
     if (!isAuthEnabled) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
 
     // Skip if user already skipped
     if (localStorage.getItem('profileSkipped') === 'true') return;
 
     try {
-      const response = await fetch(`/api/profile?userId=${user.id}`);
+      const response = await fetch('/api/profile', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const result = await response.json();
 
       // Show modal if no profile exists
@@ -402,8 +405,8 @@ import { regions } from '../data/regions.js';
         profileCompleteModal?.classList.remove('hidden');
 
         // Pre-fill with user metadata if available
-        const name = user.user_metadata?.full_name || user.user_metadata?.name || '';
-        const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+        const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
+        const avatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
         if (avatar && profilePreview) {
           profilePreview.src = avatar;
         }
@@ -445,9 +448,11 @@ import { regions } from '../data/regions.js';
   const mobileSignoutBtn = document.getElementById('mobile-signout-btn');
 
   // Check auth state and update UI
-  async function getProfileAvatar(userId) {
+  async function getProfileAvatar(token) {
     try {
-      const response = await fetch(`/api/profile?userId=${userId}`);
+      const response = await fetch('/api/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok) return null;
       const result = await response.json();
       return result?.profile?.avatar_url || null;
@@ -458,9 +463,10 @@ import { regions } from '../data/regions.js';
   }
 
   async function updateAuthUI() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
 
-    if (user) {
+    if (user && session) {
       // User is logged in
       signInButton?.classList.add('md:hidden');
       profileContainer?.classList.remove('md:hidden');
@@ -470,7 +476,7 @@ import { regions } from '../data/regions.js';
       // Set profile info
       const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
       const metadataAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
-      const profileAvatarUrl = await getProfileAvatar(user.id);
+      const profileAvatarUrl = await getProfileAvatar(session.access_token);
       const avatar = profileAvatarUrl || metadataAvatar;
       const email = user.email;
 
@@ -570,11 +576,8 @@ import { regions } from '../data/regions.js';
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({
-            userId: session.user.id,
-            accessToken: session.access_token,
-          }),
         });
 
         const result = await response.json();
