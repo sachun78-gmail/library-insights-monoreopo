@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Image, Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { Book } from "../lib/types";
 
 interface Props {
@@ -11,7 +12,29 @@ const CARD_WIDTH = 130;
 const CARD_GAP = 12;
 const H_PADDING = 20;
 const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
-const PLACEHOLDER = "https://via.placeholder.com/130x180?text=No+Image";
+
+function CarouselCover({ uri }: { uri: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!uri || failed) {
+    return (
+      <View
+        style={{ width: CARD_WIDTH, height: 180, borderRadius: 10, backgroundColor: "#1E293B", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#334155" }}
+      >
+        <Ionicons name="book-outline" size={36} color="#475569" />
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri }}
+      style={{ width: CARD_WIDTH, height: 180, borderRadius: 10 }}
+      resizeMode="cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export function Carousel({ books, onPress }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -45,6 +68,7 @@ export function Carousel({ books, onPress }: Props) {
         snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
         snapToAlignment="start"
+        nestedScrollEnabled
         onMomentumScrollEnd={(e) =>
           handleMomentumEnd(
             e.nativeEvent.contentOffset.x,
@@ -53,15 +77,11 @@ export function Carousel({ books, onPress }: Props) {
           )
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <Pressable
             onPress={() => onPress(item)}
             style={{ width: CARD_WIDTH }}
           >
-            <Image
-              source={{ uri: item.bookImageURL || PLACEHOLDER }}
-              style={{ width: CARD_WIDTH, height: 180, borderRadius: 10 }}
-              resizeMode="cover"
-            />
+            <CarouselCover uri={item.bookImageURL} />
             <Text
               numberOfLines={2}
               style={{
@@ -80,7 +100,7 @@ export function Carousel({ books, onPress }: Props) {
             >
               {item.authors}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
       />
 

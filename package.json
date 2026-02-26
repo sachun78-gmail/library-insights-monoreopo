@@ -18,9 +18,14 @@
     "check:local": "npm run check:server && npm run check:web",
     "deploy:server": "powershell -ExecutionPolicy Bypass -File scripts/deploy-server.ps1",
     "preview": "npm run preview -w @library-insights/web",
-    "preview:cf": "npm run preview:cf -w @library-insights/web"
+    "preview:cf": "npm run preview:cf -w @library-insights/web",
+    "android": "npm run android -w @library-insights/mobile",
+    "ios": "npm run ios -w @library-insights/mobile"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "expo": "~52.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.7"
   }
 }

@@ -27,7 +27,26 @@ interface Props {
   onClose: () => void;
 }
 
-const PLACEHOLDER = "https://via.placeholder.com/80x110?text=No+Image";
+function BookCover({ uri }: { uri: string }) {
+  const [failed, setFailed] = React.useState(false);
+
+  if (!uri || failed) {
+    return (
+      <View style={[styles.bookImage, { backgroundColor: "#1E293B", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#334155" }]}>
+        <Ionicons name="book-outline" size={32} color="#475569" />
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri }}
+      style={styles.bookImage}
+      resizeMode="cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 const ALL_REGIONS = [
   { code: "11", name: "서울" }, { code: "21", name: "부산" },
@@ -719,11 +738,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
             <>
               {/* ── 도서 헤더 ── */}
               <View style={styles.bookHeader}>
-                <Image
-                  source={{ uri: book.bookImageURL || PLACEHOLDER }}
-                  style={styles.bookImage}
-                  resizeMode="cover"
-                />
+                <BookCover uri={book.bookImageURL} />
                 <View style={styles.bookInfo}>
                   <Text style={styles.bookTitle} numberOfLines={4}>
                     {book.bookname}

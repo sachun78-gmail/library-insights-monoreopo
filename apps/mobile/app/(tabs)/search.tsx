@@ -22,15 +22,34 @@ import { AppBackground } from "../../components/AppBackground";
 import type { Book, AISearchResult } from "../../lib/types";
 
 type SearchType = "title" | "author";
-type AIRecommendationItem = Book | { book?: Book; nearbyLibCount?: number } | null | undefined;
+type AIRecommendationItem =
+  | Book
+  | { book?: Book; nearbyLibCount?: number }
+  | { title: string; author: string }
+  | null
+  | undefined;
 
 function normalizeAiRecommendations(items: AIRecommendationItem[] | undefined): Book[] {
   if (!items) return [];
   return items
     .map((item) => {
       if (!item) return null;
+      // mode: 'full' / 'no-gps' — { book, nearbyLibCount }
+      if ("book" in item && item.book) return item.book;
+      // mode: 'full' / 'no-gps' — Book 객체 직접
       if ("bookname" in item) return item as Book;
-      return item.book ?? null;
+      // mode: 'ai-only' — { title, author }
+      if ("title" in item) {
+        return {
+          bookname: item.title,
+          authors: item.author,
+          isbn13: "",
+          publisher: "",
+          publication_year: "",
+          bookImageURL: "",
+        } as Book;
+      }
+      return null;
     })
     .filter((book): book is Book => !!book && !!book.bookname);
 }
@@ -275,7 +294,13 @@ export default function SearchScreen() {
             data={books}
             keyExtractor={(item, i) => `${item.isbn13 ?? i}-${i}`}
             contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-            renderItem={({ item }) => <BookCard book={item} onPress={setSelectedBook} />}
+            renderItem={({ item }) => (
+              <BookCard
+                book={item}
+                onPress={setSelectedBook}
+                aiOnly={aiMode && aiData?.mode === "ai-only" && !item.isbn13}
+              />
+            )}
             onEndReached={() => {
               if (!aiMode && hasNextPage && !isFetchingNextPage) fetchNextPage();
             }}

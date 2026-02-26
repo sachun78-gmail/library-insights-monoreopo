@@ -1,16 +1,39 @@
-import React from "react";
+import React, { useState } from "react";
 import { TouchableOpacity, Image, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import type { Book } from "../lib/types";
 
 interface Props {
   book: Book;
   onPress: (book: Book) => void;
   rank?: number;
+  aiOnly?: boolean;
 }
 
-const PLACEHOLDER = "https://via.placeholder.com/60x85?text=No+Image";
+function BookCover({ uri, width = 52, height = 74 }: { uri: string; width?: number; height?: number }) {
+  const [failed, setFailed] = useState(false);
 
-export function BookCard({ book, onPress, rank }: Props) {
+  if (!uri || failed) {
+    return (
+      <View
+        style={{ width, height, borderRadius: 6, backgroundColor: "#1E293B", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#334155" }}
+      >
+        <Ionicons name="book-outline" size={22} color="#475569" />
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri }}
+      style={{ width, height, borderRadius: 6 }}
+      resizeMode="cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+export function BookCard({ book, onPress, rank, aiOnly }: Props) {
   return (
     <TouchableOpacity
       onPress={() => onPress(book)}
@@ -26,12 +49,13 @@ export function BookCard({ book, onPress, rank }: Props) {
           </Text>
         </View>
       )}
-      <Image
-        source={{ uri: book.bookImageURL || PLACEHOLDER }}
-        style={{ width: 52, height: 74, borderRadius: 6 }}
-        resizeMode="cover"
-      />
+      <BookCover uri={book.bookImageURL} />
       <View className="flex-1 justify-center">
+        {aiOnly && (
+          <View className="self-start bg-indigo-950 border border-indigo-700 rounded px-1.5 py-0.5 mb-1">
+            <Text className="text-indigo-300" style={{ fontSize: 10 }}>AI 추천</Text>
+          </View>
+        )}
         <Text
           className="text-sm font-semibold text-slate-100 mb-1"
           numberOfLines={2}
