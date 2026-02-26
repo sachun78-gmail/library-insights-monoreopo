@@ -426,38 +426,48 @@ import Analytics from '../components/Analytics.astro';
         const profileRegion = document.getElementById('profile-region') as HTMLSelectElement;
         const profileSubregion = document.getElementById('profile-subregion') as HTMLSelectElement;
 
-        if (result.profile) {
-          const profile = result.profile;
+        const profile = result.profile;
 
-          // Pre-fill avatar
+        // 폼 초기화 (이전 입력값 제거)
+        if (profileBirthdate) profileBirthdate.value = '';
+        if (profileGender) profileGender.value = '';
+        if (profileRegion) {
+          profileRegion.value = '';
+          profileRegion.dispatchEvent(new Event('change')); // sub-region 초기화
+        }
+
+        // 아바타 기본값 설정
+        const defaultAvatar = session.user.user_metadata?.avatar_url
+          || session.user.user_metadata?.picture
+          || `https://ui-avatars.com/api/?name=User&background=F4CE14&color=1A1A1A&size=96`;
+        if (profilePreview) profilePreview.src = defaultAvatar;
+
+        if (profile) {
+          // 아바타
           if (profile.avatar_url && profilePreview) {
             profilePreview.src = profile.avatar_url;
-          } else if (user.user_metadata?.avatar_url && profilePreview) {
-            profilePreview.src = user.user_metadata.avatar_url;
           }
 
-          // Pre-fill birth date
+          // 생년월일
           if (profile.birth_date && profileBirthdate) {
             profileBirthdate.value = profile.birth_date;
           }
 
-          // Pre-fill gender
+          // 성별
           if (profile.gender && profileGender) {
             profileGender.value = profile.gender;
           }
 
-          // Pre-fill region
+          // 지역 (sub-region 옵션이 채워진 후 값 설정)
           if (profile.region_code && profileRegion) {
             profileRegion.value = profile.region_code;
-            // Trigger change event to populate sub-regions
             profileRegion.dispatchEvent(new Event('change'));
 
-            // Wait a bit for sub-regions to populate, then set the value
-            setTimeout(() => {
-              if (profile.sub_region_code && profileSubregion) {
+            if (profile.sub_region_code && profileSubregion) {
+              setTimeout(() => {
                 profileSubregion.value = profile.sub_region_code;
-              }
-            }, 100);
+              }, 50);
+            }
           }
         }
 
