@@ -172,6 +172,7 @@ export default function SearchScreen() {
                 style={aiMode ? { fontSize: 11 } : undefined}
                 multiline={false}
                 numberOfLines={1}
+                // @ts-ignore - iOS-only prop, not in current RN type definitions
                 adjustsFontSizeToFit
                 minimumFontScale={0.72}
                 placeholder={

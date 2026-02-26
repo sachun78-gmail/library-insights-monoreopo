@@ -142,14 +142,16 @@ export default function MyPageScreen() {
     queryFn: () => api.profile(user!.id),
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
-    onSuccess: (data) => {
-      setSelectedGender(normalizeGenderValue(data?.gender));
-      setSelectedRegion(data?.region_code ?? null);
-      setSelectedSubRegion(data?.sub_region_code ?? null);
-      setBirthDate(data?.birth_date ?? "");
-      setAvatarUrl(data?.avatar_url ?? null);
-    },
-  } as any);
+  });
+
+  useEffect(() => {
+    if (!profile) return;
+    setSelectedGender(normalizeGenderValue(profile.gender));
+    setSelectedRegion(profile.region_code ?? null);
+    setSelectedSubRegion(profile.sub_region_code ?? null);
+    setBirthDate(profile.birth_date ?? "");
+    setAvatarUrl(profile.avatar_url ?? null);
+  }, [profile]);
 
   const uploadImageMutation = useMutation({
     mutationFn: async () => {

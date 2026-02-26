@@ -8,7 +8,7 @@ const CACHE_TTL = 10 * 60; // 10 minutes
 const OPENAI_TIMEOUT_MS = 8000;
 const FETCH_TIMEOUT_MS = 2500;
 const MAX_AI_BOOKS = 12;
-const MAX_SEED_LOOKUPS = 5;
+const MAX_SEED_LOOKUPS = 12;
 const MAX_SEED_ISBNS = 5;
 const MAX_LIB_CHECK_BOOKS = 12;
 const MAX_RETURN_BOOKS = 12;
@@ -70,6 +70,55 @@ function cleanTitle(title: string): string {
   let cleaned = title.replace(/\s*\(.*?\)\s*/g, '').trim();
   cleaned = cleaned.replace(/\s*:.*$/, '').trim();
   return cleaned;
+}
+
+// AI 저자명과 DB 저자명의 토큰 일치 여부 확인
+function authorMatches(aiAuthor: string, dbAuthors: string): boolean {
+  if (!aiAuthor || !dbAuthors) return false;
+  const aiTokens = normalizeText(aiAuthor)
+    .split(/[\s,]+/)
+    .filter((t) => t.length >= 2);
+  const dbNorm = normalizeText(dbAuthors);
+  return aiTokens.some((token) => dbNorm.includes(token));
+}
+
+// AI 추천 1건을 공공도서관 DB에서 검색해 가장 적합한 도서 반환
+async function findBookInDB(
+  locals: any,
+  rec: { title: string; author: string }
+): Promise<any | null> {
+  const trySearch = async (keyword: string): Promise<any[]> => {
+    try {
+      const data = await fetchLibraryData(locals, 'srchBooks', {
+        keyword,
+        pageNo: 1,
+        pageSize: 5,
+      });
+      if (data.response?.error) return [];
+      const docs = data.response?.docs || [];
+      return docs.map((d: any) => d.doc || d).filter((d: any) => d?.isbn13);
+    } catch {
+      return [];
+    }
+  };
+
+  // 1차: cleanTitle로 검색 후 저자 일치 우선 선택
+  const byTitle = await trySearch(cleanTitle(rec.title));
+  if (byTitle.length > 0) {
+    const matched = byTitle.find((d) => authorMatches(rec.author, d.authors ?? ''));
+    if (matched) return matched;
+    // 저자 일치 없어도 isbn13만 있으면 첫 결과 반환
+    return byTitle[0];
+  }
+
+  // 2차: "제목 저자" 조합으로 재검색
+  const byTitleAuthor = await trySearch(`${cleanTitle(rec.title)} ${rec.author}`);
+  if (byTitleAuthor.length > 0) {
+    const matched = byTitleAuthor.find((d) => authorMatches(rec.author, d.authors ?? ''));
+    return matched ?? byTitleAuthor[0];
+  }
+
+  return null;
 }
 
 function normalizeIsbn(value: string | null | undefined): string {
@@ -200,20 +249,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     console.log('[AI-Search] Step 2: Seed book lookup');
     const seedSearchResults = await Promise.all(
-      aiBooks.slice(0, MAX_SEED_LOOKUPS).map(async (rec) => {
-        try {
-          const data = await fetchLibraryData(locals, 'srchBooks', {
-            keyword: cleanTitle(rec.title),
-            pageNo: 1,
-            pageSize: 1,
-          });
-          if (data.response?.error) return null;
-          const docs = data.response?.docs || [];
-          return docs.length > 0 ? docs[0].doc : null;
-        } catch {
-          return null;
-        }
-      })
+      aiBooks.slice(0, MAX_SEED_LOOKUPS).map((rec) => findBookInDB(locals, rec))
     );
 
     const seedBooks = seedSearchResults.filter((b: any) => b?.isbn13);

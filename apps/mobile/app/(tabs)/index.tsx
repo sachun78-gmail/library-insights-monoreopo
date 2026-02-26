@@ -170,6 +170,7 @@ export default function HomeScreen() {
                   style={[styles.input, isAiMode && styles.inputAiMode]}
                   multiline={false}
                   numberOfLines={1}
+                  // @ts-ignore - iOS-only prop, not in current RN type definitions
                   adjustsFontSizeToFit
                   minimumFontScale={0.72}
                   placeholder={
