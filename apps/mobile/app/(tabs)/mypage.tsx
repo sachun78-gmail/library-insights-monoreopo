@@ -11,6 +11,7 @@ import {
   TextInput,
   Modal,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -21,15 +22,6 @@ import { AppBackground } from "../../components/AppBackground";
 import { isKorean } from "../../lib/i18n";
 import type { UserProfile } from "../../lib/types";
 import { regions as regionsData } from "../../../../apps/web/src/data/regions.js";
-
-function getImagePickerModule(): any | null {
-  try {
-    const req = (globalThis as any).eval?.("require") ?? require;
-    return req("expo-image-picker");
-  } catch {
-    return null;
-  }
-}
 
 const REGIONS = [
   { code: "11", name: "Seoul", nameKo: "서울" },
@@ -155,15 +147,6 @@ export default function MyPageScreen() {
 
   const uploadImageMutation = useMutation({
     mutationFn: async () => {
-      const ImagePicker = getImagePickerModule();
-      if (!ImagePicker) {
-        throw new Error(
-          isKorean
-            ? "expo-image-picker 패키지가 설치되지 않았습니다. 설치 후 다시 시도해주세요."
-            : "expo-image-picker is not installed. Please install it and try again."
-        );
-      }
-
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         throw new Error(isKorean ? "사진 접근 권한이 필요합니다." : "Media library permission is required.");

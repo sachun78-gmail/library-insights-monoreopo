@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { verifyAuth, getSupabase } from '../../lib/auth';
+import { verifyAuth, getSupabase, safeErrorResponse } from '../../lib/auth';
 
 export const prerender = false;
 
@@ -53,8 +53,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
     if (error) throw error;
     return jsonResponse({ reviews: data || [], total: count || 0, page, limit });
-  } catch (error: any) {
-    return jsonResponse({ error: error.message }, 500);
+  } catch (error) {
+    return safeErrorResponse(error);
   }
 };
 
@@ -104,8 +104,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (error) throw error;
     return jsonResponse({ review: data });
-  } catch (error: any) {
-    return jsonResponse({ error: error.message }, 500);
+  } catch (error) {
+    return safeErrorResponse(error);
   }
 };
 
@@ -131,7 +131,7 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
 
     if (error) throw error;
     return jsonResponse({ success: true });
-  } catch (error: any) {
-    return jsonResponse({ error: error.message }, 500);
+  } catch (error) {
+    return safeErrorResponse(error);
   }
 };

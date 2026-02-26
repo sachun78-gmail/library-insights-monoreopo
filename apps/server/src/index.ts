@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import rateLimit from "@fastify/rate-limit";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 
@@ -24,6 +25,17 @@ if (!PROXY_SHARED_SECRET) {
   throw new Error("PROXY_SHARED_SECRET is required");
 }
 
+// Rate limiting: IP 기반, 엔드포인트별로 다른 제한 적용
+await app.register(rateLimit, {
+  global: true,
+  max: 120,          // 기본: IP당 분당 120 요청
+  timeWindow: 60_000,
+  errorResponseBuilder: () => ({
+    error: "Too Many Requests",
+    message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+  }),
+});
+
 const ALLOWED_ENDPOINTS = new Set([
   "srchBooks",
   "srchDtlList",
@@ -38,7 +50,7 @@ const ALLOWED_ENDPOINTS = new Set([
 
 const API_BASE = "https://data4library.kr/api";
 
-app.get("/healthz", async () => ({ ok: true }));
+app.get("/healthz", { config: { rateLimit: false } }, async () => ({ ok: true }));
 
 const AI_RECOMMEND_PROMPT = `You are a Korean publishing curation expert.
 Return exactly 12 Korean-language recommended books for the user's keyword.
@@ -62,10 +74,11 @@ const AI_INSIGHT_PROMPT = `너는 전 세계 출판 트렌드와 독자들의 �
   "difficulty": "난이도 평가 텍스트"
 }`;
 
-// AI 도서 추천
+// AI 도서 추천 — IP당 분당 10 요청 (OpenAI 비용 절감)
 app.get<{ Querystring: { keyword?: string } }>(
   "/v1/ai-recommend",
   {
+    config: { rateLimit: { max: 10, timeWindow: 60_000 } },
     preHandler: async (req, reply) => {
       const headerValue = req.headers["x-proxy-key"];
       const requestKey = Array.isArray(headerValue) ? headerValue[0] : headerValue;
@@ -77,7 +90,7 @@ app.get<{ Querystring: { keyword?: string } }>(
   async (req, reply) => {
     const { keyword } = req.query;
     if (!keyword) return reply.code(400).send({ error: "keyword is required" });
-    if (!OPENAI_API_KEY) return reply.code(500).send({ error: "OpenAI not configured" });
+    if (!OPENAI_API_KEY) return reply.code(500).send({ error: "AI not configured" });
 
     try {
       const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
@@ -95,15 +108,16 @@ app.get<{ Querystring: { keyword?: string } }>(
       return reply.send({ books });
     } catch (err: any) {
       req.log.error(err);
-      return reply.code(500).send({ error: "AI recommend failed", detail: err?.message });
+      return reply.code(500).send({ error: "AI recommend failed" });
     }
   }
 );
 
-// AI 도서 인사이트
+// AI 도서 인사이트 — IP당 분당 20 요청
 app.get<{ Querystring: { title?: string; author?: string; isbn13?: string } }>(
   "/v1/ai-insight",
   {
+    config: { rateLimit: { max: 20, timeWindow: 60_000 } },
     preHandler: async (req, reply) => {
       const headerValue = req.headers["x-proxy-key"];
       const requestKey = Array.isArray(headerValue) ? headerValue[0] : headerValue;
@@ -115,7 +129,7 @@ app.get<{ Querystring: { title?: string; author?: string; isbn13?: string } }>(
   async (req, reply) => {
     const { title, author } = req.query;
     if (!title) return reply.code(400).send({ error: "title is required" });
-    if (!OPENAI_API_KEY) return reply.code(500).send({ error: "OpenAI not configured" });
+    if (!OPENAI_API_KEY) return reply.code(500).send({ error: "AI not configured" });
 
     try {
       const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
@@ -135,7 +149,7 @@ app.get<{ Querystring: { title?: string; author?: string; isbn13?: string } }>(
       return reply.send({ insight });
     } catch (err: any) {
       req.log.error(err);
-      return reply.code(500).send({ error: "AI insight failed", detail: err?.message });
+      return reply.code(500).send({ error: "AI insight failed" });
     }
   }
 );

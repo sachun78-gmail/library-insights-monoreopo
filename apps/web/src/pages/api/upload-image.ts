@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { verifyAuth } from '../../lib/auth';
+import { verifyAuth, safeErrorResponse } from '../../lib/auth';
 
 export const prerender = false;
 
@@ -72,11 +72,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
-    console.error('Upload error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Upload failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  } catch (error) {
+    return safeErrorResponse(error, 'Upload failed');
   }
 };

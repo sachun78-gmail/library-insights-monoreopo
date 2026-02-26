@@ -25,6 +25,18 @@ function jsonUnauthorized() {
 }
 
 /**
+ * 내부 에러를 로깅하고 클라이언트에 안전한 메시지만 반환합니다.
+ */
+export function safeErrorResponse(error: unknown, publicMessage = 'Internal server error'): Response {
+  // 서버 로그에만 상세 에러 기록
+  console.error('[API Error]', error instanceof Error ? error.message : String(error));
+  return new Response(JSON.stringify({ error: publicMessage }), {
+    status: 500,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/**
  * Verifies the Bearer token in the Authorization header.
  * Returns { userId: string } on success, or a 401/500 Response on failure.
  */

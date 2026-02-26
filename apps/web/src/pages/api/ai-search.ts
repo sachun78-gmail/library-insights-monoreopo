@@ -425,7 +425,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       regions: nearestRegions.map((r) => r.name),
     });
   } catch (error: any) {
-    console.error('[AI-Search] Fatal error:', error);
-    return jsonResponse({ error: 'AI recommendation failed', detail: error?.message ?? String(error) }, 500);
+    console.error('[AI-Search] Fatal error:', error?.message ?? String(error));
+    return jsonResponse({ error: 'AI recommendation failed' }, 500);
   }
 };
