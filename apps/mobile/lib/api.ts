@@ -6,8 +6,9 @@ const AI_TIMEOUT_MS = 40_000;
 const DEBUG_API = typeof __DEV__ !== "undefined" && __DEV__;
 
 type Params = Record<string, string | number | boolean | undefined | null>;
+type ExtraHeaders = Record<string, string>;
 
-async function get(path: string, params: Params = {}, timeoutMs = TIMEOUT_MS): Promise<any> {
+async function get(path: string, params: Params = {}, timeoutMs = TIMEOUT_MS, extraHeaders?: ExtraHeaders): Promise<any> {
   const url = new URL(`${BASE_URL}${path}`);
   for (const [key, value] of Object.entries(params)) {
     if (value != null) {
@@ -22,7 +23,10 @@ async function get(path: string, params: Params = {}, timeoutMs = TIMEOUT_MS): P
     if (DEBUG_API) {
       console.log("[API][GET][REQ]", url.toString());
     }
-    const res = await fetch(url.toString(), { signal: controller.signal });
+    const res = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: extraHeaders,
+    });
     if (DEBUG_API) {
       console.log("[API][GET][RES]", path, res.status);
     }
@@ -38,7 +42,7 @@ async function get(path: string, params: Params = {}, timeoutMs = TIMEOUT_MS): P
   }
 }
 
-async function post(path: string, body: Record<string, any>): Promise<any> {
+async function post(path: string, body: Record<string, any>, extraHeaders?: ExtraHeaders): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -47,7 +51,7 @@ async function post(path: string, body: Record<string, any>): Promise<any> {
     }
     const res = await fetch(`${BASE_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...extraHeaders },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -83,7 +87,7 @@ async function post(path: string, body: Record<string, any>): Promise<any> {
   }
 }
 
-async function del(path: string, body: Record<string, any>): Promise<any> {
+async function del(path: string, body: Record<string, any>, extraHeaders?: ExtraHeaders): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -92,7 +96,7 @@ async function del(path: string, body: Record<string, any>): Promise<any> {
     }
     const res = await fetch(`${BASE_URL}${path}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...extraHeaders },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -111,7 +115,7 @@ async function del(path: string, body: Record<string, any>): Promise<any> {
   }
 }
 
-async function postForm(path: string, formData: FormData): Promise<any> {
+async function postForm(path: string, formData: FormData, extraHeaders?: ExtraHeaders): Promise<any> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -120,6 +124,7 @@ async function postForm(path: string, formData: FormData): Promise<any> {
     }
     const res = await fetch(`${BASE_URL}${path}`, {
       method: "POST",
+      headers: extraHeaders,
       body: formData,
       signal: controller.signal,
     });
@@ -136,6 +141,10 @@ async function postForm(path: string, formData: FormData): Promise<any> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function authHeader(token: string): ExtraHeaders {
+  return { Authorization: `Bearer ${token}` };
 }
 
 export const api = {
@@ -187,11 +196,11 @@ export const api = {
   bookExist: (isbn: string, libCode: string) =>
     get("/api/book-exist", { isbn, libCode }),
 
-  // ── 북마크 ──
-  bookmarks: (userId: string) =>
-    get("/api/bookmarks", { userId }).then((res) => res?.bookmarks ?? []),
+  // ── 북마크 (인증 필요) ──
+  bookmarks: (token: string) =>
+    get("/api/bookmarks", {}, TIMEOUT_MS, authHeader(token)).then((res) => res?.bookmarks ?? []),
 
-  addBookmark: (userId: string, book: {
+  addBookmark: (token: string, book: {
     isbn13: string;
     bookname: string;
     authors: string;
@@ -200,23 +209,22 @@ export const api = {
     bookImageURL: string;
   }) =>
     post("/api/bookmarks", {
-      userId,
       isbn13: book.isbn13,
       bookname: book.bookname,
       authors: book.authors,
       publisher: book.publisher,
       publication_year: book.publication_year,
       book_image_url: book.bookImageURL,
-    }),
+    }, authHeader(token)),
 
-  removeBookmark: (userId: string, isbn13: string) =>
-    del("/api/bookmarks", { userId, isbn13 }),
+  removeBookmark: (token: string, isbn13: string) =>
+    del("/api/bookmarks", { isbn13 }, authHeader(token)),
 
-  // ── 프로필 ──
-  profile: (userId: string) =>
-    get("/api/profile", { userId }).then((res) => res?.profile ?? null),
+  // ── 프로필 (인증 필요) ──
+  profile: (token: string) =>
+    get("/api/profile", {}, TIMEOUT_MS, authHeader(token)).then((res) => res?.profile ?? null),
 
-  updateProfile: (userId: string, data: {
+  updateProfile: (token: string, data: {
     birth_date?: string;
     gender?: string;
     region_code?: string;
@@ -226,7 +234,6 @@ export const api = {
     avatar_url?: string;
   }) =>
     post("/api/profile", {
-      userId,
       birthDate: data.birth_date,
       gender: data.gender,
       regionCode: data.region_code,
@@ -234,10 +241,10 @@ export const api = {
       subRegionCode: data.sub_region_code,
       subRegionName: data.sub_region_name,
       avatarUrl: data.avatar_url,
-    }).then((res) => res?.profile ?? null),
+    }, authHeader(token)).then((res) => res?.profile ?? null),
 
-  deleteAccount: (userId: string) =>
-    post("/api/delete-account", { userId }),
+  deleteAccount: (userId: string, accessToken: string) =>
+    post("/api/delete-account", { userId, accessToken }),
 
   // ── 한줄평 ──
   bookReviews: (isbn13: string) =>
@@ -247,7 +254,6 @@ export const api = {
     get("/api/book-reviews", { page, limit }),
 
   upsertReview: (params: {
-    userId: string;
     isbn13: string;
     bookname: string;
     authors: string;
@@ -256,25 +262,24 @@ export const api = {
     display_name: string;
     rating: number;
     review_text: string;
-  }) => post("/api/book-reviews", params),
+  }, token: string) => post("/api/book-reviews", params, authHeader(token)),
 
-  deleteReview: (userId: string, isbn13: string) =>
-    del("/api/book-reviews", { userId, isbn13 }),
+  deleteReview: (token: string, isbn13: string) =>
+    del("/api/book-reviews", { isbn13 }, authHeader(token)),
 
-  uploadProfileImage: async (userId: string, file: {
+  uploadProfileImage: async (token: string, file: {
     uri: string;
     name?: string;
     type?: string;
   }) => {
     const form = new FormData();
-    form.append("userId", userId);
     form.append("file", {
       uri: file.uri,
       name: file.name ?? `profile_${Date.now()}.jpg`,
       type: file.type ?? "image/jpeg",
     } as any);
 
-    const res = await postForm("/api/upload-image", form);
+    const res = await postForm("/api/upload-image", form, authHeader(token));
     return res?.url as string;
   },
 };

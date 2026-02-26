@@ -1,15 +1,12 @@
 import type { APIRoute } from 'astro';
-import { createClient } from '@supabase/supabase-js';
+import { verifyAuth, getSupabase } from '../../lib/auth';
 
 export const prerender = false;
 
-// Create admin client that bypasses RLS
-function createAdminClient(url: string, serviceKey: string) {
-  return createClient(url, serviceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+function jsonResponse(body: any, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
@@ -24,32 +21,12 @@ function normalizeGenderInput(value: unknown): string | null {
 }
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const url = new URL(request.url);
-  const userId = url.searchParams.get('userId');
+  const auth = await verifyAuth(request, locals);
+  if (auth instanceof Response) return auth;
+  const { userId } = auth;
 
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'userId is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Try Cloudflare runtime env first, then fall back to import.meta.env
-  const runtime = locals.runtime;
-  const supabaseUrl = runtime?.env?.SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL;
-  const supabaseKey = runtime?.env?.SUPABASE_SECRET_KEY || import.meta.env.SUPABASE_SECRET_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    return new Response(JSON.stringify({
-      error: 'Supabase not configured',
-      debug: { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey }
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  const supabase = createAdminClient(supabaseUrl, supabaseKey);
+  const supabase = getSupabase(locals);
+  if (!supabase) return jsonResponse({ error: 'Supabase not configured' }, 500);
 
   try {
     const { data, error } = await supabase
@@ -58,50 +35,25 @@ export const GET: APIRoute = async ({ request, locals }) => {
       .eq('id', userId)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
+    if (error && error.code !== 'PGRST116') throw error;
 
-    return new Response(JSON.stringify({ profile: data }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ profile: data });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: error.message }, 500);
   }
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  // Try Cloudflare runtime env first, then fall back to import.meta.env
-  const runtime = locals.runtime;
-  const supabaseUrl = runtime?.env?.SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL;
-  const supabaseKey = runtime?.env?.SUPABASE_SECRET_KEY || import.meta.env.SUPABASE_SECRET_KEY;
+  const auth = await verifyAuth(request, locals);
+  if (auth instanceof Response) return auth;
+  const { userId } = auth;
 
-  if (!supabaseUrl || !supabaseKey) {
-    return new Response(JSON.stringify({
-      error: 'Supabase not configured',
-      debug: { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey }
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  const supabase = createAdminClient(supabaseUrl, supabaseKey);
+  const supabase = getSupabase(locals);
+  if (!supabase) return jsonResponse({ error: 'Supabase not configured' }, 500);
 
   try {
     const body = await request.json();
-    const { userId, birthDate, gender, regionCode, regionName, subRegionCode, subRegionName, avatarUrl } = body;
-
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'userId is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const { birthDate, gender, regionCode, regionName, subRegionCode, subRegionName, avatarUrl } = body;
 
     const profileData = {
       id: userId,
@@ -120,18 +72,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .select()
       .single();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    return new Response(JSON.stringify({ profile: data }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ profile: data });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: error.message }, 500);
   }
 };

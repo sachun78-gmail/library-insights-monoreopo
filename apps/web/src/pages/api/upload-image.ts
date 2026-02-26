@@ -1,8 +1,13 @@
 import type { APIRoute } from 'astro';
+import { verifyAuth } from '../../lib/auth';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const auth = await verifyAuth(request, locals);
+  if (auth instanceof Response) return auth;
+  const { userId: verifiedUserId } = auth;
+
   try {
     const runtime = locals.runtime;
     const R2_BUCKET = runtime?.env?.R2_BUCKET;
@@ -16,10 +21,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const userId = formData.get('userId') as string;
 
-    if (!file || !userId) {
-      return new Response(JSON.stringify({ error: 'File and userId are required' }), {
+    if (!file) {
+      return new Response(JSON.stringify({ error: 'File is required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -45,7 +49,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Generate unique filename
     const ext = file.name.split('.').pop() || 'jpg';
-    const filename = `profileImg/${userId}_${Date.now()}.${ext}`;
+    const filename = `profileImg/${verifiedUserId}_${Date.now()}.${ext}`;
 
     // Convert file to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();

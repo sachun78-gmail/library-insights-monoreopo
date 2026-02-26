@@ -390,7 +390,7 @@ const libStyles = StyleSheet.create({
 // ── Main Component ────────────────────────────────────────────
 export function BookDetailSheet({ book, onClose }: Props) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -502,7 +502,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
   // ── 북마크 ──
   const { data: bookmarks } = useQuery<Bookmark[]>({
     queryKey: ["bookmarks", user?.id],
-    queryFn: () => api.bookmarks(user!.id),
+    queryFn: () => api.bookmarks(session!.access_token),
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
   });
@@ -510,11 +510,11 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const isBookmarked = bookmarks?.some((b) => b.isbn13 === book?.isbn13) ?? false;
 
   const addMutation = useMutation({
-    mutationFn: () => api.addBookmark(user!.id, book!),
+    mutationFn: () => api.addBookmark(session!.access_token, book!),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookmarks", user?.id] }),
   });
   const removeMutation = useMutation({
-    mutationFn: () => api.removeBookmark(user!.id, book!.isbn13),
+    mutationFn: () => api.removeBookmark(session!.access_token, book!.isbn13),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bookmarks", user?.id] }),
   });
 
@@ -657,7 +657,6 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const upsertMutation = useMutation({
     mutationFn: () =>
       api.upsertReview({
-        userId: user!.id,
         isbn13: book!.isbn13,
         bookname: book!.bookname,
         authors: book!.authors,
@@ -666,7 +665,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
         display_name: (user as any)?.user_metadata?.name ?? (user as any)?.email?.split("@")[0] ?? "",
         rating: myRating,
         review_text: myReviewText.trim(),
-      }),
+      }, session!.access_token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["book-reviews", book?.isbn13] });
       queryClient.invalidateQueries({ queryKey: ["all-reviews"] });
@@ -674,7 +673,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
   });
 
   const deleteReviewMutation = useMutation({
-    mutationFn: () => api.deleteReview(user!.id, book!.isbn13),
+    mutationFn: () => api.deleteReview(session!.access_token, book!.isbn13),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["book-reviews", book?.isbn13] });
       queryClient.invalidateQueries({ queryKey: ["all-reviews"] });
