@@ -166,9 +166,9 @@ async function fetchAiInsight(): Promise<void> {
   }
 }
 
-function handleAiInsightClick(): void {
-  const userId = getUserId();
-  if (!userId) {
+async function handleAiInsightClick(): Promise<void> {
+  const token = await getAuthToken();
+  if (!token) {
     getEl('ai-insight-btn')?.classList.add('hidden');
     getEl('ai-insight-login')?.classList.remove('hidden');
     return;
@@ -1189,17 +1189,21 @@ export function openBookModal(book: any): void {
   resetLibraryState();
   _callbacks.onOpen?.(book);
 
-  // Show login prompt or review form based on auth state
-  const userId = getUserId();
-  if (userId) {
-    getEl('my-review-form')?.classList.remove('hidden');
-    getEl('my-review-login-prompt')?.classList.add('hidden');
-  } else {
-    getEl('my-review-form')?.classList.add('hidden');
-    getEl('my-review-login-prompt')?.classList.remove('hidden');
-  }
+  // 모달 먼저 열고, 세션 비동기 확인 후 로그인 상태에 따라 UI 업데이트
+  getEl('my-review-form')?.classList.add('hidden');
+  getEl('my-review-login-prompt')?.classList.add('hidden');
 
   modal?.classList.remove('hidden');
+
+  getAuthToken().then(token => {
+    if (token) {
+      getEl('my-review-form')?.classList.remove('hidden');
+      getEl('my-review-login-prompt')?.classList.add('hidden');
+    } else {
+      getEl('my-review-form')?.classList.add('hidden');
+      getEl('my-review-login-prompt')?.classList.remove('hidden');
+    }
+  });
   fetchBookDetails(book.isbn13 || '', book.bookname || '');
 
   // Fetch user reviews for this book

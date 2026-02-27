@@ -306,6 +306,8 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 </script>
 <script>
   import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
+  import { initBookmarks } from '../scripts/bookmarks';
+  initBookmarks();
   initBookModal();
   (window as any).__openBookModal = sharedOpenModal;
 </script>
