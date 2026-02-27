@@ -1,8 +1,12 @@
 ---
-// Google Analytics Component
-// Set GA_MEASUREMENT_ID in your environment variables (.env or .dev.vars)
+// Google Analytics + AdSense Component
 const gaId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || '';
+const adsbygooglePub = 'ca-pub-7431853210834432';
 ---
+
+<!-- Google AdSense 사이트 확인 -->
+<meta name="google-adsense-account" content={adsbygooglePub} />
+<script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsbygooglePub}`} crossorigin="anonymous"></script>
 
 {gaId && (
   <>
