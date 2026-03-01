@@ -3,12 +3,19 @@
 -- Supabase Dashboard > SQL Editor 에서 실행하세요.
 -- ============================================================
 
+-- ── bookmarks 마이그레이션 ────────────────────────────────
+-- reading_status 컬럼 추가 (없으면 추가)
+ALTER TABLE bookmarks
+  ADD COLUMN IF NOT EXISTS reading_status TEXT NOT NULL DEFAULT 'to_read'
+  CHECK (reading_status IN ('to_read', 'reading', 'read'));
+
 -- ── bookmarks ──────────────────────────────────────────────
 ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
 
 -- 기존 정책 초기화 (재실행 시 오류 방지)
 DROP POLICY IF EXISTS "bookmarks_select_own" ON bookmarks;
 DROP POLICY IF EXISTS "bookmarks_insert_own" ON bookmarks;
+DROP POLICY IF EXISTS "bookmarks_update_own" ON bookmarks;
 DROP POLICY IF EXISTS "bookmarks_delete_own" ON bookmarks;
 
 -- 본인 북마크만 조회
@@ -19,6 +26,12 @@ CREATE POLICY "bookmarks_select_own"
 -- 본인 북마크만 추가 (user_id를 JWT uid로 강제)
 CREATE POLICY "bookmarks_insert_own"
   ON bookmarks FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- 본인 북마크만 수정 (reading_status 변경용)
+CREATE POLICY "bookmarks_update_own"
+  ON bookmarks FOR UPDATE
+  USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 -- 본인 북마크만 삭제

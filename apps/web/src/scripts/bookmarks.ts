@@ -3,7 +3,8 @@
 
 import { supabase } from '../lib/supabase';
 
-let bookmarkedIsbns: Set<string> = new Set();
+// isbn13 → reading_status ('to_read' | 'reading' | 'read') 매핑
+let bookmarkedMap: Map<string, string> = new Map();
 let currentUserId: string | null = null;
 let loaded = false;
 
@@ -17,7 +18,7 @@ export async function initBookmarks(): Promise<void> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
       currentUserId = null;
-      bookmarkedIsbns.clear();
+      bookmarkedMap.clear();
       loaded = true;
       return;
     }
@@ -37,7 +38,9 @@ async function loadBookmarks(): Promise<void> {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
-    bookmarkedIsbns = new Set((data.bookmarks || []).map((b: any) => b.isbn13));
+    bookmarkedMap = new Map(
+      (data.bookmarks || []).map((b: any) => [b.isbn13, b.reading_status || 'to_read'])
+    );
   } catch {
     // ignore
   }
@@ -45,7 +48,7 @@ async function loadBookmarks(): Promise<void> {
 }
 
 export function isBookmarked(isbn13: string): boolean {
-  return bookmarkedIsbns.has(isbn13);
+  return bookmarkedMap.has(isbn13);
 }
 
 export function getUserId(): string | null {
@@ -53,11 +56,36 @@ export function getUserId(): string | null {
 }
 
 export function getBookmarkedIsbns(): string[] {
-  return Array.from(bookmarkedIsbns);
+  return Array.from(bookmarkedMap.keys());
 }
 
 export function isLoaded(): boolean {
   return loaded;
+}
+
+export function getReadingStatus(isbn13: string): string | null {
+  return bookmarkedMap.get(isbn13) ?? null;
+}
+
+export async function updateReadingStatus(
+  isbn13: string,
+  status: 'to_read' | 'reading' | 'read'
+): Promise<boolean> {
+  if (!currentUserId) return false;
+  const token = await getAuthToken();
+  if (!token) return false;
+  try {
+    const res = await fetch('/api/bookmarks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isbn13, reading_status: status }),
+    });
+    if (!res.ok) return false;
+    bookmarkedMap.set(isbn13, status);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function toggleBookmark(book: {
@@ -77,7 +105,7 @@ export async function toggleBookmark(book: {
   if (!token) return false;
   const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
-  if (bookmarkedIsbns.has(isbn)) {
+  if (bookmarkedMap.has(isbn)) {
     // Remove
     try {
       await fetch('/api/bookmarks', {
@@ -85,7 +113,7 @@ export async function toggleBookmark(book: {
         headers: authHeaders,
         body: JSON.stringify({ isbn13: isbn }),
       });
-      bookmarkedIsbns.delete(isbn);
+      bookmarkedMap.delete(isbn);
       return false; // not bookmarked now
     } catch {
       return true; // still bookmarked
@@ -103,9 +131,10 @@ export async function toggleBookmark(book: {
           publisher: book.publisher || '',
           publication_year: book.publication_year || '',
           book_image_url: book.bookImageURL || '',
+          reading_status: 'to_read',
         }),
       });
-      bookmarkedIsbns.add(isbn);
+      bookmarkedMap.set(isbn, 'to_read');
       return true; // bookmarked now
     } catch {
       return false; // not bookmarked
@@ -116,7 +145,7 @@ export async function toggleBookmark(book: {
 // Render a heart button for a book card
 export function renderHeartButton(isbn13: string, extraClasses = ''): string {
   if (!isbn13) return '';
-  const filled = bookmarkedIsbns.has(isbn13);
+  const filled = bookmarkedMap.has(isbn13);
   return `
     <button
       class="bookmark-btn ${extraClasses} flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

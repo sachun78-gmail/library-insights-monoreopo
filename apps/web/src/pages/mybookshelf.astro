@@ -144,6 +144,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         내 서재
       </h1>
       <p id="bookshelf-count" class="text-white/80 text-sm sm:text-lg mt-3"></p>
+      <p id="bookshelf-read-count" class="text-white/60 text-xs sm:text-sm mt-1"></p>
     </div>
   </div>
 
@@ -173,6 +174,26 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         <a href="/" class="px-6 py-3 bg-primary text-charcoal font-bold rounded-lg hover:bg-primary/90 transition-colors">
           도서 검색하기
         </a>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div id="filter-tabs" class="hidden flex gap-2 flex-wrap mb-4 sm:mb-6">
+        <button class="filter-tab active-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors bg-charcoal text-white dark:bg-white dark:text-charcoal" data-filter="all">
+          <span class="material-symbols-outlined text-sm">collections_bookmark</span>
+          전체 <span id="tab-count-all" class="ml-1 opacity-70"></span>
+        </button>
+        <button class="filter-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-charcoal/60 dark:text-white/60 hover:bg-charcoal/5 dark:hover:bg-white/10" data-filter="to_read">
+          <span class="material-symbols-outlined text-sm">bookmark</span>
+          읽기전 <span id="tab-count-to_read" class="ml-1 opacity-70"></span>
+        </button>
+        <button class="filter-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20" data-filter="reading">
+          <span class="material-symbols-outlined text-sm">menu_book</span>
+          읽는중 <span id="tab-count-reading" class="ml-1 opacity-70"></span>
+        </button>
+        <button class="filter-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20" data-filter="read">
+          <span class="material-symbols-outlined text-sm">check_circle</span>
+          읽음 <span id="tab-count-read" class="ml-1 opacity-70"></span>
+        </button>
       </div>
 
       <!-- Bookmarks Grid -->
@@ -232,9 +253,19 @@ import BookDetailModal from '../components/BookDetailModal.astro';
   const bookshelfEmpty = document.getElementById('bookshelf-empty');
   const bookshelfGrid = document.getElementById('bookshelf-grid');
   const bookshelfCount = document.getElementById('bookshelf-count');
+  const bookshelfReadCount = document.getElementById('bookshelf-read-count');
+  const filterTabs = document.getElementById('filter-tabs');
   const bookshelfSigninBtn = document.getElementById('bookshelf-signin-btn');
 
   let allBookmarks: any[] = [];
+  let currentFilter = 'all';
+  let currentAuthHeaders: Record<string, string> = {};
+
+  const STATUS_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+    to_read: { label: '읽기전', icon: 'bookmark', color: 'text-charcoal/50 dark:text-white/50' },
+    reading:  { label: '읽는중', icon: 'menu_book', color: 'text-blue-500' },
+    read:     { label: '읽음',   icon: 'check_circle', color: 'text-green-500' },
+  };
 
   initBookModal();
 
@@ -242,6 +273,32 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     const signinBtn = document.getElementById('signin-btn');
     signinBtn?.click();
   });
+
+  function updateCounts() {
+    const total = allBookmarks.length;
+    const readCount = allBookmarks.filter((b: any) => b.reading_status === 'read').length;
+    const toReadCount = allBookmarks.filter((b: any) => b.reading_status === 'to_read').length;
+    const readingCount = allBookmarks.filter((b: any) => b.reading_status === 'reading').length;
+
+    if (bookshelfCount) bookshelfCount.textContent = `찜한 도서 ${total}권`;
+    if (bookshelfReadCount && readCount > 0) {
+      bookshelfReadCount.textContent = `읽음 ${readCount}권`;
+    }
+
+    const tabAll = document.getElementById('tab-count-all');
+    const tabToRead = document.getElementById('tab-count-to_read');
+    const tabReading = document.getElementById('tab-count-reading');
+    const tabRead = document.getElementById('tab-count-read');
+    if (tabAll) tabAll.textContent = `${total}`;
+    if (tabToRead) tabToRead.textContent = `${toReadCount}`;
+    if (tabReading) tabReading.textContent = `${readingCount}`;
+    if (tabRead) tabRead.textContent = `${readCount}`;
+  }
+
+  function getFilteredBookmarks() {
+    if (currentFilter === 'all') return allBookmarks;
+    return allBookmarks.filter((b: any) => (b.reading_status || 'to_read') === currentFilter);
+  }
 
   async function loadBookshelf() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -254,10 +311,10 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
     bookshelfLoading?.classList.remove('hidden');
 
-    const authHeaders = { Authorization: `Bearer ${session.access_token}` };
+    currentAuthHeaders = { Authorization: `Bearer ${session.access_token}` };
 
     try {
-      const res = await fetch('/api/bookmarks', { headers: authHeaders });
+      const res = await fetch('/api/bookmarks', { headers: currentAuthHeaders });
       const data = await res.json();
       allBookmarks = data.bookmarks || [];
 
@@ -269,24 +326,38 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         return;
       }
 
-      if (bookshelfCount) bookshelfCount.textContent = `찜한 도서 ${allBookmarks.length}권`;
-
-      renderBookmarks(authHeaders);
+      updateCounts();
+      filterTabs?.classList.remove('hidden');
+      renderBookmarks();
     } catch {
       bookshelfLoading?.classList.add('hidden');
       bookshelfEmpty?.classList.remove('hidden');
     }
   }
 
-  function renderBookmarks(authHeaders: Record<string, string>) {
+  function renderBookmarks() {
     if (!bookshelfGrid) return;
 
-    bookshelfGrid.innerHTML = allBookmarks.map((bm: any, index: number) => {
+    const filtered = getFilteredBookmarks();
+
+    if (filtered.length === 0) {
+      bookshelfGrid.classList.add('hidden');
+      bookshelfEmpty?.classList.remove('hidden');
+      return;
+    }
+
+    bookshelfEmpty?.classList.add('hidden');
+
+    bookshelfGrid.innerHTML = filtered.map((bm: any) => {
       const hasImage = bm.book_image_url && bm.book_image_url.trim() !== '';
       const imgSrc = hasImage ? bm.book_image_url : bookPlaceholder;
+      const status = bm.reading_status || 'to_read';
+      const statusCfg = STATUS_CONFIG[status];
+      const realIndex = allBookmarks.findIndex((b: any) => b.isbn13 === bm.isbn13);
+
       return `
         <div class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-lg transition-all group">
-          <div class="relative cursor-pointer" data-bm-index="${index}">
+          <div class="relative cursor-pointer" data-bm-index="${realIndex}">
             ${hasImage ? `
               <img src="${imgSrc}" alt="${bm.bookname}" class="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='${bookPlaceholder}';" />
             ` : `
@@ -294,10 +365,34 @@ import BookDetailModal from '../components/BookDetailModal.astro';
                 <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500">menu_book</span>
               </div>
             `}
+            <!-- 상태 뱃지 -->
+            <div class="absolute top-2 right-2 flex items-center gap-1 bg-white/90 dark:bg-charcoal/90 rounded-full px-2 py-0.5 shadow-sm">
+              <span class="material-symbols-outlined text-sm ${statusCfg.color}" style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;">${statusCfg.icon}</span>
+              <span class="text-[10px] font-medium ${statusCfg.color}">${statusCfg.label}</span>
+            </div>
           </div>
           <div class="p-2 sm:p-3">
-            <h4 class="font-bold text-charcoal dark:text-white text-xs sm:text-sm line-clamp-2 mb-1 cursor-pointer" data-bm-index="${index}">${bm.bookname || '제목 없음'}</h4>
+            <h4 class="font-bold text-charcoal dark:text-white text-xs sm:text-sm line-clamp-2 mb-1 cursor-pointer" data-bm-index="${realIndex}">${bm.bookname || '제목 없음'}</h4>
             <p class="text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 line-clamp-1 mb-2">${bm.authors || '저자 미상'}</p>
+            <!-- 독서 상태 3-버튼 토글 -->
+            <div class="flex gap-1 mb-2" data-isbn="${bm.isbn13}">
+              ${(['to_read', 'reading', 'read'] as const).map((s) => {
+                const cfg = STATUS_CONFIG[s];
+                const isActive = status === s;
+                return `<button
+                  class="status-btn flex-1 flex flex-col items-center gap-0.5 px-1 py-1 rounded-lg border text-[9px] sm:text-[10px] font-medium transition-colors ${isActive
+                    ? `border-current ${cfg.color} bg-current/10`
+                    : 'border-charcoal/10 dark:border-white/10 text-charcoal/40 dark:text-white/40 hover:border-charcoal/20 dark:hover:border-white/20'
+                  }"
+                  data-isbn="${bm.isbn13}"
+                  data-status="${s}"
+                  title="${cfg.label}"
+                >
+                  <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' ${isActive ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">${cfg.icon}</span>
+                  ${cfg.label}
+                </button>`;
+              }).join('')}
+            </div>
             <button
               class="remove-bookmark-btn w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-red-200 dark:border-red-800/30 text-red-500 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               data-isbn="${bm.isbn13}"
@@ -330,6 +425,35 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       });
     });
 
+    // Status toggle buttons
+    bookshelfGrid.querySelectorAll('.status-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const isbn = (btn as HTMLElement).dataset.isbn;
+        const newStatus = (btn as HTMLElement).dataset.status as 'to_read' | 'reading' | 'read';
+        if (!isbn || !newStatus) return;
+
+        const bmIdx = allBookmarks.findIndex((b: any) => b.isbn13 === isbn);
+        if (bmIdx === -1) return;
+        if (allBookmarks[bmIdx].reading_status === newStatus) return;
+
+        try {
+          const res = await fetch('/api/bookmarks', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...currentAuthHeaders },
+            body: JSON.stringify({ isbn13: isbn, reading_status: newStatus }),
+          });
+          if (res.ok) {
+            allBookmarks[bmIdx].reading_status = newStatus;
+            updateCounts();
+            renderBookmarks();
+          }
+        } catch {
+          // ignore
+        }
+      });
+    });
+
     // Remove bookmark buttons
     bookshelfGrid.querySelectorAll('.remove-bookmark-btn').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
@@ -343,17 +467,19 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         try {
           await fetch('/api/bookmarks', {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            headers: { 'Content-Type': 'application/json', ...currentAuthHeaders },
             body: JSON.stringify({ isbn13: isbn }),
           });
           allBookmarks = allBookmarks.filter((b: any) => b.isbn13 !== isbn);
           if (allBookmarks.length === 0) {
             bookshelfGrid!.classList.add('hidden');
+            filterTabs?.classList.add('hidden');
             bookshelfEmpty?.classList.remove('hidden');
             if (bookshelfCount) bookshelfCount.textContent = '찜한 도서 0권';
+            if (bookshelfReadCount) bookshelfReadCount.textContent = '';
           } else {
-            if (bookshelfCount) bookshelfCount.textContent = `찜한 도서 ${allBookmarks.length}권`;
-            renderBookmarks(authHeaders);
+            updateCounts();
+            renderBookmarks();
           }
         } catch {
           (btn as HTMLButtonElement).disabled = false;
@@ -362,6 +488,22 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       });
     });
   }
+
+  // Filter tab click handlers
+  document.querySelectorAll('.filter-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      currentFilter = (tab as HTMLElement).dataset.filter || 'all';
+
+      document.querySelectorAll('.filter-tab').forEach((t) => {
+        t.classList.remove('active-tab', 'bg-charcoal', 'text-white', 'dark:bg-white', 'dark:text-charcoal');
+        t.classList.add('text-charcoal/60', 'dark:text-white/60');
+      });
+      tab.classList.add('active-tab', 'bg-charcoal', 'text-white', 'dark:bg-white', 'dark:text-charcoal');
+      tab.classList.remove('text-charcoal/60', 'dark:text-white/60');
+
+      renderBookmarks();
+    });
+  });
 
   loadBookshelf();
 
