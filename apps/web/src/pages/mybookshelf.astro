@@ -28,6 +28,8 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
+    .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-charcoal dark:text-white transition-colors duration-300">
@@ -177,23 +179,25 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       </div>
 
       <!-- Filter Tabs -->
-      <div id="filter-tabs" class="hidden flex gap-2 flex-wrap mb-4 sm:mb-6">
-        <button class="filter-tab active-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors bg-charcoal text-white dark:bg-white dark:text-charcoal" data-filter="all">
-          <span class="material-symbols-outlined text-sm">collections_bookmark</span>
-          전체 <span id="tab-count-all" class="ml-1 opacity-70"></span>
-        </button>
-        <button class="filter-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-charcoal/60 dark:text-white/60 hover:bg-charcoal/5 dark:hover:bg-white/10" data-filter="to_read">
-          <span class="material-symbols-outlined text-sm">bookmark</span>
-          읽기전 <span id="tab-count-to_read" class="ml-1 opacity-70"></span>
-        </button>
-        <button class="filter-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20" data-filter="reading">
-          <span class="material-symbols-outlined text-sm">menu_book</span>
-          읽는중 <span id="tab-count-reading" class="ml-1 opacity-70"></span>
-        </button>
-        <button class="filter-tab flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20" data-filter="read">
-          <span class="material-symbols-outlined text-sm">check_circle</span>
-          읽음 <span id="tab-count-read" class="ml-1 opacity-70"></span>
-        </button>
+      <div id="filter-tabs" class="hidden overflow-x-auto scrollbar-none mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div class="flex gap-2 w-max sm:w-auto">
+          <button class="filter-tab active-tab flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors bg-charcoal text-white dark:bg-white dark:text-charcoal whitespace-nowrap" data-filter="all">
+            <span class="material-symbols-outlined text-sm">collections_bookmark</span>
+            전체 <span id="tab-count-all" class="ml-0.5 opacity-70"></span>
+          </button>
+          <button class="filter-tab flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-charcoal/60 dark:text-white/60 hover:bg-charcoal/5 dark:hover:bg-white/10 whitespace-nowrap" data-filter="to_read">
+            <span class="material-symbols-outlined text-sm">bookmark</span>
+            읽기전 <span id="tab-count-to_read" class="ml-0.5 opacity-70"></span>
+          </button>
+          <button class="filter-tab flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 whitespace-nowrap" data-filter="reading">
+            <span class="material-symbols-outlined text-sm">menu_book</span>
+            읽는중 <span id="tab-count-reading" class="ml-0.5 opacity-70"></span>
+          </button>
+          <button class="filter-tab flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border border-charcoal/20 dark:border-white/20 text-xs sm:text-sm font-medium transition-colors text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 whitespace-nowrap" data-filter="read">
+            <span class="material-symbols-outlined text-sm">check_circle</span>
+            읽음 <span id="tab-count-read" class="ml-0.5 opacity-70"></span>
+          </button>
+        </div>
       </div>
 
       <!-- Bookmarks Grid -->
@@ -380,7 +384,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
                 const cfg = STATUS_CONFIG[s];
                 const isActive = status === s;
                 return `<button
-                  class="status-btn flex-1 flex flex-col items-center gap-0.5 px-1 py-1 rounded-lg border text-[9px] sm:text-[10px] font-medium transition-colors ${isActive
+                  class="status-btn flex-1 flex flex-col items-center gap-0.5 px-1 py-1.5 sm:py-1 rounded-lg border text-[9px] sm:text-[10px] font-medium transition-colors ${isActive
                     ? `border-current ${cfg.color} bg-current/10`
                     : 'border-charcoal/10 dark:border-white/10 text-charcoal/40 dark:text-white/40 hover:border-charcoal/20 dark:hover:border-white/20'
                   }"
@@ -388,8 +392,8 @@ import BookDetailModal from '../components/BookDetailModal.astro';
                   data-status="${s}"
                   title="${cfg.label}"
                 >
-                  <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' ${isActive ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">${cfg.icon}</span>
-                  ${cfg.label}
+                  <span class="material-symbols-outlined text-sm sm:text-xs" style="font-variation-settings: 'FILL' ${isActive ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">${cfg.icon}</span>
+                  <span class="hidden sm:inline">${cfg.label}</span>
                 </button>`;
               }).join('')}
             </div>

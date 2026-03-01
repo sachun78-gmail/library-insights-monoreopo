@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import type {
   Book,
   Bookmark,
+  ReadingStatus,
   UserProfile,
   BookReview,
   AIInsight,
@@ -90,6 +91,32 @@ async function post(
     return res.json();
   } catch (error) {
     if (DEBUG_API) console.log("[API][POST][ERR]", path, error);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function patch(
+  path: string,
+  body: Record<string, any>,
+  extraHeaders?: ExtraHeaders
+): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    if (DEBUG_API) console.log("[API][PATCH][REQ]", `${BASE_URL}${path}`, body);
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...extraHeaders },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (DEBUG_API) console.log("[API][PATCH][RES]", path, res.status);
+    if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
+    return res.json();
+  } catch (error) {
+    if (DEBUG_API) console.log("[API][PATCH][ERR]", path, error);
     throw error;
   } finally {
     clearTimeout(timer);
@@ -224,7 +251,13 @@ export const api = {
       publisher: book.publisher,
       publication_year: book.publication_year,
       book_image_url: book.bookImageURL,
+      reading_status: "to_read",
     }, headers);
+  },
+
+  updateReadingStatus: async (isbn13: string, reading_status: ReadingStatus): Promise<void> => {
+    const headers = await getAuthHeader();
+    return patch("/api/bookmarks", { isbn13, reading_status }, headers);
   },
 
   removeBookmark: async (isbn13: string): Promise<void> => {

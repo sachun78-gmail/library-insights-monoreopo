@@ -24,6 +24,8 @@ export interface Library {
   operatingTime?: string;
 }
 
+export type ReadingStatus = 'to_read' | 'reading' | 'read';
+
 export interface Bookmark {
   isbn13: string;
   bookname: string;
@@ -31,6 +33,7 @@ export interface Bookmark {
   publisher: string;
   publication_year: string;
   book_image_url: string;
+  reading_status: ReadingStatus;
   created_at?: string;
 }
 
