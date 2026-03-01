@@ -831,7 +831,6 @@ sachun78@gmail.com
           const hasImage = book.bookImageURL && book.bookImageURL.trim() !== '';
           const imgSrc = hasImage ? book.bookImageURL : cardPlaceholder;
           const isbn = book.isbn13 || '';
-          const filled = isbn ? isBookmarked(isbn) : false;
           return `
             <div class="flex-shrink-0 w-[140px] sm:w-[160px] cursor-pointer group snap-start" data-new-arrival-index="${index}">
               <div class="relative overflow-hidden rounded-lg mb-2 shadow-md group-hover:shadow-lg transition-shadow">
@@ -842,11 +841,6 @@ sachun78@gmail.com
                   onerror="this.onerror=null; this.src='${cardPlaceholder}';"
                 />
                 <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                ${isbn ? `
-                  <button class="bookmark-btn absolute top-1 right-1 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 dark:bg-charcoal/80 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10" data-isbn="${isbn}" data-book-index="${index}">
-                    <span class="material-symbols-outlined text-lg ${filled ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}" style="font-variation-settings: 'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
-                  </button>
-                ` : ''}
               </div>
               <h4 class="text-xs sm:text-sm font-bold text-charcoal dark:text-white line-clamp-2 leading-tight mb-0.5">${book.bookname}</h4>
               <p class="text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 truncate">${book.authors || '저자 미상'}</p>
@@ -856,43 +850,10 @@ sachun78@gmail.com
 
         // Add click handlers
         newArrivalsList.querySelectorAll('[data-new-arrival-index]').forEach((card) => {
-          card.addEventListener('click', (e) => {
-            // Don't open modal if clicking bookmark button
-            if ((e.target as HTMLElement).closest('.bookmark-btn')) return;
+          card.addEventListener('click', () => {
             const idx = parseInt(card.getAttribute('data-new-arrival-index') || '0');
             const book = newArrivalsBooks[idx];
             if (book) openBookModal(book);
-          });
-        });
-
-        // Bookmark button handlers
-        newArrivalsList.querySelectorAll('.bookmark-btn').forEach((btn) => {
-          btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const userId = getUserId();
-            if (!userId) {
-              const signinBtn = document.getElementById('signin-btn');
-              signinBtn?.click();
-              return;
-            }
-            const isbn = (btn as HTMLElement).dataset.isbn || '';
-            const bookIdx = parseInt((btn as HTMLElement).dataset.bookIndex || '0');
-            const book = newArrivalsBooks[bookIdx];
-            if (!book || !isbn) return;
-
-            const icon = btn.querySelector('.material-symbols-outlined');
-            const nowBookmarked = await toggleBookmark({
-              isbn13: isbn,
-              bookname: book.bookname,
-              authors: book.authors,
-              publisher: book.publisher,
-              publication_year: book.publication_year,
-              bookImageURL: book.bookImageURL,
-            });
-            if (icon) {
-              icon.className = `material-symbols-outlined text-lg ${nowBookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}`;
-              (icon as HTMLElement).style.fontVariationSettings = `'FILL' ${nowBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
-            }
           });
         });
       }

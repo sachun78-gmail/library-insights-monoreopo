@@ -821,11 +821,6 @@ import BookDetailModal from '../components/BookDetailModal.astro';
                         주변 ${libCount}개 도서관 소장
                       </span>
                     ` : ''}
-                    ${book.isbn13 ? `
-                      <button class="bookmark-btn ml-auto flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-isbn="${book.isbn13}" data-card-index="${index}" data-card-type="ai">
-                        <span class="material-symbols-outlined text-lg ${isBookmarked(book.isbn13) ? 'text-red-500' : 'text-charcoal/30 dark:text-white/30'}" style="font-variation-settings: 'FILL' ${isBookmarked(book.isbn13) ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
-                      </button>
-                    ` : ''}
                   </div>
                 </div>
               </div>
@@ -835,7 +830,6 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
         searchResults.innerHTML = seedHtml + cardsHtml;
         searchResults.classList.remove('hidden');
-        attachBookmarkHandlers('ai');
         const renderToken = ++aiCardsRenderToken;
         hydrateMissingAICardImages(renderToken);
       }
@@ -1058,11 +1052,6 @@ import BookDetailModal from '../components/BookDetailModal.astro';
                         <span class="material-symbols-outlined text-xs sm:text-sm">local_library</span>
                         소장 도서관 확인
                       </span>
-                      ${book.isbn13 ? `
-                        <button class="bookmark-btn ml-auto flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-isbn="${book.isbn13}" data-card-index="${index}" data-card-type="normal">
-                          <span class="material-symbols-outlined text-lg ${isBookmarked(book.isbn13) ? 'text-red-500' : 'text-charcoal/30 dark:text-white/30'}" style="font-variation-settings: 'FILL' ${isBookmarked(book.isbn13) ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
-                        </button>
-                      ` : ''}
                     </div>
                   </div>
                 </div>
@@ -1070,7 +1059,6 @@ import BookDetailModal from '../components/BookDetailModal.astro';
             `;
           }).join('');
           searchResults.classList.remove('hidden');
-          attachBookmarkHandlers('normal');
         }
 
         // Pagination
@@ -1097,39 +1085,6 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       }
     }
 
-    // Bookmark button handler
-    function attachBookmarkHandlers(cardType: string) {
-      if (!searchResults) return;
-      searchResults.querySelectorAll(`.bookmark-btn[data-card-type="${cardType}"]`).forEach((btn) => {
-        btn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const userId = getUserId();
-          if (!userId) {
-            const signinBtn = document.getElementById('signin-btn');
-            signinBtn?.click();
-            return;
-          }
-          const isbn = (btn as HTMLElement).dataset.isbn || '';
-          const cardIdx = parseInt((btn as HTMLElement).dataset.cardIndex || '0');
-          const book = currentBooks[cardIdx];
-          if (!book || !isbn) return;
-
-          const icon = btn.querySelector('.material-symbols-outlined');
-          const nowBookmarked = await toggleBookmark({
-            isbn13: isbn,
-            bookname: book.bookname || book.bookName,
-            authors: book.authors,
-            publisher: book.publisher,
-            publication_year: book.publication_year,
-            bookImageURL: book.bookImageURL,
-          });
-          if (icon) {
-            icon.className = `material-symbols-outlined text-lg ${nowBookmarked ? 'text-red-500' : 'text-charcoal/30 dark:text-white/30'}`;
-            (icon as HTMLElement).style.fontVariationSettings = `'FILL' ${nowBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
-          }
-        });
-      });
-    }
 
     // Pagination handlers
     const typeUrlStr = () => currentSearchType === 'author' ? '&type=author' : '';

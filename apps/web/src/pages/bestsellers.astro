@@ -518,39 +518,6 @@ sachun78@gmail.com
   // ========================================
   // Bookmarks
   // ========================================
-  function attachBookmarkHandlers(gridEl, booksArray) {
-    if (!gridEl) return;
-    gridEl.querySelectorAll('.bookmark-btn').forEach((btn) => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const bm = window.__bookmarks || {};
-        if (!bm.getUserId || !bm.getUserId()) {
-          const signinBtn = document.getElementById('signin-btn');
-          signinBtn?.click();
-          return;
-        }
-        const isbn = btn.dataset.isbn;
-        const idx = parseInt(btn.dataset.bookIndex || '0');
-        const book = booksArray[idx];
-        if (!book || !isbn) return;
-
-        const icon = btn.querySelector('.material-symbols-outlined');
-        const nowBookmarked = await bm.toggleBookmark({
-          isbn13: isbn,
-          bookname: book.bookname,
-          authors: book.authors,
-          publisher: book.publisher,
-          publication_year: book.publication_year,
-          bookImageURL: book.bookImageURL,
-        });
-        if (icon) {
-          icon.className = `material-symbols-outlined text-lg ${nowBookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}`;
-          icon.style.fontVariationSettings = `'FILL' ${nowBookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
-        }
-      });
-    });
-  }
-
   let allPopularBooks = [];
   let allHottrendBooks = [];
 
@@ -742,14 +709,6 @@ sachun78@gmail.com
               <div class="absolute top-2 left-2 bg-primary text-charcoal text-xs font-bold px-2 py-1 rounded-full z-10">
                 ${rank}위
               </div>
-              ${book.isbn13 ? `
-                <button class="bookmark-btn absolute top-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 dark:bg-charcoal/80 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10"
-                  data-isbn="${book.isbn13}" data-book-type="popular" data-book-index="${index}"
-                  onclick="event.stopPropagation()">
-                  <span class="material-symbols-outlined text-lg ${bookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}"
-                    style="font-variation-settings: 'FILL' ${bookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
-                </button>
-              ` : ''}
               ${hasImage ? `
                 <img src="${book.bookImageURL}" alt="${book.bookname}" class="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='${bookPlaceholder}';" />
               ` : `
@@ -773,7 +732,6 @@ sachun78@gmail.com
       }).join('');
 
       if (popularBooksGrid) popularBooksGrid.innerHTML = booksHtml;
-      attachBookmarkHandlers(popularBooksGrid, allPopularBooks);
 
       resultsInfo?.classList.remove('hidden');
       if (resultsInfo) {
@@ -867,14 +825,6 @@ sachun78@gmail.com
                   ${diffText}
                 </div>
               ` : ''}
-              ${book.isbn13 ? `
-                <button class="bookmark-btn absolute bottom-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-white/80 dark:bg-charcoal/80 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-10"
-                  data-isbn="${book.isbn13}" data-book-type="hottrend" data-book-index="${index}"
-                  onclick="event.stopPropagation()">
-                  <span class="material-symbols-outlined text-lg ${bookmarked ? 'text-red-500' : 'text-charcoal/40 dark:text-white/40'}"
-                    style="font-variation-settings: 'FILL' ${bookmarked ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
-                </button>
-              ` : ''}
               ${hasImage ? `
                 <img src="${book.bookImageURL}" alt="${book.bookname}" class="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='${bookPlaceholder}';" />
               ` : `
@@ -892,7 +842,6 @@ sachun78@gmail.com
       }).join('');
 
       if (hottrendBooksGrid) hottrendBooksGrid.innerHTML = booksHtml;
-      attachBookmarkHandlers(hottrendBooksGrid, allHottrendBooks);
 
     } catch (error) {
       console.error('Hot trend books fetch error:', error);

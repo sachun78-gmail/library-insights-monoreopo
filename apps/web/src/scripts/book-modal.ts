@@ -3,7 +3,7 @@
 // Includes integrated library search: GPS-based with region dropdown fallback
 
 import { regions as regionsData } from '../data/regions.js';
-import { getUserId } from './bookmarks';
+import { getUserId, isBookmarked, toggleBookmark } from './bookmarks';
 import { supabase } from '../lib/supabase';
 
 async function getAuthToken(): Promise<string | null> {
@@ -1143,6 +1143,27 @@ export function initBookModal(callbacks?: BookModalCallbacks): void {
   });
 }
 
+function updateModalBookmarkBtn(isbn13: string): void {
+  const btn = getEl('modal-bookmark-btn');
+  const icon = getEl('modal-bookmark-icon');
+  const text = getEl('modal-bookmark-text');
+  if (!btn || !icon || !text) return;
+
+  const filled = isBookmarked(isbn13);
+  icon.style.fontVariationSettings = `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
+  if (filled) {
+    // 찜한 상태: 빨간 테두리 + 빨간 아이콘
+    btn.classList.add('border-red-400', 'dark:border-red-500', 'text-red-500', 'dark:text-red-400', 'bg-red-50', 'dark:bg-red-900/20');
+    btn.classList.remove('border-charcoal/20', 'dark:border-white/20', 'text-charcoal/50', 'dark:text-white/50');
+    text.textContent = '찜 해제';
+  } else {
+    // 찜 전 상태: 회색 테두리 + 회색 아이콘
+    btn.classList.remove('border-red-400', 'dark:border-red-500', 'text-red-500', 'dark:text-red-400', 'bg-red-50', 'dark:bg-red-900/20');
+    btn.classList.add('border-charcoal/20', 'dark:border-white/20', 'text-charcoal/50', 'dark:text-white/50');
+    text.textContent = '찜하기';
+  }
+}
+
 export function openBookModal(book: any): void {
   if (!book) return;
 
@@ -1194,6 +1215,33 @@ export function openBookModal(book: any): void {
   getEl('my-review-login-prompt')?.classList.add('hidden');
 
   modal?.classList.remove('hidden');
+
+  // 찜하기 버튼 상태 초기화
+  if (book.isbn13) {
+    updateModalBookmarkBtn(book.isbn13);
+  }
+
+  // 찜하기 버튼 클릭 핸들러 (매번 새로 등록 방지: replaceWith clone)
+  const bookmarkBtn = getEl('modal-bookmark-btn');
+  if (bookmarkBtn && book.isbn13) {
+    const newBtn = bookmarkBtn.cloneNode(true) as HTMLElement;
+    bookmarkBtn.replaceWith(newBtn);
+    newBtn.addEventListener('click', async () => {
+      if (!getUserId()) {
+        document.getElementById('signin-btn')?.click();
+        return;
+      }
+      await toggleBookmark({
+        isbn13: book.isbn13,
+        bookname: book.bookname,
+        authors: book.authors,
+        publisher: book.publisher,
+        publication_year: book.publication_year,
+        bookImageURL: book.bookImageURL,
+      });
+      updateModalBookmarkBtn(book.isbn13);
+    });
+  }
 
   getAuthToken().then(token => {
     if (token) {
