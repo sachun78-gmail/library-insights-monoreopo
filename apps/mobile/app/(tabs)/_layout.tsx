@@ -3,6 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
 import { t } from "../../lib/i18n";
+import { useAuth } from "../../lib/auth-context";
+import { usePushNotifications } from "../../lib/usePushNotifications";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -35,6 +37,9 @@ function FloatingTabBarBackground() {
 }
 
 export default function TabLayout() {
+  const { user } = useAuth();
+  usePushNotifications(!!user);
+
   return (
     <Tabs
       screenOptions={{

@@ -1,6 +1,66 @@
 import type { APIRoute } from 'astro';
 import { verifyAuth, getSupabase, safeErrorResponse } from '../../lib/auth';
 
+/**
+ * 해당 isbn13을 찜한 사용자들(리뷰 작성자 제외)의 Expo Push Token을 조회하여 알림을 발송합니다.
+ */
+async function sendReviewPushNotifications(
+  supabase: any,
+  isbn13: string,
+  reviewerUserId: string,
+  bookname: string,
+  displayName: string,
+) {
+  try {
+    // 해당 책을 찜한 사람들의 push_token 조회 (작성자 본인 제외)
+    const { data: bookmarks } = await supabase
+      .from('bookmarks')
+      .select('user_id')
+      .eq('isbn13', isbn13)
+      .neq('user_id', reviewerUserId);
+
+    if (!bookmarks || bookmarks.length === 0) return;
+
+    const userIds = bookmarks.map((b: any) => b.user_id);
+
+    const { data: tokens } = await supabase
+      .from('push_tokens')
+      .select('token')
+      .in('user_id', userIds);
+
+    if (!tokens || tokens.length === 0) return;
+
+    const pushTokens: string[] = tokens.map((t: any) => t.token);
+
+    // Expo Push API로 알림 발송
+    const messages = pushTokens.map((token: string) => ({
+      to: token,
+      sound: 'default',
+      title: '새 한줄평이 달렸어요!',
+      body: `"${bookname}"에 ${displayName}님이 한줄평을 남겼습니다.`,
+      data: { isbn13, screen: 'bookDetail' },
+    }));
+
+    // Expo Push API는 최대 100개 묶음으로 처리
+    const chunkSize = 100;
+    for (let i = 0; i < messages.length; i += chunkSize) {
+      const chunk = messages.slice(i, i + chunkSize);
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify(chunk),
+      });
+    }
+  } catch (err) {
+    // 알림 발송 실패는 리뷰 저장 성공에 영향을 주지 않도록 무시
+    console.error('[Push] 알림 발송 실패:', err instanceof Error ? err.message : String(err));
+  }
+}
+
 export const prerender = false;
 
 function jsonResponse(body: any, status = 200) {
@@ -103,6 +163,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .single();
 
     if (error) throw error;
+
+    // 찜한 사용자들에게 푸쉬 알림 발송 (비동기, 결과 무시)
+    sendReviewPushNotifications(
+      supabase,
+      isbn13,
+      userId,
+      bookname || '알 수 없는 책',
+      display_name || '누군가',
+    );
+
     return jsonResponse({ review: data });
   } catch (error) {
     return safeErrorResponse(error);

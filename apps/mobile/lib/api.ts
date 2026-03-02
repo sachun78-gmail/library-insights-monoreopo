@@ -299,6 +299,17 @@ export const api = {
     return post("/api/delete-account", {}, headers);
   },
 
+  // ── 푸쉬 토큰 ──
+  registerPushToken: async (token: string, platform: "android" | "ios"): Promise<void> => {
+    const headers = await getAuthHeader();
+    return post("/api/push-tokens", { token, platform }, headers);
+  },
+
+  unregisterPushToken: async (token: string): Promise<void> => {
+    const headers = await getAuthHeader();
+    return del("/api/push-tokens", { token }, headers);
+  },
+
   // ── 한줄평 ──
   bookReviews: (isbn13: string): Promise<BookReview[]> =>
     get("/api/book-reviews", { isbn13 }).then((res) => res?.reviews ?? []),

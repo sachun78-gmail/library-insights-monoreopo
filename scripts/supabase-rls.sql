@@ -92,3 +92,41 @@ CREATE POLICY "reviews_update_own"
 CREATE POLICY "reviews_delete_own"
   ON book_reviews FOR DELETE
   USING (auth.uid() = user_id);
+
+
+-- ── push_tokens ──────────────────────────────────────────────
+-- 푸쉬 알림 토큰 저장 테이블 (Expo Push Token)
+CREATE TABLE IF NOT EXISTS push_tokens (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  token       TEXT NOT NULL,
+  platform    TEXT NOT NULL DEFAULT 'android' CHECK (platform IN ('android', 'ios')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, token)
+);
+
+ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "push_tokens_select_own" ON push_tokens;
+DROP POLICY IF EXISTS "push_tokens_insert_own" ON push_tokens;
+DROP POLICY IF EXISTS "push_tokens_delete_own" ON push_tokens;
+
+-- 본인 토큰만 조회
+CREATE POLICY "push_tokens_select_own"
+  ON push_tokens FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- 본인 토큰만 저장
+CREATE POLICY "push_tokens_insert_own"
+  ON push_tokens FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- 본인 토큰만 삭제
+CREATE POLICY "push_tokens_delete_own"
+  ON push_tokens FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- 서비스 롤이 북마크 기반으로 수신자 토큰을 조회할 수 있도록 허용
+-- (웹 API에서 서비스 롤 키로 조회)
+-- 참고: 서비스 롤은 RLS를 우회하므로 별도 정책 불필요

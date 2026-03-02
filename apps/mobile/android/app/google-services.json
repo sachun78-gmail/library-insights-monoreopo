@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "334498998450",
+    "project_id": "library-insights",
+    "storage_bucket": "library-insights.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:334498998450:android:7f08ab15c8d93d67e441ab",
+        "android_client_info": {
+          "package_name": "work.libraryinsights"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPTzncXvwQqjoib7CQ3Z3Qrv9V-9N957Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
