@@ -164,8 +164,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (error) throw error;
 
-    // 찜한 사용자들에게 푸쉬 알림 발송 (비동기, 결과 무시)
-    sendReviewPushNotifications(
+    // 찜한 사용자들에게 푸쉬 알림 발송
+    await sendReviewPushNotifications(
       supabase,
       isbn13,
       userId,
