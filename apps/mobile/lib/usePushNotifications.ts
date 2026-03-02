@@ -3,6 +3,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { useRouter } from "expo-router";
 import { api } from "./api";
 
 // 포그라운드에서 알림을 배너로 표시
@@ -57,7 +58,31 @@ async function requestPermissionAndGetToken(): Promise<string | null> {
  */
 export function usePushNotifications(isLoggedIn: boolean) {
   const registered = useRef(false);
+  const router = useRouter();
 
+  // 알림 탭 → 도서 상세 이동
+  useEffect(() => {
+    // 앱이 실행 중이거나 백그라운드일 때 알림 탭 처리
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as { isbn13?: string };
+      if (data?.isbn13) {
+        router.push(`/book/${data.isbn13}`);
+      }
+    });
+
+    // 앱이 완전히 종료된 상태에서 알림 탭으로 시작된 경우 처리
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!response) return;
+      const data = response.notification.request.content.data as { isbn13?: string };
+      if (data?.isbn13) {
+        router.push(`/book/${data.isbn13}`);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // 푸쉬 토큰 등록
   useEffect(() => {
     console.log("[Push] usePushNotifications 실행 - isLoggedIn:", isLoggedIn, "registered:", registered.current);
     if (!isLoggedIn || registered.current) return;

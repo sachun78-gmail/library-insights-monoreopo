@@ -25,6 +25,10 @@ export default function RootLayout() {
               name="login"
               options={{ presentation: "modal", animation: "slide_from_bottom" }}
             />
+            <Stack.Screen
+              name="book/[isbn13]"
+              options={{ presentation: "modal", animation: "slide_from_bottom", headerShown: false }}
+            />
           </Stack>
         </SafeAreaProvider>
       </AuthProvider>

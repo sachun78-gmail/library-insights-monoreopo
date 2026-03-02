@@ -130,3 +130,30 @@ CREATE POLICY "push_tokens_delete_own"
 -- 서비스 롤이 북마크 기반으로 수신자 토큰을 조회할 수 있도록 허용
 -- (웹 API에서 서비스 롤 키로 조회)
 -- 참고: 서비스 롤은 RLS를 우회하므로 별도 정책 불필요
+
+
+-- ── 추천 알림 pg_cron 스케줄 ────────────────────────────────
+-- Supabase Dashboard > SQL Editor 에서 실행
+-- 사전 조건: pg_cron 확장 활성화 필요
+--   Supabase Dashboard > Database > Extensions > pg_cron 활성화
+
+-- 기존 스케줄 제거 후 재등록
+SELECT cron.unschedule('send-recommendation-notifications') WHERE EXISTS (
+  SELECT 1 FROM cron.job WHERE jobname = 'send-recommendation-notifications'
+);
+
+-- 매주 월요일 오전 9시 (KST = UTC+9, 즉 UTC 00:00)
+SELECT cron.schedule(
+  'send-recommendation-notifications',
+  '0 0 * * 1',
+  $$
+    SELECT net.http_post(
+      url := current_setting('app.supabase_url') || '/functions/v1/send-recommendation-notifications',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer ' || current_setting('app.service_role_key')
+      ),
+      body := '{}'::jsonb
+    );
+  $$
+);
