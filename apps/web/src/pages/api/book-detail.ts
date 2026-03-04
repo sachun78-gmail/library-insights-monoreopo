@@ -62,9 +62,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   try {
-    // 1. 네이버 책 검색 API
-    const bookQuery = isbn ? `isbn:${isbn.replace(/-/g, '')}` : title;
-    const bookApiUrl = `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(bookQuery)}&display=1`;
+    // 1. 네이버 책 검색 API — ISBN이 있으면 book_adv.json의 d_isbn으로 정확 검색
+    let bookApiUrl: string;
+    if (isbn) {
+      bookApiUrl = `https://openapi.naver.com/v1/search/book_adv.json?d_isbn=${encodeURIComponent(isbn.replace(/-/g, ''))}&display=1`;
+    } else {
+      bookApiUrl = `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(title)}&display=1`;
+    }
 
     const bookResponse = await fetch(bookApiUrl, {
       headers: {

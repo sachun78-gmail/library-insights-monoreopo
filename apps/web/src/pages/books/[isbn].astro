@@ -1,0 +1,687 @@
+---
+export const prerender = false;
+
+import Auth from '../../components/Auth.astro';
+import Analytics from '../../components/Analytics.astro';
+import BookDetailModal from '../../components/BookDetailModal.astro';
+import { regions as regionsData } from '../../data/regions.js';
+import { fetchLibraryProxy } from '../../lib/library-proxy';
+
+const { isbn } = Astro.params;
+
+if (!isbn) {
+  return Astro.redirect('/');
+}
+
+// --- 도서 정보 가져오기 (OG 태그용) ---
+function getEnvVar(key: string): string | undefined {
+  const locals = Astro.locals as any;
+  if (locals?.runtime?.env?.[key]) {
+    return locals.runtime.env[key];
+  }
+  return (import.meta.env as any)[key];
+}
+
+function stripHtml(str: string | undefined): string {
+  if (!str) return '';
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/<[^>]*>/g, '');
+}
+
+let bookTitle = '';
+let bookAuthor = '';
+let bookPublisher = '';
+let bookDescription = '';
+let bookImage = '';
+let bookLink = '';
+let bookPrice = '';
+let bookDiscount = '';
+let bookPubdate = '';
+let bookIsbn = isbn;
+let bookClassNm = '';
+let fetchSuccess = false;
+
+// Naver API + Data4Library API 병렬 호출
+const clientId = getEnvVar('NAVER_CLIENT_ID');
+const clientSecret = getEnvVar('NAVER_CLIENT_SECRET');
+
+// 1) Naver API (책 상세 정보) — book_adv.json + d_isbn으로 정확 검색
+const naverPromise = (clientId && clientSecret)
+  ? fetch(`https://openapi.naver.com/v1/search/book_adv.json?d_isbn=${encodeURIComponent(isbn.replace(/-/g, ''))}&display=1`, {
+      headers: { 'X-Naver-Client-Id': clientId, 'X-Naver-Client-Secret': clientSecret },
+    }).then(r => r.ok ? r.json() : null).catch(() => null)
+  : Promise.resolve(null);
+
+// 2) Data4Library API (이미지, 분류 등)
+const data4libPromise = fetchLibraryProxy(Astro.locals, '/v1/srchDtlList', {
+  isbn13: isbn,
+  loaninfoYN: 'N',
+}).catch(() => null);
+
+const [naverJson, data4libData] = await Promise.all([naverPromise, data4libPromise]);
+
+// Data4Library 결과 파싱
+const d4lDetail = data4libData?.response?.detail?.[0]?.book || data4libData?.response?.book;
+if (d4lDetail) {
+  bookTitle = d4lDetail.bookname || '';
+  bookAuthor = d4lDetail.authors || '';
+  bookPublisher = d4lDetail.publisher || '';
+  bookDescription = d4lDetail.description || '';
+  bookImage = d4lDetail.bookImageURL || '';
+  bookClassNm = d4lDetail.class_nm || '';
+  bookPubdate = d4lDetail.publication_year || '';
+  fetchSuccess = true;
+}
+
+// Naver 결과로 보완 (Naver에만 있는 정보: 가격, 링크 등)
+if (naverJson?.items?.length > 0) {
+  const nBook = naverJson.items[0];
+  if (!bookTitle) bookTitle = stripHtml(nBook.title);
+  if (!bookAuthor) bookAuthor = stripHtml(nBook.author);
+  if (!bookPublisher) bookPublisher = nBook.publisher || '';
+  if (!bookDescription) bookDescription = stripHtml(nBook.description);
+  if (!bookImage) bookImage = nBook.image || '';
+  bookLink = nBook.link || '';
+  bookPrice = nBook.price || '';
+  bookDiscount = nBook.discount || '';
+  if (!bookPubdate) bookPubdate = nBook.pubdate || '';
+  bookIsbn = nBook.isbn || isbn;
+  fetchSuccess = true;
+}
+
+const pageTitle = bookTitle ? `${bookTitle} - LibraryInsights` : 'LibraryInsights';
+const ogDescription = bookTitle
+  ? `${bookAuthor}${bookPublisher ? ` · ${bookPublisher}` : ''}${bookDescription ? ` — ${bookDescription.slice(0, 100)}` : ''}`
+  : '한국 공공도서관 대출 데이터를 기반으로 베스트셀러와 추천 도서를 탐색하세요.';
+const ogImage = bookImage || 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80';
+const canonicalUrl = `https://library-insights.work/books/${isbn}`;
+---
+<html lang="ko" class=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script is:inline>
+  (function(){
+    var t = localStorage.getItem('theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  })();
+</script>
+<title>{pageTitle}</title>
+<meta name="description" content={ogDescription}/>
+<link rel="canonical" href={canonicalUrl}/>
+<meta property="og:site_name" content="LibraryInsights"/>
+<meta property="og:type" content="book"/>
+<meta property="og:title" content={bookTitle || 'LibraryInsights'}/>
+<meta property="og:description" content={ogDescription}/>
+<meta property="og:url" content={canonicalUrl}/>
+<meta property="og:image" content={ogImage}/>
+<meta property="og:locale" content="ko_KR"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content={bookTitle || 'LibraryInsights'}/>
+<meta name="twitter:description" content={ogDescription}/>
+<meta name="twitter:image" content={ogImage}/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<Analytics />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
+<style>
+  body {
+    font-family: 'Noto Serif', serif;
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+</style>
+{fetchSuccess && (
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Book",
+    "name": bookTitle,
+    "author": { "@type": "Person", "name": bookAuthor },
+    "publisher": { "@type": "Organization", "name": bookPublisher },
+    "isbn": bookIsbn,
+    "image": bookImage,
+    "url": canonicalUrl,
+    "description": bookDescription.slice(0, 200),
+  })} />
+)}
+</head>
+<body class="bg-background-light dark:bg-background-dark text-charcoal dark:text-white transition-colors duration-300">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="border-b border-solid border-charcoal/10 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center justify-between max-w-[1200px] mx-auto w-full px-4 py-2 sm:py-4">
+<a href="/" class="flex items-center gap-1.5 sm:gap-3 text-charcoal dark:text-white min-w-0">
+<span class="material-symbols-outlined text-primary text-xl sm:text-2xl flex-shrink-0 leading-none">auto_stories</span>
+<span class="text-charcoal dark:text-white text-sm sm:text-xl font-bold leading-none tracking-[-0.015em] font-display truncate">LibraryInsights</span>
+</a>
+<div class="flex items-center justify-end gap-2 sm:gap-8 ml-auto">
+<nav class="hidden md:flex items-center gap-3 sm:gap-9">
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/reviews">한줄평</a>
+<a class="text-charcoal dark:text-white text-xs sm:text-sm font-medium leading-normal hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+</nav>
+<button id="theme-toggle" class="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-label="다크모드 전환">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl dark:hidden">dark_mode</span>
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-lg sm:text-xl hidden dark:inline">light_mode</span>
+</button>
+<button id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/10 dark:border-white/10 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors" aria-expanded="false" aria-controls="mobile-menu">
+  <span class="material-symbols-outlined text-charcoal dark:text-white text-xl">menu</span>
+</button>
+<button id="signin-btn" class="hidden md:flex min-w-[56px] sm:min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-7 sm:h-10 px-2 sm:px-5 bg-primary text-charcoal text-[10px] sm:text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-all flex-shrink-0">
+<span class="truncate">Sign In</span>
+</button>
+<div id="profile-container" class="hidden relative md:block md:hidden">
+<button id="profile-btn" class="flex items-center gap-2 cursor-pointer rounded-lg h-10 px-3 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+<img id="profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+<span id="profile-name" class="text-charcoal dark:text-white text-sm font-medium max-w-[120px] truncate"></span>
+<span class="material-symbols-outlined text-charcoal dark:text-white text-sm">expand_more</span>
+</button>
+<div id="profile-dropdown" class="hidden absolute right-0 top-12 bg-white dark:bg-charcoal-800 rounded-xl shadow-xl border border-charcoal/10 dark:border-white/10 min-w-[180px] z-50 overflow-hidden">
+<div class="flex flex-col items-center py-4 px-4 border-b border-charcoal/10 dark:border-white/10">
+<img id="dropdown-avatar" src="" alt="Profile" class="w-14 h-14 rounded-full object-cover bg-primary mb-2" />
+<p id="dropdown-name" class="text-sm font-bold text-charcoal dark:text-white"></p>
+</div>
+<div class="py-2">
+<a href="/mypage" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">person</span>
+마이 페이지
+</a>
+<button id="signout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-lg">logout</span>
+로그아웃
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</header>
+
+<!-- Mobile Menu -->
+<div id="mobile-menu" class="hidden md:hidden border-b border-charcoal/10 dark:border-white/10 bg-background-light dark:bg-background-dark">
+<div class="max-w-[1200px] mx-auto px-4 py-3 flex flex-col gap-2">
+<a class="text-charcoal dark:text-white text-sm font-medium py-2 hover:text-primary transition-colors" href="/bestsellers">Bestsellers</a>
+<a class="text-charcoal dark:text-white text-sm font-medium py-2 hover:text-primary transition-colors" href="/reviews">한줄평</a>
+<a class="text-charcoal dark:text-white text-sm font-medium py-2 hover:text-primary transition-colors" href="/mybookshelf">내 서재</a>
+<div id="mobile-auth-logged-out" class="flex gap-2 py-2">
+<button id="mobile-signin-btn" class="flex-1 py-2 bg-primary text-charcoal text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">Sign In</button>
+<button id="mobile-signup-btn" class="flex-1 py-2 border border-charcoal/20 dark:border-white/20 text-charcoal dark:text-white text-sm font-bold rounded-lg hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors">Sign Up</button>
+</div>
+<div id="mobile-auth-logged-in" class="hidden flex items-center gap-3 py-2">
+<img id="mobile-profile-avatar" src="" alt="Profile" class="w-8 h-8 rounded-full object-cover border-2 border-primary" />
+<span id="mobile-profile-name" class="text-charcoal dark:text-white text-sm font-medium flex-1 truncate"></span>
+<button id="mobile-signout-btn" class="text-xs text-charcoal/50 dark:text-white/50 hover:text-charcoal dark:hover:text-white">로그아웃</button>
+</div>
+</div>
+</div>
+
+<!-- Main Content: Book Detail Page -->
+<main class="flex-1 max-w-3xl mx-auto w-full px-0 sm:px-4 py-0 sm:py-6">
+  <div class="bg-white dark:bg-charcoal-800 sm:rounded-2xl shadow-lg ring-1 ring-charcoal/10 dark:ring-white/15">
+
+    <!-- 상단 헤더: 뒤로가기 + 찜하기 + 공유 -->
+    <div class="flex items-center justify-between px-3 sm:px-5 py-2.5 border-b border-charcoal/10 dark:border-white/10">
+      <a href="/" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-charcoal/50 dark:text-white/50 hover:text-charcoal dark:hover:text-white hover:bg-charcoal/5 dark:hover:bg-white/10 text-sm font-medium transition-all">
+        <span class="material-symbols-outlined text-lg">arrow_back</span>
+        홈으로
+      </a>
+      <div class="flex items-center gap-2">
+        <button id="page-share-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-charcoal/20 dark:border-white/20 text-charcoal/50 dark:text-white/50 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+          <span class="material-symbols-outlined text-lg">share</span>
+          <span class="text-xs font-bold">공유</span>
+        </button>
+        <button id="modal-bookmark-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-charcoal/20 dark:border-white/20 text-charcoal/50 dark:text-white/50 hover:bg-charcoal/5 dark:hover:bg-white/10 transition-all">
+          <span id="modal-bookmark-icon" class="material-symbols-outlined text-lg transition-all" style="font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;">favorite</span>
+          <span id="modal-bookmark-text" class="text-xs font-bold">찜하기</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Book Info -->
+    <div class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <div class="flex flex-col sm:flex-row gap-3 sm:gap-6">
+        <img id="modal-book-image" src={bookImage || ''} alt={bookTitle} class="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded-lg flex-shrink-0 mx-auto sm:mx-0" />
+        <div class="flex flex-col text-center sm:text-left">
+          <h1 id="modal-book-title" class="text-lg sm:text-2xl font-bold text-charcoal dark:text-white mb-1 sm:mb-2">{bookTitle}</h1>
+          <p id="modal-book-author" class="text-sm sm:text-base text-charcoal/60 dark:text-white/60 mb-1">{bookAuthor || '저자 미상'}</p>
+          <p id="modal-book-publisher" class="text-charcoal/40 dark:text-white/40 text-xs sm:text-sm mb-2 sm:mb-3">{bookPublisher}{bookPubdate ? ` (${bookPubdate.slice(0,4)})` : ''}</p>
+          <div id="modal-book-tags" class="flex flex-wrap gap-2 justify-center sm:justify-start">
+            {bookClassNm && <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">{bookClassNm}</span>}
+            <span class="text-xs px-2 py-1 bg-charcoal/5 dark:bg-white/10 text-charcoal/60 dark:text-white/60 rounded-full">ISBN: {isbn}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Insight Section -->
+    <div id="ai-insight-section" class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <button id="ai-insight-btn" class="w-full flex items-center justify-center gap-2 py-3 sm:py-4 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20 border border-violet-300/30 dark:border-violet-500/30 hover:from-violet-500/20 hover:to-purple-500/20 dark:hover:from-violet-500/30 dark:hover:to-purple-500/30 transition-all group">
+        <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-lg sm:text-xl group-hover:scale-110 transition-transform">auto_awesome</span>
+        <span class="text-sm sm:text-base font-bold text-violet-700 dark:text-violet-300">AI 요약 & 핵심 Insight</span>
+        <span class="material-symbols-outlined text-violet-400 dark:text-violet-500 text-sm">chevron_right</span>
+      </button>
+      <div id="ai-insight-login" class="hidden">
+        <div class="flex flex-col items-center gap-3 py-4 px-3 rounded-xl bg-charcoal/5 dark:bg-white/5 border border-charcoal/10 dark:border-white/10">
+          <span class="material-symbols-outlined text-3xl text-charcoal/30 dark:text-white/30">lock</span>
+          <p class="text-sm text-charcoal/70 dark:text-white/70 text-center">AI 도서 분석은 로그인 후 이용할 수 있습니다.</p>
+          <button id="ai-insight-login-btn" class="px-5 py-2 bg-primary text-charcoal text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">로그인하기</button>
+        </div>
+      </div>
+      <div id="ai-insight-loading" class="hidden py-4 px-1">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="material-symbols-outlined text-violet-500 text-lg animate-pulse">auto_awesome</span>
+          <span id="ai-insight-loading-text" class="text-sm font-medium text-charcoal/70 dark:text-white/70">도서 정보 수집 중...</span>
+        </div>
+        <div class="w-full h-2 bg-charcoal/10 dark:bg-white/10 rounded-full overflow-hidden">
+          <div id="ai-insight-progress-bar" class="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+        </div>
+        <p id="ai-insight-progress-percent" class="text-right text-[10px] text-charcoal/40 dark:text-white/40 mt-1">0%</p>
+      </div>
+      <div id="ai-insight-content" class="hidden space-y-3 mt-3">
+        <div class="p-3 sm:p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200/50 dark:border-violet-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-violet-600 dark:text-violet-400 text-base">summarize</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">3줄 요약</span>
+          </div>
+          <p id="ai-insight-summary" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <div class="p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200/50 dark:border-amber-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-base">lightbulb</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">핵심 메시지</span>
+          </div>
+          <p id="ai-insight-key-message" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <div class="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200/50 dark:border-emerald-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-base">group</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">이런 사람에게 추천</span>
+          </div>
+          <p id="ai-insight-recommend" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <div class="p-3 sm:p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-200/50 dark:border-sky-700/30">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-sky-600 dark:text-sky-400 text-base">speed</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">난이도 평가</span>
+          </div>
+          <p id="ai-insight-difficulty" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+      </div>
+      <div id="ai-insight-error" class="hidden flex flex-col items-center gap-2 py-4">
+        <span class="material-symbols-outlined text-2xl text-charcoal/30 dark:text-white/30">error_outline</span>
+        <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">AI 분석 중 오류가 발생했습니다.</p>
+        <button id="ai-insight-retry-btn" class="px-4 py-1.5 bg-violet-500 text-white text-xs font-bold rounded-lg hover:bg-violet-600 transition-colors">다시 시도</button>
+      </div>
+    </div>
+
+    <!-- Book Description & Review Section -->
+    <div class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <div class="mb-3 sm:mb-4">
+        <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-2 sm:mb-3">
+          <span class="material-symbols-outlined text-primary text-lg sm:text-xl">rate_review</span>
+          도서 정보 및 리뷰
+        </h3>
+      </div>
+      <div id="review-loading" class="hidden flex items-center justify-center py-6">
+        <div class="animate-spin rounded-full h-6 w-6 border-3 border-primary border-t-transparent"></div>
+        <span class="ml-2 text-sm text-charcoal/60 dark:text-white/60">정보를 불러오는 중...</span>
+      </div>
+      <div id="review-content" class="hidden">
+        <div id="data4lib-intro" class="hidden mb-4 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg">auto_stories</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">도서관 정보나루 책소개</span>
+          </div>
+          <p id="data4lib-description" class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed"></p>
+        </div>
+        <div id="blog-review" class="hidden mb-4 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-[#03C75A] text-lg">forum</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">블로그 리뷰</span>
+          </div>
+          <h4 id="review-title" class="text-sm sm:text-base font-bold text-charcoal dark:text-white mb-2 line-clamp-2"></h4>
+          <p id="review-description" class="text-xs sm:text-sm text-charcoal/70 dark:text-white/70 leading-relaxed line-clamp-3 mb-3"></p>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-charcoal/50 dark:text-white/50">
+              <span class="material-symbols-outlined text-sm">person</span>
+              <span id="review-blogger"></span>
+              <span>·</span>
+              <span id="review-date"></span>
+            </div>
+            <a id="review-link" href="#" target="_blank" rel="noopener noreferrer" class="text-xs text-[#03C75A] hover:underline flex items-center gap-1">
+              전체 보기
+              <span class="material-symbols-outlined text-sm">open_in_new</span>
+            </a>
+          </div>
+        </div>
+        <div id="book-description" class="mb-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-primary text-lg">description</span>
+            <span class="text-xs sm:text-sm font-bold text-charcoal dark:text-white">책 소개</span>
+          </div>
+          <p class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed line-clamp-4"></p>
+        </div>
+        <div id="book-price-info" class="hidden flex items-center gap-3 mb-4 p-2 sm:p-3 bg-charcoal/5 dark:bg-white/5 rounded-lg">
+          <span class="material-symbols-outlined text-primary text-lg">sell</span>
+          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <span id="book-price" class="text-charcoal/40 dark:text-white/40 line-through"></span>
+            <span id="book-discount" class="text-primary font-bold"></span>
+          </div>
+        </div>
+        <a id="naver-review-link" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full py-2.5 sm:py-3 bg-[#03C75A] hover:bg-[#02b350] text-white font-bold rounded-lg transition-colors text-xs sm:text-sm">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z"/>
+          </svg>
+          네이버에서 더 많은 리뷰 보기
+        </a>
+      </div>
+      <div id="review-empty" class="hidden text-center py-4">
+        <span class="material-symbols-outlined text-3xl text-charcoal/30 dark:text-white/30 mb-2">search_off</span>
+        <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">리뷰 정보를 찾을 수 없습니다.</p>
+      </div>
+    </div>
+
+    <!-- 한줄평 섹션 -->
+    <div id="user-reviews-section" class="p-3 sm:p-6 border-b border-charcoal/10 dark:border-white/10">
+      <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-3 sm:mb-4">
+        <span class="material-symbols-outlined text-primary text-lg sm:text-xl">rate_review</span>
+        독자 한줄평
+      </h3>
+      <div id="reviews-summary" class="hidden mb-3 flex items-center gap-2">
+        <span id="reviews-avg-stars" class="text-yellow-400 text-base sm:text-lg leading-none"></span>
+        <span id="reviews-avg-score" class="text-sm font-bold text-charcoal dark:text-white"></span>
+        <span id="reviews-count-text" class="text-xs text-charcoal/50 dark:text-white/50"></span>
+      </div>
+      <div id="my-review-form" class="hidden mb-4 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-xl border border-charcoal/10 dark:border-white/10">
+        <p class="text-xs sm:text-sm font-bold text-charcoal dark:text-white mb-2">내 한줄평</p>
+        <div id="star-selector" class="flex gap-1 mb-3" role="group" aria-label="별점 선택">
+          <button type="button" data-star="1" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="2" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="3" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="4" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+          <button type="button" data-star="5" class="star-btn text-2xl text-charcoal/20 dark:text-white/20 hover:text-yellow-400 transition-colors leading-none">★</button>
+        </div>
+        <div class="relative mb-2">
+          <textarea id="review-textarea" maxlength="100" rows="2" placeholder="이 책에 대한 한줄평을 남겨보세요 (최대 100자)" class="w-full px-3 py-2 text-xs sm:text-sm text-charcoal dark:text-white bg-white dark:bg-charcoal-700 border border-charcoal/20 dark:border-white/20 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary placeholder-charcoal/30 dark:placeholder-white/30"></textarea>
+          <span id="review-char-count" class="absolute bottom-2 right-3 text-[10px] text-charcoal/30 dark:text-white/30">0/100</span>
+        </div>
+        <div class="flex gap-2">
+          <button id="review-submit-btn" class="flex-1 py-2 bg-primary text-charcoal text-xs sm:text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">등록</button>
+          <button id="review-delete-btn" class="hidden px-4 py-2 bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 text-xs sm:text-sm font-bold rounded-lg hover:bg-red-500/20 dark:hover:bg-red-500/30 transition-colors border border-red-300/30 dark:border-red-500/30">삭제</button>
+        </div>
+        <p id="review-submit-error" class="hidden mt-2 text-xs text-red-500"></p>
+      </div>
+      <div id="my-review-login-prompt" class="hidden mb-4 flex items-center gap-2 p-3 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
+        <span class="material-symbols-outlined text-charcoal/30 dark:text-white/30 text-lg">lock</span>
+        <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60">로그인 후 한줄평을 남겨보세요.</p>
+        <button id="review-login-btn" class="ml-auto px-3 py-1.5 bg-primary text-charcoal text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors flex-shrink-0">로그인</button>
+      </div>
+      <div id="user-reviews-loading" class="hidden flex items-center gap-2 py-3">
+        <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+        <span class="text-xs text-charcoal/50 dark:text-white/50">한줄평을 불러오는 중...</span>
+      </div>
+      <div id="reviews-list" class="space-y-2"></div>
+      <button id="reviews-show-more" class="hidden w-full mt-2 py-2 text-xs text-charcoal/50 dark:text-white/50 hover:text-primary dark:hover:text-primary transition-colors flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-sm">expand_more</span>
+        <span id="reviews-show-more-text"></span>
+      </button>
+      <a id="reviews-all-link" href="/reviews" class="hidden mt-2 w-full py-2 text-xs text-primary/70 hover:text-primary transition-colors flex items-center justify-center gap-1">
+        <span class="material-symbols-outlined text-sm">open_in_new</span>
+        한줄평 게시판에서 전체 보기
+      </a>
+      <div id="reviews-empty" class="hidden text-center py-4">
+        <span class="material-symbols-outlined text-3xl text-charcoal/20 dark:text-white/20 mb-1">chat_bubble_outline</span>
+        <p class="text-xs sm:text-sm text-charcoal/50 dark:text-white/50">아직 한줄평이 없습니다.</p>
+      </div>
+    </div>
+
+    <!-- Library Section -->
+    <div id="library-section" class="p-3 sm:p-6">
+      <div class="mb-3 sm:mb-4">
+        <h3 class="text-base sm:text-lg font-bold text-charcoal dark:text-white flex items-center gap-2 mb-1 sm:mb-2">
+          <span class="material-symbols-outlined text-primary text-lg sm:text-xl">local_library</span>
+          도서 소장 도서관
+        </h3>
+        <p id="library-mode-desc" class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 flex items-center gap-1">
+          <span class="material-symbols-outlined text-xs sm:text-sm">info</span>
+          위치 정보를 확인하는 중...
+        </p>
+      </div>
+      <div id="library-gps-view" class="hidden"></div>
+      <div id="library-region-view">
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6 p-3 sm:p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg border border-charcoal/10 dark:border-white/10">
+          <div class="flex-1">
+            <label class="block text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 mb-1">지역</label>
+            <select id="modal-region-select" class="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-charcoal/20 dark:border-white/20 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="">지역 선택</option>
+              {regionsData.map((region) => (
+                <option value={region.code}>{region.name}</option>
+              ))}
+            </select>
+          </div>
+          <div class="flex-1">
+            <label class="block text-[10px] sm:text-xs text-charcoal/60 dark:text-white/60 mb-1">세부 지역</label>
+            <select id="modal-subregion-select" class="w-full px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-charcoal/20 dark:border-white/20 bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              <option value="">세부 지역</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="library-loading" class="hidden flex flex-col items-center justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mb-2"></div>
+        <p id="library-loading-text" class="text-xs text-charcoal/50 dark:text-white/50">소장 도서관을 검색하는 중...</p>
+      </div>
+      <div id="library-initial" class="text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-primary/60 mb-2">my_location</span>
+        <p class="text-charcoal/60 dark:text-white/60 mb-3">위치 정보를 불러오는 중...</p>
+      </div>
+      <div id="library-location-error" class="hidden text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-charcoal/30 dark:text-white/30 mb-2">location_off</span>
+        <p class="text-charcoal/60 dark:text-white/60 mb-3">위치 정보를 가져올 수 없습니다.</p>
+        <div class="flex items-center justify-center gap-2">
+          <button id="retry-location-btn" class="px-4 py-2 bg-primary text-charcoal rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">refresh</span>다시 시도
+          </button>
+          <button id="switch-to-region-btn" class="px-4 py-2 bg-charcoal/10 dark:bg-white/10 text-charcoal dark:text-white rounded-lg text-sm font-bold hover:bg-charcoal/20 dark:hover:bg-white/20 transition-colors">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">list</span>지역 선택으로 전환
+          </button>
+        </div>
+      </div>
+      <div id="library-empty" class="hidden text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-charcoal/30 dark:text-white/30 mb-2">library_books</span>
+        <p class="text-charcoal/60 dark:text-white/60">소장 도서관이 없습니다.</p>
+      </div>
+      <div id="library-list" class="space-y-3 max-h-[300px] overflow-y-auto"></div>
+      <div id="library-count" class="hidden mt-4 text-sm text-charcoal/60 dark:text-white/60 text-center"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-[#1a1a1a] text-white/70">
+<div class="border-b border-white/10">
+<div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+<nav class="flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm">
+<a href="/" class="hover:text-white transition-colors">홈으로</a>
+</nav>
+</div>
+</div>
+<div class="max-w-[1200px] mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
+<div class="w-6 h-6 bg-white rounded-full"></div>
+</div>
+<div class="flex flex-col text-xs sm:text-sm">
+<span class="text-white font-bold text-base sm:text-lg">LibraryInsights</span>
+<span class="text-white/50">도서관 정보 서비스</span>
+</div>
+</div>
+<p class="text-xs sm:text-sm text-white/50">
+© 2026 LibraryInsights. Data provided by 도서관 정보나루. All rights reserved.
+</p>
+</div>
+</footer>
+</div>
+</div>
+
+<!-- Toast notification -->
+<div id="share-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-charcoal-800 dark:bg-white text-white dark:text-charcoal px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium transition-all duration-300 opacity-0 translate-y-2 pointer-events-none z-50">
+  URL이 클립보드에 복사되었습니다.
+</div>
+
+<Auth />
+
+<script define:vars={{ isbn, bookTitle, bookAuthor, bookPublisher, bookImage, bookPubdate, bookClassNm, fetchSuccess }}>
+  // 서버에서 받은 도서 정보를 window에 저장하여 클라이언트 스크립트에서 사용
+  window.__bookPageData = {
+    isbn13: isbn,
+    bookname: bookTitle,
+    authors: bookAuthor,
+    publisher: bookPublisher,
+    bookImageURL: bookImage,
+    publication_year: bookPubdate ? bookPubdate.slice(0, 4) : '',
+    class_nm: bookClassNm,
+    fetchSuccess: fetchSuccess,
+  };
+</script>
+
+<script>
+  import { initBookModal, openBookModal as sharedOpenModal } from '../../scripts/book-modal';
+  import { initBookmarks, isBookmarked, toggleBookmark, getUserId } from '../../scripts/bookmarks';
+
+  // Initialize bookmarks
+  initBookmarks();
+
+  // Initialize book modal (reuses same DOM IDs)
+  initBookModal();
+
+  // 서버에서 전달받은 도서 데이터로 모달 로직 초기화
+  const bookData = (window as any).__bookPageData;
+  if (bookData && bookData.isbn13) {
+    // 페이지에 이미 콘텐츠가 렌더링되어 있으므로 모달을 열지 않고
+    // 기존 book-modal.ts의 fetch 로직만 실행
+    // _currentBook 세팅 및 API 호출을 위해 openBookModal 대신 직접 처리
+
+    // 찜하기 버튼 상태 업데이트
+    const bookmarkBtn = document.getElementById('modal-bookmark-btn');
+    const bookmarkIcon = document.getElementById('modal-bookmark-icon');
+    const bookmarkText = document.getElementById('modal-bookmark-text');
+
+    function updateBookmarkUI() {
+      if (!bookmarkBtn || !bookmarkIcon || !bookmarkText) return;
+      const filled = isBookmarked(bookData.isbn13);
+      bookmarkIcon.style.fontVariationSettings = `'FILL' ${filled ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
+      if (filled) {
+        bookmarkBtn.classList.add('border-red-400', 'dark:border-red-500', 'text-red-500', 'dark:text-red-400', 'bg-red-50', 'dark:bg-red-900/20');
+        bookmarkBtn.classList.remove('border-charcoal/20', 'dark:border-white/20', 'text-charcoal/50', 'dark:text-white/50');
+        bookmarkText.textContent = '찜 해제';
+      } else {
+        bookmarkBtn.classList.remove('border-red-400', 'dark:border-red-500', 'text-red-500', 'dark:text-red-400', 'bg-red-50', 'dark:bg-red-900/20');
+        bookmarkBtn.classList.add('border-charcoal/20', 'dark:border-white/20', 'text-charcoal/50', 'dark:text-white/50');
+        bookmarkText.textContent = '찜하기';
+      }
+    }
+
+    updateBookmarkUI();
+
+    bookmarkBtn?.addEventListener('click', async () => {
+      if (!getUserId()) {
+        document.getElementById('signin-btn')?.click();
+        return;
+      }
+      await toggleBookmark({
+        isbn13: bookData.isbn13,
+        bookname: bookData.bookname,
+        authors: bookData.authors,
+        publisher: bookData.publisher,
+        publication_year: bookData.publication_year,
+        bookImageURL: bookData.bookImageURL,
+      });
+      updateBookmarkUI();
+    });
+
+    // book-modal.ts의 openBookModal을 호출하여 API fetch 로직 재활용
+    // 모달은 hidden 상태지만, 같은 DOM ID를 공유하므로 데이터가 페이지에 표시됨
+    // 단, 이 페이지에서는 모달의 hidden 제거가 아닌 기존 페이지 요소에 데이터를 채움
+    sharedOpenModal(bookData);
+
+    // openBookModal이 모달을 visible로 만들기 때문에 다시 hidden 처리 불필요
+    // (이 페이지에서는 book-modal 요소가 없으므로 무시됨)
+  }
+
+  // 공유 버튼 로직
+  const shareBtn = document.getElementById('page-share-btn');
+  const shareToast = document.getElementById('share-toast');
+
+  shareBtn?.addEventListener('click', async () => {
+    const shareUrl = window.location.href;
+    const shareTitle = document.title;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, url: shareUrl });
+      } catch (e) {
+        // 사용자가 공유를 취소한 경우 무시
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        showToast();
+      } catch {
+        // fallback: 구형 브라우저
+        const input = document.createElement('input');
+        input.value = shareUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast();
+      }
+    }
+  });
+
+  function showToast() {
+    if (!shareToast) return;
+    shareToast.classList.remove('opacity-0', 'translate-y-2');
+    shareToast.classList.add('opacity-100', 'translate-y-0');
+    setTimeout(() => {
+      shareToast.classList.add('opacity-0', 'translate-y-2');
+      shareToast.classList.remove('opacity-100', 'translate-y-0');
+    }, 2000);
+  }
+
+  // 테마 토글
+  const themeToggle = document.getElementById('theme-toggle');
+  themeToggle?.addEventListener('click', () => {
+    const html = document.documentElement;
+    if (html.classList.contains('dark')) {
+      html.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      html.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  });
+
+  // 모바일 메뉴 토글
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  mobileMenuBtn?.addEventListener('click', () => {
+    const expanded = mobileMenuBtn.getAttribute('aria-expanded') === 'true';
+    mobileMenuBtn.setAttribute('aria-expanded', String(!expanded));
+    mobileMenu?.classList.toggle('hidden');
+  });
+</script>
+</body></html>

@@ -118,7 +118,7 @@ app.get<{ Querystring: { keyword?: string } }>(
           { role: "user", content: keyword },
         ],
         temperature: 0,
-        max_tokens: 420,
+        max_tokens: 800,
       });
       const content = response.choices[0].message.content ?? "[]";
       const books = JSON.parse(content);

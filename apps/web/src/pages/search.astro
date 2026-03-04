@@ -610,7 +610,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     let aiCardsRenderToken = 0;
 
     // Store AI recommendations for detail lookup (ai-only mode)
-    let aiOnlyRecommendations: Array<{ title: string; author: string }> = [];
+    let aiOnlyRecommendations: Array<{ title: string; author: string; image?: string; isbn?: string }> = [];
 
     async function fetchJSONWithTimeout(apiUrl: string, timeoutMs = 15000) {
       const controller = new AbortController();
@@ -894,22 +894,23 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     }
 
     // Render minimal cards for ai-only mode (just title + author from OpenAI)
-    function renderAIOnlyCards(recommendations: Array<{ title: string; author: string }>) {
+    function renderAIOnlyCards(recommendations: Array<{ title: string; author: string; image?: string; isbn?: string }>) {
       aiOnlyRecommendations = recommendations;
       currentBooks = [];
 
       if (searchResults) {
         searchResults.innerHTML = recommendations.map((rec, index) => {
+          const hasImage = rec.image && rec.image.trim();
+          const imageHtml = hasImage
+            ? `<img src="${rec.image}" alt="${rec.title}" class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 object-cover bg-gray-200 dark:bg-charcoal-600" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex-col items-center justify-center" style="display:none"><span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">auto_awesome</span><span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">${index + 1}</span></div>`
+            : `<div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center"><span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">auto_awesome</span><span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">${index + 1}</span></div>`;
           return `
             <div
               class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-[1.02]"
               onclick="openAIOnlyDetail(${index})"
             >
               <div class="flex p-3 sm:p-4 gap-3 sm:gap-4">
-                <div class="w-16 h-24 sm:w-24 sm:h-36 rounded-lg flex-shrink-0 book-placeholder flex flex-col items-center justify-center">
-                  <span class="material-symbols-outlined text-2xl sm:text-4xl text-gray-400 dark:text-gray-500">auto_awesome</span>
-                  <span class="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-1">${index + 1}</span>
-                </div>
+                ${imageHtml}
                 <div class="flex flex-col flex-1 min-w-0 justify-center">
                   <h3 class="font-bold text-charcoal dark:text-white line-clamp-2 mb-1 text-sm sm:text-base">${rec.title}</h3>
                   <p class="text-xs sm:text-sm text-charcoal/60 dark:text-white/60 mb-2 truncate">${rec.author || '저자 미상'}</p>
@@ -950,15 +951,19 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
         if (docs.length > 0) {
           const book = docs[0].doc;
+          // Data4Library에 이미지가 없으면 Naver에서 받아온 이미지로 보완
+          if ((!book.bookImageURL || !book.bookImageURL.trim()) && rec.image) {
+            book.bookImageURL = rec.image;
+          }
           currentBooks = [book];
           sharedOpenModal(book);
         } else {
-          const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: '', isbn13: '', publisher: '', publication_year: '' };
+          const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: rec.image || '', isbn13: rec.isbn || '', publisher: '', publication_year: '' };
           currentBooks = [minimalBook];
           sharedOpenModal(minimalBook);
         }
       } catch {
-        const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: '', isbn13: '', publisher: '', publication_year: '' };
+        const minimalBook = { bookname: rec.title, authors: rec.author, bookImageURL: rec.image || '', isbn13: rec.isbn || '', publisher: '', publication_year: '' };
         currentBooks = [minimalBook];
         sharedOpenModal(minimalBook);
       } finally {

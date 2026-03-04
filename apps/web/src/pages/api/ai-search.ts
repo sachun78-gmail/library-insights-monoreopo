@@ -82,6 +82,42 @@ function authorMatches(aiAuthor: string, dbAuthors: string): boolean {
   return aiTokens.some((token) => dbNorm.includes(token));
 }
 
+// Naver 검색으로 ISBN을 찾아 반환
+async function findIsbnViaNaver(
+  locals: any,
+  title: string,
+  author: string
+): Promise<string | null> {
+  const clientId = getEnvVar(locals, 'NAVER_CLIENT_ID');
+  const clientSecret = getEnvVar(locals, 'NAVER_CLIENT_SECRET');
+  if (!clientId || !clientSecret) return null;
+
+  try {
+    const query = author ? `${title} ${author}` : title;
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(query)}&display=1`,
+      {
+        headers: {
+          'X-Naver-Client-Id': clientId,
+          'X-Naver-Client-Secret': clientSecret,
+        },
+        signal: AbortSignal.timeout(3000),
+      }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const item = json.items?.[0];
+    if (!item?.isbn) return null;
+    // ISBN 필드에서 13자리 추출
+    const isbn13 = item.isbn
+      .split(' ')
+      .find((s: string) => s.replace(/[^0-9]/g, '').length === 13);
+    return isbn13?.replace(/[^0-9]/g, '') || null;
+  } catch {
+    return null;
+  }
+}
+
 // AI 추천 1건을 공공도서관 DB에서 검색해 가장 적합한 도서 반환
 async function findBookInDB(
   locals: any,
@@ -118,6 +154,26 @@ async function findBookInDB(
     return matched ?? byTitleAuthor[0];
   }
 
+  // 3차: Naver 브릿지 — Naver에서 ISBN 획득 후 Data4Library ISBN 검색
+  const naverIsbn = await findIsbnViaNaver(locals, cleanTitle(rec.title), rec.author);
+  if (naverIsbn) {
+    try {
+      const data = await fetchLibraryData(locals, 'srchBooks', {
+        isbn13: naverIsbn,
+        pageNo: 1,
+        pageSize: 1,
+      });
+      if (!data.response?.error) {
+        const docs = (data.response?.docs || [])
+          .map((d: any) => d.doc || d)
+          .filter((d: any) => d?.isbn13);
+        if (docs.length > 0) return docs[0];
+      }
+    } catch {
+      // continue
+    }
+  }
+
   return null;
 }
 
@@ -139,6 +195,108 @@ function getBookKey(book: any): string {
   const author = normalizeText(book?.authors || book?.author);
   if (!title) return '';
   return `meta:${title}|${author}`;
+}
+
+function stripHtml(str: string | undefined): string {
+  if (!str) return '';
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/<[^>]*>/g, '');
+}
+
+// 이미지가 없는 책들에 대해 Naver API로 이미지를 병렬 조회
+async function fillMissingImages(
+  locals: any,
+  books: any[]
+): Promise<void> {
+  const clientId = getEnvVar(locals, 'NAVER_CLIENT_ID');
+  const clientSecret = getEnvVar(locals, 'NAVER_CLIENT_SECRET');
+  if (!clientId || !clientSecret) return;
+
+  const booksNeedingImage = books.filter(
+    (b) => !b.bookImageURL || !b.bookImageURL.trim()
+  );
+  if (booksNeedingImage.length === 0) return;
+
+  await Promise.all(
+    booksNeedingImage.map(async (book) => {
+      try {
+        const isbn = book.isbn13 || book.isbn;
+        const title = book.bookname || book.bookName || '';
+
+        // ISBN이 있으면 book_adv.json의 d_isbn으로 정확 검색
+        // 없으면 제목으로 일반 검색
+        let apiUrl: string;
+        if (isbn) {
+          apiUrl = `https://openapi.naver.com/v1/search/book_adv.json?d_isbn=${encodeURIComponent(String(isbn).replace(/-/g, ''))}&display=1`;
+        } else if (title) {
+          apiUrl = `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(title)}&display=1`;
+        } else {
+          return;
+        }
+
+        const res = await fetch(apiUrl, {
+          headers: {
+            'X-Naver-Client-Id': clientId,
+            'X-Naver-Client-Secret': clientSecret,
+          },
+          signal: AbortSignal.timeout(3000),
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const item = json.items?.[0];
+        if (item?.image) {
+          book.bookImageURL = item.image;
+        }
+      } catch {
+        // 개별 실패는 무시
+      }
+    })
+  );
+}
+
+// ai-only 모드: { title, author }만 있는 AI 추천에 Naver API로 이미지/ISBN 보강
+async function enrichAiRecommendations(
+  locals: any,
+  recs: Array<{ title: string; author: string; image?: string; isbn?: string }>
+): Promise<void> {
+  const clientId = getEnvVar(locals, 'NAVER_CLIENT_ID');
+  const clientSecret = getEnvVar(locals, 'NAVER_CLIENT_SECRET');
+  if (!clientId || !clientSecret) return;
+
+  await Promise.all(
+    recs.map(async (rec) => {
+      try {
+        const query = rec.title;
+        if (!query) return;
+
+        const res = await fetch(
+          `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(query)}&display=1`,
+          {
+            headers: {
+              'X-Naver-Client-Id': clientId,
+              'X-Naver-Client-Secret': clientSecret,
+            },
+            signal: AbortSignal.timeout(3000),
+          }
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        const item = json.items?.[0];
+        if (item) {
+          if (item.image) rec.image = item.image;
+          if (item.isbn) rec.isbn = item.isbn;
+        }
+      } catch {
+        // 개별 실패 무시
+      }
+    })
+  );
 }
 
 function jsonResponse(body: any, status = 200) {
@@ -255,8 +413,53 @@ export const GET: APIRoute = async ({ request, locals }) => {
       aiBooks.slice(0, MAX_SEED_LOOKUPS).map((rec) => findBookInDB(locals, rec))
     );
 
-    const seedBooks = seedSearchResults.filter((b: any) => b?.isbn13);
+    let seedBooks = seedSearchResults.filter((b: any) => b?.isbn13);
+
+    // seedBook이 0건이면 사용자 키워드로 Data4Library 직접 검색 fallback
     if (seedBooks.length === 0) {
+      console.log('[AI-Search] No seed books found, trying keyword fallback');
+      try {
+        const keywordSearchData = await fetchLibraryData(locals, 'srchBooks', {
+          keyword: keyword,
+          pageNo: 1,
+          pageSize: 10,
+        });
+        const keywordBooks = (keywordSearchData.response?.docs || [])
+          .map((d: any) => d.doc || d)
+          .filter((d: any) => d?.isbn13);
+
+        if (keywordBooks.length === 0) {
+          // 핵심 명사만 추출하여 재검색 (조사/동사/형용사 어미 제거)
+          const simplifiedKeyword = keyword
+            .replace(/[을를이가은는에서의로도만까지처럼보다라고하는있는없는좋은나쁜]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          if (simplifiedKeyword && simplifiedKeyword !== keyword) {
+            console.log(`[AI-Search] Retrying with simplified keyword: ${simplifiedKeyword}`);
+            const retryData = await fetchLibraryData(locals, 'srchBooks', {
+              keyword: simplifiedKeyword,
+              pageNo: 1,
+              pageSize: 10,
+            });
+            const retryBooks = (retryData.response?.docs || [])
+              .map((d: any) => d.doc || d)
+              .filter((d: any) => d?.isbn13);
+            if (retryBooks.length > 0) {
+              seedBooks = retryBooks;
+            }
+          }
+        } else {
+          seedBooks = keywordBooks;
+        }
+      } catch {
+        // fallback 실패 시 무시
+      }
+    }
+
+    if (seedBooks.length === 0) {
+      // 최종적으로 매칭되는 책이 없으므로 Naver API로 이미지 보강
+      console.log('[AI-Search] No seed books found after fallback, enriching ai-only with Naver images');
+      await enrichAiRecommendations(locals, aiBooks);
       return respondWithCache({
         mode: 'ai-only',
         recommendations: aiBooks,
@@ -265,7 +468,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const primarySeed = seedBooks[0];
+    let primarySeed = seedBooks[0];
     const seedIsbns = seedBooks
       .slice(0, MAX_SEED_ISBNS)
       .map((b: any) => b.isbn13)
@@ -351,6 +554,12 @@ export const GET: APIRoute = async ({ request, locals }) => {
     }
 
     if (allRecs.length === 0) {
+      // seedBook 이미지 보완 + AI 추천 목록에 Naver 이미지 보강
+      console.log('[AI-Search] ai-only mode: enriching with Naver images');
+      await Promise.all([
+        !primarySeed.bookImageURL ? fillMissingImages(locals, [primarySeed]) : Promise.resolve(),
+        enrichAiRecommendations(locals, aiBooks),
+      ]);
       return respondWithCache({
         mode: 'ai-only',
         recommendations: aiBooks,
@@ -363,6 +572,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
         regions: [],
       });
     }
+
+    // Naver API로 이미지가 없는 책들 보완
+    console.log('[AI-Search] Filling missing images via Naver API');
+    await fillMissingImages(locals, [primarySeed, ...allRecs]);
 
     if (Number.isNaN(lat) || Number.isNaN(lon)) {
       return respondWithCache({
@@ -421,7 +634,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         publisher: primarySeed.publisher || '',
         publication_year: primarySeed.publication_year || '',
       },
-      recommendations: finalRecs,
+      recommendations: libCheckResults,
       regions: nearestRegions.map((r) => r.name),
     });
   } catch (error: any) {

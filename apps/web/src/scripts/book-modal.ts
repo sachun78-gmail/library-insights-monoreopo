@@ -1071,6 +1071,56 @@ async function startLibrarySearch(): Promise<void> {
 // Init & Public API
 // ========================================
 
+// ========================================
+// Share
+// ========================================
+
+function showShareToast(): void {
+  // 기존 토스트가 있으면 재활용, 없으면 생성
+  let toast = document.getElementById('share-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'share-toast';
+    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-charcoal-800 dark:bg-white text-white dark:text-charcoal px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium transition-all duration-300 opacity-0 translate-y-2 pointer-events-none z-50';
+    toast.textContent = 'URL이 클립보드에 복사되었습니다.';
+    document.body.appendChild(toast);
+  }
+  toast.classList.remove('opacity-0', 'translate-y-2');
+  toast.classList.add('opacity-100', 'translate-y-0');
+  setTimeout(() => {
+    toast!.classList.add('opacity-0', 'translate-y-2');
+    toast!.classList.remove('opacity-100', 'translate-y-0');
+  }, 2000);
+}
+
+async function handleShareClick(): Promise<void> {
+  if (!_currentBook?.isbn13) return;
+
+  const shareUrl = `${window.location.origin}/books/${_currentBook.isbn13}`;
+  const shareTitle = _currentBook.bookname || 'LibraryInsights';
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: shareTitle, url: shareUrl });
+    } catch {
+      // 사용자가 공유를 취소한 경우 무시
+    }
+  } else {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showShareToast();
+    } catch {
+      const input = document.createElement('input');
+      input.value = shareUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      showShareToast();
+    }
+  }
+}
+
 export function initBookModal(callbacks?: BookModalCallbacks): void {
   _callbacks = callbacks || {};
 
@@ -1121,6 +1171,11 @@ export function initBookModal(callbacks?: BookModalCallbacks): void {
   // Switch to region mode button
   getEl('switch-to-region-btn')?.addEventListener('click', () => {
     switchToRegionMode();
+  });
+
+  // Share button
+  getEl('modal-share-btn')?.addEventListener('click', () => {
+    handleShareClick();
   });
 
   // Review section
