@@ -94,6 +94,20 @@ CREATE POLICY "reviews_delete_own"
   USING (auth.uid() = user_id);
 
 
+-- ── book_insights ───────────────────────────────────────────
+-- AI 도서 인사이트 캐시 테이블 (서비스 롤로만 쓰기, 읽기는 공개)
+ALTER TABLE book_insights ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "book_insights_select_all" ON book_insights;
+
+-- 누구나 조회 가능 (공개 캐시 데이터)
+CREATE POLICY "book_insights_select_all"
+  ON book_insights FOR SELECT
+  USING (true);
+
+-- INSERT/UPDATE/DELETE는 서비스 롤 키가 RLS를 우회하므로 별도 정책 불필요
+
+
 -- ── push_tokens ──────────────────────────────────────────────
 -- 푸쉬 알림 토큰 저장 테이블 (Expo Push Token)
 CREATE TABLE IF NOT EXISTS push_tokens (

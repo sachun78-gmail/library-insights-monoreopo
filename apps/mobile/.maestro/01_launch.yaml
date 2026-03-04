@@ -1,0 +1,11 @@
+appId: work.libraryinsights
+---
+- launchApp
+- assertVisible:
+    text: "Library Insights"
+    optional: true
+# 탭바가 표시되는지 확인
+- assertVisible:
+    id: "tab_home"
+    optional: true
+- takeScreenshot: launch_home

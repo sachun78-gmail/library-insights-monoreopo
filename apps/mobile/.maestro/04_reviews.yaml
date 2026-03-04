@@ -1,0 +1,13 @@
+appId: work.libraryinsights
+---
+- launchApp
+# 한줄평 탭으로 이동
+- tapOn:
+    text: "한줄평"
+- waitForAnimationToEnd
+- takeScreenshot: reviews_tab
+
+# 리뷰 목록 또는 로그인 유도 확인
+- assertVisible:
+    text: "한줄평"
+- takeScreenshot: reviews_content

@@ -194,6 +194,7 @@ export default function SearchScreen() {
             <View className="flex-1 flex-row items-center bg-slate-700 rounded-xl px-3">
               <Ionicons name="search-outline" size={18} color="#94A3B8" />
               <TextInput
+                testID="search-input"
                 className="flex-1 ml-2 text-sm text-slate-100 py-3"
                 style={aiMode ? { fontSize: 11 } : undefined}
                 multiline={false}

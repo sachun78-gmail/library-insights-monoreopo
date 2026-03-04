@@ -1,0 +1,16 @@
+appId: work.libraryinsights
+---
+- launchApp
+# 검색 탭으로 이동
+- tapOn:
+    text: "검색"
+- waitForAnimationToEnd
+- takeScreenshot: search_tab
+
+# 검색어 입력 (Maestro 한글 미지원 - ASCII 사용)
+- tapOn:
+    text: ".*입력.*"
+- inputText: "book"
+- pressKey: Enter
+- waitForAnimationToEnd
+- takeScreenshot: search_results

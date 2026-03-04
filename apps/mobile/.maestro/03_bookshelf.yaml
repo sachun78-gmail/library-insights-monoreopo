@@ -1,0 +1,13 @@
+appId: work.libraryinsights
+---
+- launchApp
+# 서재 탭으로 이동
+- tapOn:
+    text: "서재"
+- waitForAnimationToEnd
+- takeScreenshot: bookshelf_tab
+
+# 로그인 유도 화면 또는 서재 목록 확인
+- assertVisible:
+    text: "서재"
+- takeScreenshot: bookshelf_content
