@@ -16,6 +16,8 @@
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
     "@astrojs/node": "^9.5.2",
+    "@sentry/browser": "^10.42.0",
+    "@sentry/cloudflare": "^10.42.0",
     "@supabase/supabase-js": "^2.93.3",
     "@yatoday/astro-ui": "^0.17.17",
     "astro": "^5.17.1",

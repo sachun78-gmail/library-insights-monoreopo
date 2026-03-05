@@ -6,6 +6,7 @@ import { regions as regionsData } from '../data/regions.js';
 import { getUserId, isBookmarked, toggleBookmark } from './bookmarks';
 import { initFavoriteLibraries, isFavoriteLibrary, toggleFavoriteLibrary, getFavoriteLibraries } from './favorite-libraries';
 import { supabase } from '../lib/supabase';
+import { captureException } from './sentry-client';
 
 async function getAuthToken(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -160,6 +161,7 @@ async function fetchAiInsight(): Promise<void> {
     getEl('ai-insight-loading')?.classList.add('hidden');
     getEl('ai-insight-content')?.classList.remove('hidden');
   } catch (error) {
+    captureException(error);
     console.error('AI insight fetch error:', error);
     stopAiProgress();
     getEl('ai-insight-loading')?.classList.add('hidden');
@@ -206,6 +208,7 @@ async function fetchData4LibIntro(isbn13: string): Promise<void> {
       introEl.classList.remove('hidden');
     }
   } catch (err) {
+    captureException(err);
     console.error('Data4library intro error:', err);
   }
 }
@@ -293,6 +296,7 @@ async function fetchBookDetails(isbn: string, title: string): Promise<void> {
       }
     }
   } catch (error) {
+    captureException(error);
     console.error('Book detail fetch error:', error);
     reviewLoading?.classList.add('hidden');
     if ((getEl('naver-review-link') as HTMLAnchorElement | null) && title) {
@@ -478,6 +482,7 @@ async function fetchBookReviews(isbn13: string): Promise<void> {
       renderReviewList(_allReviews, false);
     }
   } catch (err) {
+    captureException(err);
     console.error('Review fetch error:', err);
     loadingEl?.classList.add('hidden');
     emptyEl?.classList.remove('hidden');
@@ -532,6 +537,7 @@ async function submitReview(): Promise<void> {
     // Reload reviews
     await fetchBookReviews(_currentBook.isbn13 || '');
   } catch (err: any) {
+    captureException(err);
     console.error('Review submit error:', err);
     if (errEl) { errEl.textContent = '저장 중 오류가 발생했습니다.'; errEl.classList.remove('hidden'); }
   } finally {
@@ -570,6 +576,7 @@ async function deleteReview(): Promise<void> {
     if (submitBtn) submitBtn.textContent = '등록';
     await fetchBookReviews(_currentBook.isbn13 || '');
   } catch (err: any) {
+    captureException(err);
     console.error('Review delete error:', err);
   } finally {
     if (deleteBtn) { deleteBtn.disabled = false; }

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { captureException } from './sentry-server';
 
 function createAdminClient(url: string, serviceKey: string) {
   return createClient(url, serviceKey, {
@@ -30,6 +31,7 @@ function jsonUnauthorized() {
 export function safeErrorResponse(error: unknown, publicMessage = 'Internal server error'): Response {
   // 서버 로그에만 상세 에러 기록
   console.error('[API Error]', error instanceof Error ? error.message : String(error));
+  captureException(error);
   return new Response(JSON.stringify({ error: publicMessage }), {
     status: 500,
     headers: { 'Content-Type': 'application/json' },

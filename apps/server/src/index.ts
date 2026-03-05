@@ -3,10 +3,13 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import dotenv from "dotenv";
 import OpenAI from "openai";
+import { initSentry, captureException } from "./sentry.js";
 
 // Prefer service-specific env file, then fall back to repository-root .env.
 dotenv.config({ path: "apps/server/.env" });
 dotenv.config();
+
+initSentry();
 
 const app = Fastify({ logger: true });
 
@@ -51,6 +54,11 @@ await app.register(rateLimit, {
     error: "Too Many Requests",
     message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
   }),
+});
+
+app.addHook("onError", (_req, _reply, error, done) => {
+  captureException(error);
+  done();
 });
 
 const ALLOWED_ENDPOINTS = new Set([
@@ -124,6 +132,7 @@ app.get<{ Querystring: { keyword?: string } }>(
       const books = JSON.parse(content);
       return reply.send({ books });
     } catch (err: any) {
+      captureException(err);
       req.log.error(err);
       return reply.code(500).send({ error: "AI recommend failed" });
     }
@@ -165,6 +174,7 @@ app.get<{ Querystring: { title?: string; author?: string; isbn13?: string } }>(
       const insight = JSON.parse(content);
       return reply.send({ insight });
     } catch (err: any) {
+      captureException(err);
       req.log.error(err);
       return reply.code(500).send({ error: "AI insight failed" });
     }
@@ -212,6 +222,7 @@ app.get<{ Params: { endpoint: string }; Querystring: Record<string, unknown> }>(
         .code(res.status)
         .send(body);
     } catch (err) {
+      captureException(err);
       req.log.error(err);
       return reply.code(502).send({ error: "Upstream error" });
     } finally {

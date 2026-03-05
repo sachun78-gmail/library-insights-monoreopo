@@ -2,6 +2,7 @@
 // Used across search.astro, index.astro, mybookshelf.astro
 
 import { supabase } from '../lib/supabase';
+import { captureException } from './sentry-client';
 
 // isbn13 → reading_status ('to_read' | 'reading' | 'read') 매핑
 let bookmarkedMap: Map<string, string> = new Map();
@@ -24,7 +25,8 @@ export async function initBookmarks(): Promise<void> {
     }
     currentUserId = session.user.id;
     await loadBookmarks();
-  } catch {
+  } catch (err) {
+    captureException(err);
     loaded = true;
   }
 }
@@ -41,8 +43,8 @@ async function loadBookmarks(): Promise<void> {
     bookmarkedMap = new Map(
       (data.bookmarks || []).map((b: any) => [b.isbn13, b.reading_status || 'to_read'])
     );
-  } catch {
-    // ignore
+  } catch (err) {
+    captureException(err);
   }
   loaded = true;
 }

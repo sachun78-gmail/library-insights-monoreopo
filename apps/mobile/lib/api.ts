@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { captureException } from "./sentry";
 import type {
   Book,
   Bookmark,
@@ -56,6 +57,7 @@ async function get(
     if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
   } catch (error) {
+    captureException(error);
     if (DEBUG_API) console.log("[API][GET][ERR]", path, error);
     throw error;
   } finally {
@@ -91,6 +93,7 @@ async function post(
     }
     return res.json();
   } catch (error) {
+    captureException(error);
     if (DEBUG_API) console.log("[API][POST][ERR]", path, error);
     throw error;
   } finally {
@@ -117,6 +120,7 @@ async function patch(
     if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
   } catch (error) {
+    captureException(error);
     if (DEBUG_API) console.log("[API][PATCH][ERR]", path, error);
     throw error;
   } finally {
@@ -143,6 +147,7 @@ async function del(
     if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
   } catch (error) {
+    captureException(error);
     if (DEBUG_API) console.log("[API][DELETE][ERR]", path, error);
     throw error;
   } finally {
@@ -169,6 +174,7 @@ async function postForm(
     if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
     return res.json();
   } catch (error) {
+    captureException(error);
     if (DEBUG_API) console.log("[API][FORM][ERR]", path, error);
     throw error;
   } finally {
