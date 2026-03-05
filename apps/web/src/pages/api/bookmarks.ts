@@ -46,6 +46,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (!isbn13) return jsonResponse({ error: 'isbn13 is required' }, 400);
 
+    const status = reading_status || 'to_read';
     const { data, error } = await supabase
       .from('bookmarks')
       .upsert(
@@ -57,7 +58,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
           publisher: publisher || '',
           publication_year: publication_year || '',
           book_image_url: book_image_url || '',
-          reading_status: reading_status || 'to_read',
+          reading_status: status,
+          completed_at: status === 'read' ? new Date().toISOString() : null,
         },
         { onConflict: 'user_id,isbn13' }
       )
@@ -88,9 +90,16 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'Invalid reading_status' }, 400);
     }
 
+    const updateData: Record<string, any> = { reading_status };
+    if (reading_status === 'read') {
+      updateData.completed_at = new Date().toISOString();
+    } else {
+      updateData.completed_at = null;
+    }
+
     const { data, error } = await supabase
       .from('bookmarks')
-      .update({ reading_status })
+      .update(updateData)
       .eq('user_id', userId)
       .eq('isbn13', isbn13)
       .select()

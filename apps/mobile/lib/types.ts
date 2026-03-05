@@ -35,6 +35,20 @@ export interface Bookmark {
   book_image_url: string;
   reading_status: ReadingStatus;
   created_at?: string;
+  completed_at?: string;
+}
+
+export interface ReadingStats {
+  summary: { total: number; to_read: number; reading: number; read: number };
+  calendar: {
+    year: number;
+    month: number;
+    days: Record<string, { bookname: string; authors: string }[]>;
+  };
+  monthlyReport: { currentMonth: number; monthLabel: string; goal: number; yearlyTotal: number; streak: number };
+  monthlyCompleted: { month: string; label: string; count: number }[];
+  topAuthors: { author: string; count: number }[];
+  publicationYearDist: { year: string; count: number }[];
 }
 
 export interface FavoriteLibrary {

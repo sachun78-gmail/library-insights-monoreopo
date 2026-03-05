@@ -183,6 +183,16 @@ CREATE POLICY "fav_libs_delete_own"
   USING (auth.uid() = user_id);
 
 
+-- ── bookmarks: completed_at 컬럼 추가 ─────────────────────────
+ALTER TABLE bookmarks
+  ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+
+-- 기존 'read' 상태 데이터 보정
+UPDATE bookmarks
+  SET completed_at = created_at
+  WHERE reading_status = 'read' AND completed_at IS NULL;
+
+
 -- ── 추천 알림 pg_cron 스케줄 ────────────────────────────────
 -- Supabase Dashboard > SQL Editor 에서 실행
 -- 사전 조건: pg_cron 확장 활성화 필요

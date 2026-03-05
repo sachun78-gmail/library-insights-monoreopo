@@ -4,6 +4,7 @@ import type {
   Book,
   Bookmark,
   ReadingStatus,
+  ReadingStats,
   UserProfile,
   BookReview,
   AIInsight,
@@ -265,6 +266,11 @@ export const api = {
   updateReadingStatus: async (isbn13: string, reading_status: ReadingStatus): Promise<void> => {
     const headers = await getAuthHeader();
     return patch("/api/bookmarks", { isbn13, reading_status }, headers);
+  },
+
+  readingStats: async (month?: string): Promise<ReadingStats> => {
+    const headers = await getAuthHeader();
+    return get("/api/reading-stats", month ? { month } : {}, TIMEOUT_MS, headers);
   },
 
   removeBookmark: async (isbn13: string): Promise<void> => {

@@ -18,7 +18,7 @@ import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
 import { BookDetailSheet } from "../../components/BookDetailSheet";
 import { AppBackground } from "../../components/AppBackground";
-import type { Bookmark, Book, ReadingStatus } from "../../lib/types";
+import type { Bookmark, Book, ReadingStatus, ReadingStats } from "../../lib/types";
 
 const PLACEHOLDER = "https://via.placeholder.com/52x74?text=No";
 
@@ -37,6 +37,184 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "read",    label: "읽음" },
 ];
 
+function StatsSection({ stats, onMonthChange }: { stats: ReadingStats; onMonthChange: (month: string) => void }) {
+  const [selectedDay, setSelectedDay] = React.useState<string | null>(null);
+  const [navVisible, setNavVisible] = React.useState(false);
+
+  const now = new Date();
+  const calendar = stats.calendar ?? { year: now.getFullYear(), month: now.getMonth() + 1, days: {} };
+  const monthlyReport = stats.monthlyReport ?? { currentMonth: 0, monthLabel: `${now.getMonth() + 1}월`, goal: 5, yearlyTotal: 0, streak: 0 };
+
+  const { year, month, days } = calendar;
+  const firstDay = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
+
+  const calendarDays: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d);
+
+  const navigateMonth = (delta: number) => {
+    let newMonth = month + delta;
+    let newYear = year;
+    if (newMonth > 12) { newYear++; newMonth = 1; }
+    if (newMonth < 1) { newYear--; newMonth = 12; }
+    onMonthChange(`${newYear}-${String(newMonth).padStart(2, '0')}`);
+    setSelectedDay(null);
+  };
+
+  const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+  return (
+    <View style={statsStyles.container}>
+      {/* 독서 캘린더 */}
+      <View style={statsStyles.chartCard}>
+        <View style={statsStyles.headerRow}>
+          <Text style={statsStyles.chartTitle}>{month}월 독서 캘린더</Text>
+          <TouchableOpacity onPress={() => setNavVisible(!navVisible)}>
+            <Text style={statsStyles.toggleText}>{navVisible ? '접기' : '전체보기'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {navVisible && (
+          <View style={statsStyles.navRow}>
+            <TouchableOpacity style={statsStyles.navBtn} onPress={() => navigateMonth(-1)}>
+              <Ionicons name="chevron-back" size={16} color="#F1F5F9" />
+            </TouchableOpacity>
+            <Text style={statsStyles.navLabel}>{year}년 {month}월</Text>
+            <TouchableOpacity style={statsStyles.navBtn} onPress={() => navigateMonth(1)}>
+              <Ionicons name="chevron-forward" size={16} color="#F1F5F9" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 요일 헤더 */}
+        <View style={statsStyles.weekRow}>
+          {WEEKDAYS.map((w, i) => (
+            <Text key={w} style={[statsStyles.weekDay, i === 0 && { color: '#F87171' }, i === 6 && { color: '#60A5FA' }]}>{w}</Text>
+          ))}
+        </View>
+
+        {/* 날짜 그리드 */}
+        <View style={statsStyles.calendarGrid}>
+          {calendarDays.map((d, idx) => {
+            if (d === null) return <View key={`empty-${idx}`} style={statsStyles.dayCell} />;
+            const dayStr = String(d);
+            const hasBooks = days[dayStr] && days[dayStr].length > 0;
+            const isToday = isCurrentMonth && today.getDate() === d;
+            const dayOfWeek = (firstDay + d - 1) % 7;
+            return (
+              <TouchableOpacity
+                key={d}
+                style={[statsStyles.dayCell, isToday && statsStyles.todayCell]}
+                onPress={() => hasBooks && setSelectedDay(selectedDay === dayStr ? null : dayStr)}
+                activeOpacity={hasBooks ? 0.6 : 1}
+              >
+                <Text style={[
+                  statsStyles.dayText,
+                  dayOfWeek === 0 && { color: '#F87171' },
+                  dayOfWeek === 6 && { color: '#60A5FA' },
+                  isToday && { fontWeight: '700' },
+                ]}>{d}</Text>
+                {hasBooks && <View style={statsStyles.dot} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* 선택한 날짜 상세 */}
+        {selectedDay && days[selectedDay] && (
+          <View style={statsStyles.detailBox}>
+            <Text style={statsStyles.detailTitle}>{month}월 {selectedDay}일 완독</Text>
+            {days[selectedDay].map((b, i) => (
+              <View key={i} style={statsStyles.detailItem}>
+                <Ionicons name="checkmark-circle" size={14} color="#D97706" />
+                <View style={{ flex: 1 }}>
+                  <Text style={statsStyles.detailBookName} numberOfLines={1}>{b.bookname}</Text>
+                  <Text style={statsStyles.detailAuthors} numberOfLines={1}>{b.authors}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* 캘린더 하단 요약 */}
+        <View style={statsStyles.calendarFooter}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#D97706' }} />
+            <Text style={{ fontSize: 10, color: '#64748B' }}>완독일</Text>
+          </View>
+          <Text style={{ fontSize: 10, color: '#64748B' }}>
+            {(() => {
+              const totalDays = Object.keys(days).length;
+              const totalBooks = Object.values(days).reduce((sum, arr) => sum + arr.length, 0);
+              return totalBooks > 0 ? `${totalDays}일 · ${totalBooks}권 완독` : '완독 기록이 없습니다';
+            })()}
+          </Text>
+        </View>
+      </View>
+
+      {/* 독서 리포트 */}
+      <View style={statsStyles.chartCard}>
+        <Text style={statsStyles.chartTitle}>독서 리포트</Text>
+
+        {/* 월간 완독 + 목표 */}
+        <View style={{ marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Text style={statsStyles.reportLabel}>{monthlyReport.monthLabel} 완독 현황</Text>
+            <Text style={{ fontSize: 11, color: '#64748B' }}>목표 {monthlyReport.goal || 5}권</Text>
+          </View>
+          <View style={statsStyles.reportBarBg}>
+            <View style={[statsStyles.reportBar, { width: `${Math.min((monthlyReport.currentMonth / (monthlyReport.goal || 5)) * 100, 100)}%` as any }]} />
+          </View>
+          <Text style={[statsStyles.reportCount, { textAlign: 'center', marginTop: 6 }]}>{monthlyReport.currentMonth}권 완독</Text>
+        </View>
+
+        {/* 구분선 */}
+        <View style={{ height: 1, backgroundColor: '#334155', marginBottom: 12 }} />
+
+        {/* 올해 누적 + 연속 독서 */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+          <View style={statsStyles.statBox}>
+            <Text style={statsStyles.statBoxLabel}>{new Date().getFullYear()}년 완독</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+              <Text style={statsStyles.statBoxValue}>{monthlyReport.yearlyTotal ?? 0}</Text>
+              <Text style={statsStyles.statBoxUnit}>권</Text>
+            </View>
+          </View>
+          <View style={statsStyles.statBox}>
+            <Text style={statsStyles.statBoxLabel}>연속 독서</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+              <Text style={statsStyles.statBoxValue}>{monthlyReport.streak ?? 0}</Text>
+              <Text style={statsStyles.statBoxUnit}>개월</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 많이 읽은 저자 TOP 3 */}
+        <View>
+          <Text style={{ fontSize: 10, color: '#64748B', marginBottom: 6 }}>많이 읽은 저자</Text>
+          {(stats.topAuthors ?? []).length === 0 ? (
+            <Text style={{ fontSize: 10, color: '#475569' }}>아직 읽은 책이 없습니다</Text>
+          ) : (
+            (stats.topAuthors ?? []).slice(0, 3).map((a, i) => {
+              const medals = ['🥇', '🥈', '🥉'];
+              return (
+                <View key={a.author} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12 }}>{medals[i]}</Text>
+                  <Text style={{ fontSize: 12, color: '#94A3B8', flex: 1 }} numberOfLines={1}>{a.author}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#F1F5F9' }}>{a.count}권</Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function bookmarkToBook(b: Bookmark): Book {
   return {
     isbn13: b.isbn13,
@@ -54,11 +232,19 @@ export default function BookshelfScreen() {
   const queryClient = useQueryClient();
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
+  const [statsMonth, setStatsMonth] = useState<string | undefined>(undefined);
 
   const { data: bookmarks, isLoading } = useQuery<Bookmark[]>({
     queryKey: ["bookmarks", user?.id],
     queryFn: () => api.bookmarks(),
     enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: stats } = useQuery<ReadingStats>({
+    queryKey: ["reading-stats", user?.id, statsMonth],
+    queryFn: () => api.readingStats(statsMonth),
+    enabled: !!user && !!bookmarks && bookmarks.length > 0,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -82,8 +268,10 @@ export default function BookshelfScreen() {
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(["bookmarks", user?.id], ctx.prev);
     },
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: ["bookmarks", user?.id] }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["reading-stats", user?.id] });
+    },
   });
 
   const handleRemove = (isbn13: string, bookname: string) => {
@@ -194,6 +382,7 @@ export default function BookshelfScreen() {
             data={filtered}
             keyExtractor={(item) => item.isbn13}
             contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            ListHeaderComponent={stats ? <StatsSection stats={stats} onMonthChange={setStatsMonth} /> : null}
             renderItem={({ item }) => {
               const status: ReadingStatus = item.reading_status ?? "to_read";
               const cfg = STATUS_CONFIG[status];
@@ -278,6 +467,77 @@ export default function BookshelfScreen() {
     </SafeAreaView>
   );
 }
+
+const statsStyles = StyleSheet.create({
+  container: { marginBottom: 16 },
+  chartCard: {
+    backgroundColor: "#1E293B",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
+    marginBottom: 12,
+  },
+  chartTitle: { fontSize: 13, fontWeight: "700", color: "#F1F5F9", marginBottom: 12 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  toggleText: { fontSize: 12, color: "#D97706", fontWeight: "500" },
+  navRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 16, marginBottom: 12 },
+  navBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navLabel: { fontSize: 14, fontWeight: "700", color: "#F1F5F9", minWidth: 100, textAlign: "center" },
+  weekRow: { flexDirection: "row", marginBottom: 6 },
+  weekDay: { flex: 1, textAlign: "center", fontSize: 11, fontWeight: "600", color: "#64748B", paddingVertical: 4 },
+  calendarGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 4 },
+  dayCell: {
+    width: `${100 / 7}%` as any,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  todayCell: { backgroundColor: "rgba(217, 119, 6, 0.1)", borderRadius: 10 },
+  dayText: { fontSize: 14, color: "#94A3B8" },
+  dot: { position: "absolute", bottom: 4, width: 5, height: 5, borderRadius: 3, backgroundColor: "#D97706" },
+  detailBox: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#334155",
+  },
+  detailTitle: { fontSize: 12, fontWeight: "700", color: "#F1F5F9", marginBottom: 8 },
+  detailItem: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
+  detailBookName: { fontSize: 12, fontWeight: "500", color: "#F1F5F9" },
+  detailAuthors: { fontSize: 10, color: "#64748B" },
+  calendarFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#334155",
+  },
+  reportLabel: { fontSize: 12, color: "#94A3B8" },
+  reportBarBg: { width: "100%" as any, height: 24, backgroundColor: "#0F172A", borderRadius: 12, overflow: "hidden" },
+  reportBar: { height: "100%" as any, backgroundColor: "#D97706", borderRadius: 12, minWidth: 0 },
+  reportCount: { fontSize: 16, fontWeight: "700", color: "#F1F5F9" },
+  statBox: {
+    flex: 1,
+    alignItems: "center" as const,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "#0F172A",
+  },
+  statBoxLabel: { fontSize: 10, color: "#64748B", marginBottom: 4 },
+  statBoxValue: { fontSize: 22, fontWeight: "700" as const, color: "#F1F5F9" },
+  statBoxUnit: { fontSize: 11, color: "#64748B", marginLeft: 2 },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#071426" },

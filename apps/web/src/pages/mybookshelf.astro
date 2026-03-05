@@ -178,6 +178,102 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         </a>
       </div>
 
+      <!-- Reading Stats Section -->
+      <div id="reading-stats" class="hidden mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <!-- 독서 캘린더 -->
+          <div class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 id="calendar-title" class="text-sm font-bold text-charcoal dark:text-white flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-primary text-base">calendar_month</span>
+                <span id="calendar-month-label"></span>
+              </h3>
+              <button id="calendar-toggle-nav" class="text-xs text-primary font-medium hover:underline">전체보기</button>
+            </div>
+            <!-- 월 네비게이션 (숨김 상태) -->
+            <div id="calendar-nav" class="hidden flex items-center justify-center gap-4 mb-3">
+              <button id="calendar-prev" class="w-7 h-7 rounded-full border border-charcoal/10 dark:border-white/10 flex items-center justify-center hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors">
+                <span class="material-symbols-outlined text-sm text-charcoal dark:text-white">chevron_left</span>
+              </button>
+              <span id="calendar-nav-label" class="text-sm font-bold text-charcoal dark:text-white min-w-[100px] text-center"></span>
+              <button id="calendar-next" class="w-7 h-7 rounded-full border border-charcoal/10 dark:border-white/10 flex items-center justify-center hover:bg-charcoal/5 dark:hover:bg-white/10 transition-colors">
+                <span class="material-symbols-outlined text-sm text-charcoal dark:text-white">chevron_right</span>
+              </button>
+            </div>
+            <!-- 캘린더 그리드 -->
+            <div class="grid grid-cols-7 gap-0.5 text-center mb-1">
+              <span class="text-[10px] font-medium text-red-400">일</span>
+              <span class="text-[10px] font-medium text-charcoal/50 dark:text-white/50">월</span>
+              <span class="text-[10px] font-medium text-charcoal/50 dark:text-white/50">화</span>
+              <span class="text-[10px] font-medium text-charcoal/50 dark:text-white/50">수</span>
+              <span class="text-[10px] font-medium text-charcoal/50 dark:text-white/50">목</span>
+              <span class="text-[10px] font-medium text-charcoal/50 dark:text-white/50">금</span>
+              <span class="text-[10px] font-medium text-blue-400">토</span>
+            </div>
+            <div id="calendar-grid" class="grid grid-cols-7 gap-0.5"></div>
+            <!-- 선택한 날짜 완독 책 목록 -->
+            <div id="calendar-detail" class="hidden mt-3 pt-3 border-t border-charcoal/10 dark:border-white/10">
+              <h4 id="calendar-detail-title" class="text-xs font-bold text-charcoal dark:text-white mb-2"></h4>
+              <div id="calendar-detail-list" class="flex flex-col gap-1"></div>
+            </div>
+            <!-- 캘린더 하단 요약 -->
+            <div id="calendar-summary" class="mt-3 pt-3 border-t border-charcoal/5 dark:border-white/5 flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+                <span class="text-[10px] text-charcoal/50 dark:text-white/50">완독일</span>
+              </div>
+              <p id="calendar-summary-text" class="text-[10px] text-charcoal/50 dark:text-white/50"></p>
+            </div>
+          </div>
+
+          <!-- 독서 리포트 -->
+          <div class="bg-white dark:bg-charcoal/40 rounded-xl border border-charcoal/5 dark:border-white/5 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-charcoal dark:text-white flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-primary text-base">analytics</span>
+                독서 리포트
+              </h3>
+            </div>
+
+            <!-- 월간 완독 목표 -->
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-1.5">
+                <p class="text-xs text-charcoal/60 dark:text-white/60" id="report-month-label"></p>
+                <p class="text-xs text-charcoal/40 dark:text-white/40" id="report-goal-label"></p>
+              </div>
+              <div class="w-full h-6 bg-charcoal/5 dark:bg-white/5 rounded-full overflow-hidden relative">
+                <div id="report-bar" class="h-full bg-primary rounded-full transition-all duration-500" style="width: 0%;"></div>
+              </div>
+              <p class="mt-1.5 text-center text-sm font-bold text-charcoal dark:text-white"><span id="report-count">0</span>권 완독</p>
+            </div>
+
+            <!-- 구분선 -->
+            <div class="border-t border-charcoal/5 dark:border-white/5 my-3"></div>
+
+            <!-- 올해 누적 + 연속 독서 -->
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div class="text-center py-2 px-2 rounded-lg bg-charcoal/[0.02] dark:bg-white/[0.03]">
+                <p class="text-[10px] text-charcoal/50 dark:text-white/50 mb-0.5" id="report-year-label"></p>
+                <p class="text-xl font-bold text-charcoal dark:text-white"><span id="report-yearly">0</span><span class="text-xs font-normal text-charcoal/50 dark:text-white/50 ml-0.5">권</span></p>
+              </div>
+              <div class="text-center py-2 px-2 rounded-lg bg-charcoal/[0.02] dark:bg-white/[0.03]">
+                <p class="text-[10px] text-charcoal/50 dark:text-white/50 mb-0.5">연속 독서</p>
+                <p class="text-xl font-bold text-charcoal dark:text-white"><span id="report-streak">0</span><span class="text-xs font-normal text-charcoal/50 dark:text-white/50 ml-0.5">개월</span></p>
+              </div>
+            </div>
+
+            <!-- 많이 읽은 저자 TOP 3 -->
+            <div>
+              <p class="text-[10px] text-charcoal/50 dark:text-white/50 mb-2 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">person</span>
+                많이 읽은 저자
+              </p>
+              <div id="report-top-authors" class="flex flex-col gap-1.5"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Filter Tabs -->
       <div id="filter-tabs" class="hidden overflow-x-auto scrollbar-none mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
         <div class="flex gap-2 w-max sm:w-auto">
@@ -244,7 +340,10 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
 <script>
   import { initBookmarks } from '../scripts/bookmarks';
+  import { loadAndRenderStats } from '../scripts/reading-stats';
   initBookmarks();
+  // 통계는 커스텀 이벤트로도 새로고침 가능
+  document.addEventListener('bookshelf-stats-refresh', () => loadAndRenderStats());
 </script>
 <script>
   import { supabase } from '../lib/supabase';
@@ -333,6 +432,8 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       updateCounts();
       filterTabs?.classList.remove('hidden');
       renderBookmarks();
+      // 통계 로드
+      import('../scripts/reading-stats').then(m => m.loadAndRenderStats());
     } catch {
       bookshelfLoading?.classList.add('hidden');
       bookshelfEmpty?.classList.remove('hidden');
@@ -451,6 +552,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
             allBookmarks[bmIdx].reading_status = newStatus;
             updateCounts();
             renderBookmarks();
+            document.dispatchEvent(new CustomEvent('bookshelf-stats-refresh'));
           }
         } catch {
           // ignore
