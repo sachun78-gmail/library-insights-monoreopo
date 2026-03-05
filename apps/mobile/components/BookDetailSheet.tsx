@@ -762,7 +762,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
         authors: book!.authors,
         publisher: book!.publisher,
         book_image_url: book!.bookImageURL,
-        display_name: userProfile?.nickname || (user as any)?.user_metadata?.name ?? (user as any)?.email?.split("@")[0] ?? "",
+        display_name: userProfile?.nickname || ((user as any)?.user_metadata?.name ?? (user as any)?.email?.split("@")[0] ?? ""),
         rating: myRating,
         review_text: myReviewText.trim(),
       }),
