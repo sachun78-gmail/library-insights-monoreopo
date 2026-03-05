@@ -503,6 +503,15 @@ import { regions } from '../data/regions.js';
   // Listen for auth state changes
   supabase.auth.onAuthStateChange((event, session) => {
     updateAuthUI();
+    if (event === 'SIGNED_IN' && session) {
+      const returnUrl = sessionStorage.getItem('authReturnUrl');
+      if (returnUrl) {
+        sessionStorage.removeItem('authReturnUrl');
+        if (returnUrl !== window.location.pathname + window.location.search) {
+          window.location.href = returnUrl;
+        }
+      }
+    }
   });
 
   // Toggle profile dropdown
@@ -687,6 +696,7 @@ import { regions } from '../data/regions.js';
   // Google Sign In
   if (googleSignInBtn) {
     googleSignInBtn.addEventListener('click', async () => {
+      sessionStorage.setItem('authReturnUrl', window.location.pathname + window.location.search);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
