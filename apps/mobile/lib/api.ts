@@ -346,6 +346,9 @@ export const api = {
   allReviews: (page = 1, limit = 20): Promise<{ reviews: BookReview[]; total: number; page: number }> =>
     get("/api/book-reviews", { page, limit }),
 
+  myReviews: async (userId: string): Promise<BookReview[]> =>
+    get("/api/book-reviews", { userId }).then((res) => res?.reviews ?? []),
+
   upsertReview: async (params: {
     isbn13: string;
     bookname: string;

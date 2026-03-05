@@ -172,8 +172,8 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     <button id="sort-recent" class="sort-tab flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-bold border-b-2 border-primary text-primary transition-colors">
       <span class="material-symbols-outlined text-lg">schedule</span>최신순
     </button>
-    <button id="sort-rating" class="sort-tab flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-medium border-b-2 border-transparent text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white transition-colors">
-      <span class="material-symbols-outlined text-lg">star</span>별점순
+    <button id="filter-mine" class="sort-tab flex items-center gap-2 px-4 sm:px-6 py-3 text-sm font-medium border-b-2 border-transparent text-charcoal/60 dark:text-white/60 hover:text-charcoal dark:hover:text-white transition-colors">
+      <span class="material-symbols-outlined text-lg">person</span>내 한줄평
     </button>
   </div>
 
@@ -187,6 +187,29 @@ import BookDetailModal from '../components/BookDetailModal.astro';
   <div id="reviews-empty" class="hidden flex flex-col items-center justify-center py-20 gap-3">
     <span class="material-symbols-outlined text-5xl text-charcoal/20 dark:text-white/20">chat_bubble_outline</span>
     <p class="text-charcoal/50 dark:text-white/50">아직 등록된 한줄평이 없습니다.</p>
+  </div>
+
+  <!-- Inline Edit Modal -->
+  <div id="review-edit-modal" class="hidden fixed inset-0 bg-black/60 overflow-y-auto h-full w-full flex justify-center items-center z-[60] px-2 sm:px-4">
+    <div class="bg-white dark:bg-charcoal-800 rounded-xl shadow-xl max-w-md w-full p-5 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-charcoal dark:text-white">한줄평 수정</h3>
+        <button id="edit-modal-close" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <p id="edit-modal-bookname" class="text-sm text-charcoal/70 dark:text-white/70 mb-3 line-clamp-1"></p>
+      <div id="edit-modal-stars" class="flex gap-1 mb-3"></div>
+      <textarea id="edit-modal-textarea" maxlength="100" rows="3" class="w-full p-3 border border-gray-300 dark:border-charcoal-600 rounded-lg bg-white dark:bg-charcoal-700 text-charcoal dark:text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary" placeholder="한줄평을 입력하세요"></textarea>
+      <div class="flex items-center justify-between mt-1 mb-4">
+        <span id="edit-modal-char-count" class="text-[10px] text-charcoal/40 dark:text-white/40">0/100</span>
+        <span id="edit-modal-error" class="text-xs text-red-500 hidden"></span>
+      </div>
+      <div class="flex gap-2">
+        <button id="edit-modal-cancel" class="flex-1 px-4 py-2.5 rounded-lg border border-charcoal/20 dark:border-white/20 text-sm font-medium text-charcoal dark:text-white hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">취소</button>
+        <button id="edit-modal-save" class="flex-1 px-4 py-2.5 rounded-lg bg-primary text-charcoal text-sm font-bold hover:bg-primary/90 transition-colors">저장</button>
+      </div>
+    </div>
   </div>
 
   <!-- Error State -->
@@ -299,7 +322,9 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
 <script>
   import { getUserId } from '../scripts/bookmarks';
+  import { supabase } from '../lib/supabase';
   window.__getUserId = getUserId;
+  window.__supabase = supabase;
 </script>
 <script>
   import '../scripts/theme';
@@ -322,8 +347,9 @@ import BookDetailModal from '../components/BookDetailModal.astro';
   const LIMIT = 20;
   let currentPage = 1;
   let totalPages = 1;
-  let currentSort: 'recent' | 'rating' = 'recent';
+  let currentFilter: 'recent' | 'mine' = 'recent';
   let allReviews: any[] = [];
+  let myReviews: any[] = [];
 
   function makeDisplayName(userId: string): string {
     return '독자_' + userId.replace(/-/g, '').slice(0, 8).toUpperCase();
@@ -376,7 +402,19 @@ import BookDetailModal from '../components/BookDetailModal.astro';
               <span class="text-[10px] text-charcoal/40 dark:text-white/40">${dateStr}</span>
             </div>
             <p class="text-xs sm:text-sm text-charcoal/80 dark:text-white/80 leading-relaxed flex-1">${r.review_text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
-            <p class="text-[10px] text-charcoal/40 dark:text-white/40 mt-2">${displayName}</p>
+            <div class="flex items-center justify-between mt-2">
+              <p class="text-[10px] text-charcoal/40 dark:text-white/40">${displayName}</p>
+              ${currentFilter === 'mine' ? `
+              <div class="flex gap-1">
+                <button class="my-review-edit-btn p-1 rounded hover:bg-charcoal/10 dark:hover:bg-white/10 transition-colors" data-isbn="${r.isbn13}" data-rating="${r.rating}" data-text="${r.review_text.replace(/"/g, '&quot;')}" data-bookname="${r.bookname.replace(/"/g, '&quot;')}" data-book="${bookData}" title="수정">
+                  <span class="material-symbols-outlined text-sm text-charcoal/50 dark:text-white/50">edit</span>
+                </button>
+                <button class="my-review-delete-btn p-1 rounded hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" data-isbn="${r.isbn13}" data-bookname="${r.bookname.replace(/"/g, '&quot;')}" title="삭제">
+                  <span class="material-symbols-outlined text-sm text-red-400">delete</span>
+                </button>
+              </div>
+              ` : ''}
+            </div>
           </div>
         </div>
       `;
@@ -395,26 +433,50 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         }
       });
     });
+
+    // Attach edit/delete handlers for my reviews
+    if (currentFilter === 'mine') {
+      grid.querySelectorAll('.my-review-edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const el = btn as HTMLElement;
+          openEditModal({
+            isbn13: el.dataset.isbn || '',
+            rating: parseInt(el.dataset.rating || '0', 10),
+            review_text: el.dataset.text || '',
+            bookname: el.dataset.bookname || '',
+            bookData: el.dataset.book || '{}',
+          });
+        });
+      });
+
+      grid.querySelectorAll('.my-review-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const el = btn as HTMLElement;
+          const isbn = el.dataset.isbn || '';
+          const bookname = el.dataset.bookname || '';
+          if (!confirm(`"${bookname}" 한줄평을 삭제하시겠습니까?`)) return;
+          await handleDeleteReview(isbn);
+        });
+      });
+    }
   }
 
-  function getSortedReviews(): any[] {
-    const sorted = [...allReviews];
-    if (currentSort === 'rating') {
-      sorted.sort((a, b) => b.rating - a.rating || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else {
-      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
-    return sorted;
+  function getActiveReviews(): any[] {
+    const source = currentFilter === 'mine' ? myReviews : allReviews;
+    return [...source].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
   function getPageReviews(): any[] {
-    const sorted = getSortedReviews();
+    const sorted = getActiveReviews();
     const start = (currentPage - 1) * LIMIT;
     return sorted.slice(start, start + LIMIT);
   }
 
   function updatePagination(): void {
-    totalPages = Math.max(1, Math.ceil(allReviews.length / LIMIT));
+    const activeList = currentFilter === 'mine' ? myReviews : allReviews;
+    totalPages = Math.max(1, Math.ceil(activeList.length / LIMIT));
     const pagination = document.getElementById('pagination');
     const pageInfo = document.getElementById('page-info');
     const prevBtn = document.getElementById('prev-page') as HTMLButtonElement | null;
@@ -443,6 +505,15 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     const pageReviews = getPageReviews();
     if (pageReviews.length === 0) {
       empty?.classList.remove('hidden');
+      const emptyIcon = empty?.querySelector('.material-symbols-outlined');
+      const emptyText = empty?.querySelector('p');
+      if (currentFilter === 'mine') {
+        if (emptyIcon) emptyIcon.textContent = 'edit_note';
+        if (emptyText) emptyText.textContent = '아직 작성한 한줄평이 없습니다.';
+      } else {
+        if (emptyIcon) emptyIcon.textContent = 'chat_bubble_outline';
+        if (emptyText) emptyText.textContent = '아직 등록된 한줄평이 없습니다.';
+      }
       grid?.classList.add('hidden');
       document.getElementById('pagination')?.classList.add('hidden');
     } else {
@@ -470,6 +541,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       allReviews = data.reviews || [];
+      myReviews = []; // 캐시 초기화
       currentPage = 1;
       showReviews();
     } catch (err) {
@@ -479,24 +551,48 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     }
   }
 
-  // Sort tabs
+  function setActiveTab(activeId: string, inactiveId: string) {
+    const active = document.getElementById(activeId);
+    const inactive = document.getElementById(inactiveId);
+    active?.classList.add('border-primary', 'text-primary', 'font-bold');
+    active?.classList.remove('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+    inactive?.classList.remove('border-primary', 'text-primary', 'font-bold');
+    inactive?.classList.add('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+  }
+
+  // Filter tabs
   document.getElementById('sort-recent')?.addEventListener('click', () => {
-    currentSort = 'recent';
+    currentFilter = 'recent';
     currentPage = 1;
-    document.getElementById('sort-recent')?.classList.add('border-primary', 'text-primary', 'font-bold');
-    document.getElementById('sort-recent')?.classList.remove('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
-    document.getElementById('sort-rating')?.classList.remove('border-primary', 'text-primary', 'font-bold');
-    document.getElementById('sort-rating')?.classList.add('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+    setActiveTab('sort-recent', 'filter-mine');
     showReviews();
   });
 
-  document.getElementById('sort-rating')?.addEventListener('click', () => {
-    currentSort = 'rating';
+  document.getElementById('filter-mine')?.addEventListener('click', async () => {
+    const sb = (window as any).__supabase;
+    if (!sb) return;
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    currentFilter = 'mine';
     currentPage = 1;
-    document.getElementById('sort-rating')?.classList.add('border-primary', 'text-primary', 'font-bold');
-    document.getElementById('sort-rating')?.classList.remove('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
-    document.getElementById('sort-recent')?.classList.remove('border-primary', 'text-primary', 'font-bold');
-    document.getElementById('sort-recent')?.classList.add('border-transparent', 'text-charcoal/60', 'dark:text-white/60', 'font-medium');
+    setActiveTab('filter-mine', 'sort-recent');
+
+    // 내 한줄평이 아직 로드되지 않았으면 fetch
+    if (myReviews.length === 0) {
+      try {
+        const res = await fetch(`/api/book-reviews?userId=${session.user.id}`);
+        const data = await res.json();
+        myReviews = data.reviews || [];
+      } catch (err) {
+        console.error('Failed to fetch my reviews:', err);
+        myReviews = [];
+      }
+    }
+
     showReviews();
   });
 
@@ -556,6 +652,133 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     const signinBtn = document.getElementById('signin-btn');
     signinBtn?.click();
   });
+
+  // ── Edit Modal Logic ──
+  let editModalRating = 0;
+  let editModalIsbn = '';
+  let editModalBookData = '{}';
+
+  const editModal = document.getElementById('review-edit-modal');
+  const editTextarea = document.getElementById('edit-modal-textarea') as HTMLTextAreaElement | null;
+  const editCharCount = document.getElementById('edit-modal-char-count');
+  const editError = document.getElementById('edit-modal-error');
+  const editStarsContainer = document.getElementById('edit-modal-stars');
+
+  function renderEditStars(rating: number) {
+    editModalRating = rating;
+    if (!editStarsContainer) return;
+    editStarsContainer.innerHTML = Array.from({ length: 5 }, (_, i) => {
+      const filled = i < rating;
+      return `<button class="edit-star-btn text-2xl ${filled ? 'text-yellow-400' : 'text-charcoal/20 dark:text-white/20'} hover:scale-110 transition-transform" data-star="${i + 1}">${filled ? '★' : '☆'}</button>`;
+    }).join('');
+    editStarsContainer.querySelectorAll('.edit-star-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        renderEditStars(parseInt((btn as HTMLElement).dataset.star || '0', 10));
+      });
+    });
+  }
+
+  function openEditModal(data: { isbn13: string; rating: number; review_text: string; bookname: string; bookData: string }) {
+    editModalIsbn = data.isbn13;
+    editModalBookData = data.bookData;
+    const booknameEl = document.getElementById('edit-modal-bookname');
+    if (booknameEl) booknameEl.textContent = data.bookname;
+    renderEditStars(data.rating);
+    if (editTextarea) editTextarea.value = data.review_text;
+    if (editCharCount) editCharCount.textContent = `${data.review_text.length}/100`;
+    editError?.classList.add('hidden');
+    editModal?.classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+    editModal?.classList.add('hidden');
+  }
+
+  editTextarea?.addEventListener('input', () => {
+    if (editCharCount) editCharCount.textContent = `${editTextarea.value.length}/100`;
+  });
+
+  document.getElementById('edit-modal-close')?.addEventListener('click', closeEditModal);
+  document.getElementById('edit-modal-cancel')?.addEventListener('click', closeEditModal);
+  editModal?.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
+
+  document.getElementById('edit-modal-save')?.addEventListener('click', async () => {
+    const text = editTextarea?.value.trim() || '';
+    if (!text) {
+      if (editError) { editError.textContent = '한줄평을 입력해주세요.'; editError.classList.remove('hidden'); }
+      return;
+    }
+    if (editModalRating === 0) {
+      if (editError) { editError.textContent = '별점을 선택해주세요.'; editError.classList.remove('hidden'); }
+      return;
+    }
+
+    const saveBtn = document.getElementById('edit-modal-save') as HTMLButtonElement | null;
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+
+    try {
+      const sb = (window as any).__supabase;
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.access_token) throw new Error('로그인이 필요합니다.');
+
+      const bookObj = JSON.parse(editModalBookData.replace(/&quot;/g, '"'));
+      const displayName = document.getElementById('profile-name')?.textContent || session.user.user_metadata?.name || session.user.email?.split('@')[0] || '';
+
+      const res = await fetch('/api/book-reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          isbn13: editModalIsbn,
+          bookname: bookObj.bookname || '',
+          authors: bookObj.authors || '',
+          publisher: bookObj.publisher || '',
+          book_image_url: bookObj.bookImageURL || '',
+          display_name: displayName,
+          rating: editModalRating,
+          review_text: text,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      closeEditModal();
+      myReviews = [];
+      // 내 한줄평 재로드
+      const myRes = await fetch(`/api/book-reviews?userId=${session.user.id}`);
+      const myData = await myRes.json();
+      myReviews = myData.reviews || [];
+      showReviews();
+    } catch (err: any) {
+      console.error('Review edit error:', err);
+      if (editError) { editError.textContent = err.message || '저장 중 오류가 발생했습니다.'; editError.classList.remove('hidden'); }
+    } finally {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '저장'; }
+    }
+  });
+
+  async function handleDeleteReview(isbn13: string) {
+    try {
+      const sb = (window as any).__supabase;
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.access_token) throw new Error('로그인이 필요합니다.');
+
+      const res = await fetch('/api/book-reviews', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ isbn13 }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      // 내 한줄평 목록에서 제거
+      myReviews = myReviews.filter(r => r.isbn13 !== isbn13);
+      allReviews = allReviews.filter(r => !(r.isbn13 === isbn13 && r.user_id === session.user.id));
+      showReviews();
+    } catch (err: any) {
+      console.error('Review delete error:', err);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  }
 
   // Initial load
   fetchReviews();
