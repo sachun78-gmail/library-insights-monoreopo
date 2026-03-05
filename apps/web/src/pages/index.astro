@@ -3,6 +3,7 @@ console.log('This runs in your terminal, not the browser!');
 import Auth from '../components/Auth.astro';
 import Analytics from '../components/Analytics.astro';
 import BookDetailModal from '../components/BookDetailModal.astro';
+import Footer from '../components/Footer.astro';
 ---
 <html lang="ko" class=""><head>
 <meta charset="utf-8"/>
@@ -347,57 +348,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
 
 </main>
 <!-- Footer -->
-<footer class="bg-[#1a1a1a] text-white/70">
-<!-- Top Row: Links -->
-<div class="border-b border-white/10">
-<div class="max-w-[1200px] mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
-<nav class="flex flex-wrap items-center gap-4 sm:gap-8 text-xs sm:text-sm">
-<button id="terms-btn" class="hover:text-white transition-colors">이용약관</button>
-<button id="privacy-btn" class="hover:text-white transition-colors">개인정보처리방침</button>
-<button id="sitemap-btn" class="hover:text-white transition-colors">사이트맵</button>
-</nav>
-<div class="relative">
-<select class="bg-transparent border border-white/20 rounded px-3 py-1.5 text-xs sm:text-sm text-white/70 focus:outline-none focus:border-white/40 cursor-pointer appearance-none pr-8">
-<option value="" class="bg-[#1a1a1a]">유관 사이트</option>
-<option value="https://www.nl.go.kr" class="bg-[#1a1a1a]">국립중앙도서관</option>
-<option value="https://www.data4library.kr" class="bg-[#1a1a1a]">도서관 정보나루</option>
-<option value="https://www.mcst.go.kr" class="bg-[#1a1a1a]">문화체육관광부</option>
-</select>
-<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-sm pointer-events-none">expand_more</span>
-</div>
-</div>
-</div>
-<!-- Bottom Row: Logo & Copyright -->
-<div class="max-w-[1200px] mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-<div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
-<!-- Logo -->
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-blue-500 flex items-center justify-center">
-<div class="w-6 h-6 bg-white rounded-full"></div>
-</div>
-<div class="flex flex-col text-xs sm:text-sm">
-<span class="text-white font-bold text-base sm:text-lg">LibraryInsights</span>
-<span class="text-white/50">도서관 정보 서비스</span>
-</div>
-</div>
-<!-- Contact Info -->
-<div class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
-<a href="tel:02-000-0000" class="flex items-center gap-1.5 hover:text-white transition-colors">
-<span class="material-symbols-outlined text-sm">call</span>
-02-000-0000
-</a>
-<a href="mailto:sachun78@gmail.com" class="flex items-center gap-1.5 hover:text-white transition-colors">
-<span class="material-symbols-outlined text-sm">mail</span>
-sachun78@gmail.com
-</a>
-</div>
-</div>
-<!-- Copyright -->
-<p class="text-xs sm:text-sm text-white/50">
-© 2026 LibraryInsights. Data provided by 도서관 정보나루. All rights reserved.
-</p>
-</div>
-</footer>
+<Footer />
 </div>
 </div>
 
