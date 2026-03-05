@@ -581,16 +581,14 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     currentPage = 1;
     setActiveTab('filter-mine', 'sort-recent');
 
-    // 내 한줄평이 아직 로드되지 않았으면 fetch
-    if (myReviews.length === 0) {
-      try {
-        const res = await fetch(`/api/book-reviews?userId=${session.user.id}`);
-        const data = await res.json();
-        myReviews = data.reviews || [];
-      } catch (err) {
-        console.error('Failed to fetch my reviews:', err);
-        myReviews = [];
-      }
+    // 내 한줄평 항상 최신 데이터 fetch
+    try {
+      const res = await fetch(`/api/book-reviews?userId=${session.user.id}`);
+      const data = await res.json();
+      myReviews = data.reviews || [];
+    } catch (err) {
+      console.error('Failed to fetch my reviews:', err);
+      myReviews = [];
     }
 
     showReviews();
@@ -742,10 +740,14 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       if (data.error) throw new Error(data.error);
 
       closeEditModal();
-      myReviews = [];
-      // 내 한줄평 재로드
-      const myRes = await fetch(`/api/book-reviews?userId=${session.user.id}`);
+      // 전체 + 내 한줄평 모두 재로드
+      const [allRes, myRes] = await Promise.all([
+        fetch(`/api/book-reviews?page=1&limit=1000`),
+        fetch(`/api/book-reviews?userId=${session.user.id}`),
+      ]);
+      const allData = await allRes.json();
       const myData = await myRes.json();
+      allReviews = allData.reviews || [];
       myReviews = myData.reviews || [];
       showReviews();
     } catch (err: any) {
@@ -770,9 +772,15 @@ import BookDetailModal from '../components/BookDetailModal.astro';
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // 내 한줄평 목록에서 제거
-      myReviews = myReviews.filter(r => r.isbn13 !== isbn13);
-      allReviews = allReviews.filter(r => !(r.isbn13 === isbn13 && r.user_id === session.user.id));
+      // 전체 + 내 한줄평 모두 재로드
+      const [allRes, myRes] = await Promise.all([
+        fetch(`/api/book-reviews?page=1&limit=1000`),
+        fetch(`/api/book-reviews?userId=${session.user.id}`),
+      ]);
+      const allData = await allRes.json();
+      const myData = await myRes.json();
+      allReviews = allData.reviews || [];
+      myReviews = myData.reviews || [];
       showReviews();
     } catch (err: any) {
       console.error('Review delete error:', err);

@@ -112,6 +112,7 @@ export default function MyPageScreen() {
   const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [nickname, setNickname] = useState("");
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedSubRegion, setSelectedSubRegion] = useState<string | null>(null);
@@ -130,7 +131,7 @@ export default function MyPageScreen() {
   }, [user]);
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
-    queryKey: ["profile", user?.id],
+    queryKey: ["profile"],
     queryFn: () => api.profile(),
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
@@ -138,6 +139,7 @@ export default function MyPageScreen() {
 
   useEffect(() => {
     if (!profile) return;
+    setNickname(profile.nickname ?? "");
     setSelectedGender(normalizeGenderValue(profile.gender));
     setSelectedRegion(profile.region_code ?? null);
     setSelectedSubRegion(profile.sub_region_code ?? null);
@@ -190,6 +192,7 @@ export default function MyPageScreen() {
       }
 
       return api.updateProfile({
+        nickname: nickname.trim() || undefined,
         birth_date: normalizedBirthDate || undefined,
         gender: selectedGender ?? undefined,
         region_code: selectedRegion ?? undefined,
@@ -204,7 +207,7 @@ export default function MyPageScreen() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
       setIsEditing(false);
       Alert.alert(isKorean ? "저장 완료" : "Saved", isKorean ? "프로필이 저장되었습니다." : "Profile has been saved.");
     },
@@ -277,6 +280,7 @@ export default function MyPageScreen() {
   };
 
   const resetEditableState = () => {
+    setNickname(profile?.nickname ?? "");
     setSelectedGender(normalizeGenderValue(profile?.gender));
     setSelectedRegion(profile?.region_code ?? null);
     setSelectedSubRegion(profile?.sub_region_code ?? null);
@@ -388,7 +392,7 @@ export default function MyPageScreen() {
             </TouchableOpacity>
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.heroName}>{String(accountName)}</Text>
+              <Text style={styles.heroName}>{profile?.nickname || String(accountName)}</Text>
               <Text style={styles.heroEmail}>{user.email}</Text>
               <Text style={styles.heroMeta}>
                 {isKorean ? "가입일" : "Joined"}: {formatJoinDate((user as any)?.created_at)}
@@ -404,6 +408,22 @@ export default function MyPageScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{isKorean ? "프로필정보" : "Profile Info"}</Text>
+
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>{isKorean ? "닉네임" : "Nickname"}</Text>
+              {isEditing ? (
+                <TextInput
+                  style={styles.textInput}
+                  value={nickname}
+                  onChangeText={(t) => setNickname(t.slice(0, 20))}
+                  placeholder={isKorean ? "한줄평에 표시될 닉네임 (선택)" : "Display name for reviews (optional)"}
+                  placeholderTextColor="#64748B"
+                  maxLength={20}
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{profile?.nickname || "-"}</Text>
+              )}
+            </View>
 
             <View style={styles.fieldBlock}>
               <Text style={styles.fieldLabel}>{isKorean ? "생년월일" : "Birth Date"}</Text>
