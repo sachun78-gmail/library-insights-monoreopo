@@ -23,6 +23,18 @@ import { regions } from '../data/regions.js';
         <span class="text-xs text-gray-500 dark:text-gray-400">프로필 이미지 (선택)</span>
       </div>
 
+      <!-- Nickname -->
+      <div>
+        <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">닉네임</label>
+        <input
+          type="text"
+          id="profile-nickname"
+          maxlength="20"
+          placeholder="한줄평에 표시될 닉네임 (선택)"
+          class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-charcoal-700 dark:border-charcoal-600 dark:text-white"
+        />
+      </div>
+
       <!-- Birth Date -->
       <div>
         <label class="block text-sm font-medium text-charcoal dark:text-white mb-1">생년월일</label>
@@ -306,6 +318,7 @@ import { regions } from '../data/regions.js';
 
       const authHeaders = { Authorization: `Bearer ${session.access_token}` };
 
+      const nickname = (document.getElementById('profile-nickname') as HTMLInputElement)?.value?.trim() || null;
       const birthDate = profileBirthdate?.value || null;
       const gender = profileGender?.value || null;
       const regionCode = profileRegion?.value || null;
@@ -354,6 +367,7 @@ import { regions } from '../data/regions.js';
             subRegionCode,
             subRegionName,
             avatarUrl,
+            nickname,
           }),
         });
 
@@ -448,16 +462,16 @@ import { regions } from '../data/regions.js';
   const mobileSignoutBtn = document.getElementById('mobile-signout-btn');
 
   // Check auth state and update UI
-  async function getProfileAvatar(token) {
+  async function getProfileData(token) {
     try {
       const response = await fetch('/api/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) return null;
       const result = await response.json();
-      return result?.profile?.avatar_url || null;
+      return result?.profile ? { avatar_url: result.profile.avatar_url || null, nickname: result.profile.nickname || null } : null;
     } catch (error) {
-      console.error('Error loading profile avatar:', error);
+      console.error('Error loading profile data:', error);
       return null;
     }
   }
@@ -474,17 +488,18 @@ import { regions } from '../data/regions.js';
       mobileAuthLoggedIn?.classList.remove('hidden');
 
       // Set profile info
-      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
+      const defaultName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
       const metadataAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
-      const profileAvatarUrl = await getProfileAvatar(session.access_token);
-      const avatar = profileAvatarUrl || metadataAvatar;
+      const profileData = await getProfileData(session.access_token);
+      const avatar = profileData?.avatar_url || metadataAvatar;
+      const displayName = profileData?.nickname || defaultName;
       const email = user.email;
 
-      if (profileName) profileName.textContent = name;
-      if (dropdownName) dropdownName.textContent = name;
-      if (mobileProfileName) mobileProfileName.textContent = name;
+      if (profileName) profileName.textContent = displayName;
+      if (dropdownName) dropdownName.textContent = displayName;
+      if (mobileProfileName) mobileProfileName.textContent = displayName;
 
-      const avatarUrl = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F4CE14&color=1A1A1A`;
+      const avatarUrl = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=F4CE14&color=1A1A1A`;
       if (profileAvatar) profileAvatar.src = avatarUrl;
       if (dropdownAvatar) dropdownAvatar.src = avatarUrl;
       if (mobileProfileAvatar) mobileProfileAvatar.src = avatarUrl;

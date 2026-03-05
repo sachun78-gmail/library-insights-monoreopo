@@ -186,6 +186,10 @@ import Analytics from '../components/Analytics.astro';
 <span id="info-name" class="font-medium text-charcoal dark:text-white"></span>
 </div>
 <div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
+<span class="text-charcoal/60 dark:text-white/60">닉네임</span>
+<span id="info-nickname" class="font-medium text-charcoal dark:text-white">-</span>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-charcoal/10 dark:border-white/10">
 <span class="text-charcoal/60 dark:text-white/60">이메일</span>
 <span id="info-email" class="font-medium text-charcoal dark:text-white"></span>
 </div>
@@ -374,6 +378,7 @@ import Analytics from '../components/Analytics.astro';
   const mypageName = document.getElementById('mypage-name');
   const mypageEmail = document.getElementById('mypage-email');
   const infoName = document.getElementById('info-name');
+  const infoNickname = document.getElementById('info-nickname');
   const infoEmail = document.getElementById('info-email');
   const infoCreated = document.getElementById('info-created');
   const infoBirthdate = document.getElementById('info-birthdate');
@@ -445,6 +450,16 @@ import Analytics from '../components/Analytics.astro';
           // Use profile avatar if available
           if (profile.avatar_url) {
             avatar = profile.avatar_url;
+          }
+
+          // Display nickname
+          if (profile.nickname && infoNickname) {
+            infoNickname.textContent = profile.nickname;
+          }
+
+          // Use nickname for header display if available
+          if (profile.nickname) {
+            if (mypageName) mypageName.textContent = profile.nickname;
           }
 
           // Display birth date
@@ -526,6 +541,7 @@ import Analytics from '../components/Analytics.astro';
 
         const profileCompleteModal = document.getElementById('profile-complete-modal');
         const profilePreview = document.getElementById('profile-preview') as HTMLImageElement;
+        const profileNickname = document.getElementById('profile-nickname') as HTMLInputElement;
         const profileBirthdate = document.getElementById('profile-birthdate') as HTMLInputElement;
         const profileGender = document.getElementById('profile-gender') as HTMLSelectElement;
         const profileRegion = document.getElementById('profile-region') as HTMLSelectElement;
@@ -534,6 +550,7 @@ import Analytics from '../components/Analytics.astro';
         const profile = result.profile;
 
         // 폼 초기화 (이전 입력값 제거)
+        if (profileNickname) profileNickname.value = '';
         if (profileBirthdate) profileBirthdate.value = '';
         if (profileGender) profileGender.value = '';
         if (profileRegion) {
@@ -551,6 +568,11 @@ import Analytics from '../components/Analytics.astro';
           // 아바타
           if (profile.avatar_url && profilePreview) {
             profilePreview.src = profile.avatar_url;
+          }
+
+          // 닉네임
+          if (profile.nickname && profileNickname) {
+            profileNickname.value = profile.nickname;
           }
 
           // 생년월일

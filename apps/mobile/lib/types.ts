@@ -76,6 +76,7 @@ export interface UserProfile {
   sub_region_code: string | null;
   sub_region_name: string | null;
   avatar_url: string | null;
+  nickname?: string | null;
 }
 
 export interface BookReview {

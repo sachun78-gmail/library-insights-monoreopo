@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const body = await request.json();
-    const { birthDate, gender, regionCode, regionName, subRegionCode, subRegionName, avatarUrl } = body;
+    const { birthDate, gender, regionCode, regionName, subRegionCode, subRegionName, avatarUrl, nickname } = body;
 
     const profileData = {
       id: userId,
@@ -64,7 +64,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       sub_region_code: subRegionCode || null,
       sub_region_name: subRegionName || null,
       avatar_url: avatarUrl || null,
+      nickname: nickname !== undefined ? (nickname || null) : undefined,
     };
+
+    // undefined 값 제거 (기존 값 유지를 위해)
+    Object.keys(profileData).forEach(key => {
+      if ((profileData as any)[key] === undefined) delete (profileData as any)[key];
+    });
 
     const { data, error } = await supabase
       .from('profiles')

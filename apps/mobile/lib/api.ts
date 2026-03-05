@@ -282,6 +282,7 @@ export const api = {
     sub_region_code?: string;
     sub_region_name?: string;
     avatar_url?: string;
+    nickname?: string;
   }): Promise<UserProfile | null> => {
     const headers = await getAuthHeader();
     return post("/api/profile", {
@@ -292,6 +293,7 @@ export const api = {
       subRegionCode: data.sub_region_code,
       subRegionName: data.sub_region_name,
       avatarUrl: data.avatar_url,
+      nickname: data.nickname,
     }, headers).then((res) => res?.profile ?? null);
   },
 

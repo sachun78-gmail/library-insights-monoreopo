@@ -430,6 +430,14 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
 
+  // 프로필에서 닉네임 조회
+  const { data: userProfile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => api.profile(),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const [showLibrary, setShowLibrary] = useState(false);
   const [showAI, setShowAI] = useState(false);
 
@@ -754,7 +762,7 @@ export function BookDetailSheet({ book, onClose }: Props) {
         authors: book!.authors,
         publisher: book!.publisher,
         book_image_url: book!.bookImageURL,
-        display_name: (user as any)?.user_metadata?.name ?? (user as any)?.email?.split("@")[0] ?? "",
+        display_name: userProfile?.nickname || (user as any)?.user_metadata?.name ?? (user as any)?.email?.split("@")[0] ?? "",
         rating: myRating,
         review_text: myReviewText.trim(),
       }),
