@@ -7,6 +7,7 @@ import type {
   BookReview,
   AIInsight,
   AISearchResult,
+  FavoriteLibrary,
 } from "./types";
 
 const BASE_URL =
@@ -308,6 +309,32 @@ export const api = {
   unregisterPushToken: async (token: string): Promise<void> => {
     const headers = await getAuthHeader();
     return del("/api/push-tokens", { token }, headers);
+  },
+
+  // ── 즐겨찾기 도서관 ──
+  favoriteLibraries: async (): Promise<FavoriteLibrary[]> => {
+    const headers = await getAuthHeader();
+    return get("/api/favorite-libraries", {}, TIMEOUT_MS, headers).then(
+      (res) => res?.libraries ?? []
+    );
+  },
+
+  addFavoriteLibrary: async (lib: {
+    lib_code: string;
+    lib_name: string;
+    address?: string;
+    tel?: string;
+    latitude?: string;
+    longitude?: string;
+    homepage?: string;
+  }): Promise<void> => {
+    const headers = await getAuthHeader();
+    return post("/api/favorite-libraries", lib, headers);
+  },
+
+  removeFavoriteLibrary: async (libCode: string): Promise<void> => {
+    const headers = await getAuthHeader();
+    return del("/api/favorite-libraries", { lib_code: libCode }, headers);
   },
 
   // ── 한줄평 ──

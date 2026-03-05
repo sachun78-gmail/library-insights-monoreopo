@@ -215,6 +215,22 @@ import Analytics from '../components/Analytics.astro';
 </div>
 </div>
 
+<!-- Favorite Libraries Section -->
+<h2 class="text-lg font-bold text-charcoal dark:text-white mb-4 mt-8 flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+즐겨찾기 도서관
+<span class="text-sm font-normal text-charcoal/50 dark:text-white/50">(최대 3곳)</span>
+</h2>
+<div id="fav-libs-list" class="space-y-3">
+  <div id="fav-libs-loading" class="flex items-center justify-center py-6">
+    <span class="material-symbols-outlined animate-spin text-charcoal/30 dark:text-white/30">progress_activity</span>
+  </div>
+  <div id="fav-libs-empty" class="hidden text-center py-6 text-charcoal/50 dark:text-white/50 text-sm">
+    <span class="material-symbols-outlined text-3xl block mb-2">local_library</span>
+    즐겨찾기 도서관이 없습니다.<br/>책 상세에서 도서관 옆의 별 아이콘을 눌러 추가하세요.
+  </div>
+</div>
+
 <!-- Actions -->
 <div class="mt-8 space-y-3">
 <button id="edit-profile-btn" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm text-charcoal dark:text-white border border-charcoal/20 dark:border-white/20 rounded-lg hover:bg-charcoal/5 dark:hover:bg-white/5 transition-colors">
@@ -480,6 +496,103 @@ import Analytics from '../components/Analytics.astro';
       }
     });
   }
+</script>
+<script>
+  import { supabase } from '../lib/supabase';
+
+  async function loadFavoriteLibraries() {
+    const listEl = document.getElementById('fav-libs-list');
+    const loadingEl = document.getElementById('fav-libs-loading');
+    const emptyEl = document.getElementById('fav-libs-empty');
+    if (!listEl) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      loadingEl?.classList.add('hidden');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/favorite-libraries', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      const libs = data.libraries || [];
+
+      loadingEl?.classList.add('hidden');
+
+      if (libs.length === 0) {
+        emptyEl?.classList.remove('hidden');
+        return;
+      }
+
+      emptyEl?.classList.add('hidden');
+
+      const cardsHtml = libs.map((lib: any) => `
+        <div class="flex items-start justify-between gap-3 p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg" data-fav-libcode="${lib.lib_code}">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="material-symbols-outlined text-amber-500 text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+              <h4 class="font-bold text-charcoal dark:text-white text-sm truncate">${lib.lib_name}</h4>
+            </div>
+            <p class="text-xs text-charcoal/60 dark:text-white/60 truncate">
+              <span class="material-symbols-outlined text-xs align-middle">location_on</span>
+              ${lib.address || '주소 없음'}
+            </p>
+            ${lib.tel ? `<p class="text-xs text-charcoal/60 dark:text-white/60"><span class="material-symbols-outlined text-xs align-middle">call</span> ${lib.tel}</p>` : ''}
+          </div>
+          <button class="fav-lib-remove-btn flex-shrink-0 p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" data-libcode="${lib.lib_code}" title="즐겨찾기 해제">
+            <span class="material-symbols-outlined text-lg text-red-400 hover:text-red-500">delete</span>
+          </button>
+        </div>
+      `).join('');
+
+      // loadingEl 뒤에 카드 삽입
+      listEl.innerHTML = cardsHtml;
+
+      // 삭제 버튼 이벤트
+      listEl.querySelectorAll('.fav-lib-remove-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const libCode = (btn as HTMLElement).dataset.libcode;
+          if (!libCode) return;
+          if (!confirm('이 도서관을 즐겨찾기에서 제거하시겠습니까?')) return;
+
+          try {
+            await fetch('/api/favorite-libraries', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ lib_code: libCode }),
+            });
+            // 카드 제거
+            const card = listEl.querySelector(`[data-fav-libcode="${libCode}"]`);
+            card?.remove();
+
+            // 남은 카드가 없으면 빈 상태 표시
+            if (listEl.querySelectorAll('[data-fav-libcode]').length === 0) {
+              emptyEl?.classList.remove('hidden');
+            }
+          } catch (err) {
+            console.error('Failed to remove favorite library:', err);
+          }
+        });
+      });
+    } catch (err) {
+      console.error('Failed to load favorite libraries:', err);
+      loadingEl?.classList.add('hidden');
+    }
+  }
+
+  // 로그인 상태가 확인된 후 로드
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (session) loadFavoriteLibraries();
+  });
+  // 초기 로드
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) loadFavoriteLibraries();
+  });
 </script>
 <script>
   import '../scripts/theme';

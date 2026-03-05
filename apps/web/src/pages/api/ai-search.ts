@@ -5,10 +5,10 @@ import { fetchLibraryProxy } from '../../lib/library-proxy';
 export const prerender = false;
 
 const CACHE_TTL = 24 * 60 * 60; // 24 hours
-const OPENAI_TIMEOUT_MS = 8000;
+const OPENAI_TIMEOUT_MS = 15000;
 const FETCH_TIMEOUT_MS = 5000;
-const MAX_AI_BOOKS = 12;
-const MAX_SEED_LOOKUPS = 12;
+const MAX_AI_BOOKS = 10;
+const MAX_SEED_LOOKUPS = 10;
 const MAX_SEED_ISBNS = 5;
 const MAX_LIB_CHECK_BOOKS = 12;
 const MAX_RETURN_BOOKS = 12;
@@ -60,7 +60,7 @@ function getNearestRegions(lat: number, lon: number, count = 2) {
 }
 
 const SYSTEM_PROMPT = `You are a Korean publishing curation expert.
-Return exactly 12 Korean-language recommended books for the user's keyword.
+Return exactly 10 Korean-language recommended books for the user's keyword.
 Output must be strict JSON array only:
 [
   { "title": "Book title", "author": "Author" }
@@ -488,68 +488,44 @@ export const GET: APIRoute = async ({ request, locals }) => {
     });
     const allRecs: any[] = [];
 
-    console.log('[AI-Search] Step 3a: usageAnalysisList');
+    // Step 3: recommandList (메인) — mania + reader 병렬 호출
+    console.log('[AI-Search] Step 3: recommandList (mania + reader)');
     try {
-      const usageData = await fetchLibraryData(
-        locals,
-        'usageAnalysisList',
-        { isbn13: primarySeed.isbn13 },
-        3000
-      );
-      if (!usageData.response?.error) {
-        const maniaRec = usageData.response?.maniaRecBooks || [];
-        const readerRec = usageData.response?.readerRecBooks || [];
-        const coLoan = usageData.response?.coLoanBooks || [];
-        for (const item of [...maniaRec, ...readerRec, ...coLoan]) {
-          const book = item.book || item;
-          pushUniqueBook(book);
-        }
+      const [maniaData, readerData] = await Promise.all([
+        fetchLibraryData(locals, 'recommandList', { isbn13: seedIsbns }).catch(() => ({})),
+        fetchLibraryData(locals, 'recommandList', { isbn13: seedIsbns, type: 'reader' }).catch(() => ({})),
+      ]);
+
+      const maniaBooks = extractBooks(maniaData);
+      const readerBooks = extractBooks(readerData);
+      for (const book of [...maniaBooks, ...readerBooks]) {
+        pushUniqueBook(book);
       }
     } catch {
       // continue
     }
 
+    // Step 3b: recommandList 결과 부족 시 usageAnalysisList로 보충
     if (allRecs.length < MAX_RETURN_BOOKS) {
-      console.log('[AI-Search] Step 3b: recommandList');
+      console.log('[AI-Search] Step 3b: usageAnalysisList (fallback)');
       try {
-        const [maniaData, readerData] = await Promise.all([
-          fetchLibraryData(locals, 'recommandList', { isbn13: seedIsbns }).catch(() => ({})),
-          fetchLibraryData(locals, 'recommandList', { isbn13: seedIsbns, type: 'reader' }).catch(() => ({})),
-        ]);
-
-        const maniaBooks = extractBooks(maniaData);
-        const readerBooks = extractBooks(readerData);
-        for (const book of [...maniaBooks, ...readerBooks]) {
-          pushUniqueBook(book);
+        const usageData = await fetchLibraryData(
+          locals,
+          'usageAnalysisList',
+          { isbn13: primarySeed.isbn13 },
+          3000
+        );
+        if (!usageData.response?.error) {
+          const maniaRec = usageData.response?.maniaRecBooks || [];
+          const readerRec = usageData.response?.readerRecBooks || [];
+          const coLoan = usageData.response?.coLoanBooks || [];
+          for (const item of [...maniaRec, ...readerRec, ...coLoan]) {
+            const book = item.book || item;
+            pushUniqueBook(book);
+          }
         }
       } catch {
         // continue
-      }
-    }
-
-    if (allRecs.length === 0) {
-      for (const book of seedBooks) pushUniqueBook(book);
-
-      if (allRecs.length < MAX_RETURN_BOOKS) {
-        const extraResults = await Promise.all(
-          aiBooks.slice(seedBooks.length, MAX_RETURN_BOOKS).map(async (rec) => {
-            try {
-              const data = await fetchLibraryData(locals, 'srchBooks', {
-                keyword: cleanTitle(rec.title),
-                pageNo: 1,
-                pageSize: 1,
-              });
-              const docs = data.response?.docs || [];
-              return docs.length > 0 ? docs[0].doc : null;
-            } catch {
-              return null;
-            }
-          })
-        );
-
-        for (const book of extraResults) {
-          if (book) pushUniqueBook(book);
-        }
       }
     }
 
@@ -573,9 +549,16 @@ export const GET: APIRoute = async ({ request, locals }) => {
       });
     }
 
+    // 랜덤 12권 선택 (Fisher-Yates shuffle)
+    for (let i = allRecs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allRecs[i], allRecs[j]] = [allRecs[j], allRecs[i]];
+    }
+    const selectedRecs = allRecs.slice(0, MAX_RETURN_BOOKS);
+
     // Naver API로 이미지가 없는 책들 보완
     console.log('[AI-Search] Filling missing images via Naver API');
-    await fillMissingImages(locals, [primarySeed, ...allRecs]);
+    await fillMissingImages(locals, [primarySeed, ...selectedRecs]);
 
     if (Number.isNaN(lat) || Number.isNaN(lon)) {
       return respondWithCache({
@@ -586,13 +569,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
           isbn13: primarySeed.isbn13,
           bookImageURL: primarySeed.bookImageURL || '',
         },
-        recommendations: allRecs.slice(0, MAX_RETURN_BOOKS).map((book) => ({ book, nearbyLibCount: 0 })),
+        recommendations: selectedRecs.map((book) => ({ book, nearbyLibCount: 0 })),
         regions: [],
       });
     }
 
     const nearestRegions = getNearestRegions(lat, lon, 2);
-    const booksToCheck = allRecs.slice(0, MAX_LIB_CHECK_BOOKS);
+    const booksToCheck = selectedRecs;
 
     console.log('[AI-Search] Step 5: library availability check');
     const libCheckResults = await Promise.all(

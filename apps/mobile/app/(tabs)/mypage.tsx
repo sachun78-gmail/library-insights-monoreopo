@@ -20,7 +20,7 @@ import { useAuth } from "../../lib/auth-context";
 import { api } from "../../lib/api";
 import { AppBackground } from "../../components/AppBackground";
 import { isKorean } from "../../lib/i18n";
-import type { UserProfile } from "../../lib/types";
+import type { UserProfile, FavoriteLibrary } from "../../lib/types";
 import { regions as regionsData } from "../../../../apps/web/src/data/regions.js";
 
 const REGIONS = [
@@ -214,6 +214,36 @@ export default function MyPageScreen() {
         error?.message ?? (isKorean ? "프로필 저장에 실패했습니다." : "Failed to save profile.")
       ),
   });
+
+  // ── 즐겨찾기 도서관 ──
+  const { data: favLibs = [], isLoading: isFavLibsLoading } = useQuery<FavoriteLibrary[]>({
+    queryKey: ["favorite-libraries"],
+    queryFn: () => api.favoriteLibraries(),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const removeFavMutation = useMutation({
+    mutationFn: (libCode: string) => api.removeFavoriteLibrary(libCode),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["favorite-libraries"] }),
+  });
+
+  const handleRemoveFavLib = (libCode: string, libName: string) => {
+    Alert.alert(
+      isKorean ? "즐겨찾기 해제" : "Remove favorite",
+      isKorean
+        ? `${libName}을(를) 즐겨찾기에서 제거하시겠습니까?`
+        : `Remove ${libName} from favorites?`,
+      [
+        { text: isKorean ? "취소" : "Cancel", style: "cancel" },
+        {
+          text: isKorean ? "제거" : "Remove",
+          style: "destructive",
+          onPress: () => removeFavMutation.mutate(libCode),
+        },
+      ]
+    );
+  };
 
   const handleSignOut = () => {
     Alert.alert(
@@ -456,6 +486,52 @@ export default function MyPageScreen() {
                 </Text>
               )}
             </View>
+          </View>
+
+          {/* 즐겨찾기 도서관 */}
+          <View style={styles.favLibSection}>
+            <View style={styles.favLibHeader}>
+              <Ionicons name="star" size={18} color="#F59E0B" />
+              <Text style={styles.favLibTitle}>
+                {isKorean ? "즐겨찾기 도서관" : "Favorite Libraries"}
+              </Text>
+              <Text style={styles.favLibCount}>
+                ({favLibs.length}/3)
+              </Text>
+            </View>
+            {isFavLibsLoading ? (
+              <ActivityIndicator size="small" color="#6366F1" style={{ marginVertical: 12 }} />
+            ) : favLibs.length === 0 ? (
+              <Text style={styles.favLibEmpty}>
+                {isKorean
+                  ? "즐겨찾기 도서관이 없습니다.\n책 상세에서 도서관 옆 별 아이콘을 눌러 추가하세요."
+                  : "No favorite libraries.\nTap the star icon next to a library in book details to add one."}
+              </Text>
+            ) : (
+              favLibs.map((lib) => (
+                <View key={lib.lib_code} style={styles.favLibCard}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.favLibName} numberOfLines={1}>{lib.lib_name}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                      <Ionicons name="location-outline" size={11} color="#9CA3AF" />
+                      <Text style={styles.favLibInfo} numberOfLines={1}>{lib.address || "-"}</Text>
+                    </View>
+                    {lib.tel ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 }}>
+                        <Ionicons name="call-outline" size={11} color="#9CA3AF" />
+                        <Text style={styles.favLibInfo}>{lib.tel}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveFavLib(lib.lib_code, lib.lib_name)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
           </View>
 
           <TouchableOpacity style={styles.menuRow} onPress={handleSignOut}>
@@ -898,4 +974,53 @@ const styles = StyleSheet.create({
     borderColor: "#334155",
   },
   menuText: { fontSize: 15, color: "#CBD5E1", fontWeight: "500" },
+  // 즐겨찾기 도서관
+  favLibSection: {
+    marginTop: 24,
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  favLibHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+  },
+  favLibTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#F1F5F9",
+  },
+  favLibCount: {
+    fontSize: 13,
+    color: "#64748B",
+  },
+  favLibEmpty: {
+    textAlign: "center",
+    color: "#64748B",
+    fontSize: 13,
+    lineHeight: 20,
+    paddingVertical: 16,
+  },
+  favLibCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 12,
+    marginBottom: 8,
+  },
+  favLibName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#F1F5F9",
+  },
+  favLibInfo: {
+    fontSize: 11,
+    color: "#64748B",
+    flex: 1,
+  },
 });

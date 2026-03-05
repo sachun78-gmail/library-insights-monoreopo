@@ -4,6 +4,7 @@
 
 import { regions as regionsData } from '../data/regions.js';
 import { getUserId, isBookmarked, toggleBookmark } from './bookmarks';
+import { initFavoriteLibraries, isFavoriteLibrary, toggleFavoriteLibrary, getFavoriteLibraries } from './favorite-libraries';
 import { supabase } from '../lib/supabase';
 
 async function getAuthToken(): Promise<string | null> {
@@ -739,12 +740,20 @@ function checkLoanAvailability(isbn: string, libs: Array<{ lib: any; distance?: 
 }
 
 function renderLibraryCard(lib: any, distanceText?: string): string {
+  const isFav = isFavoriteLibrary(lib.libCode);
+  const isLoggedIn = !!getUserId();
   return `
     <div class="p-4 bg-charcoal/5 dark:bg-white/5 rounded-lg" data-libcode="${lib.libCode}">
       <div class="flex items-start justify-between gap-4">
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1 flex-wrap">
             <h4 class="font-bold text-charcoal dark:text-white">${lib.libName}</h4>
+            ${isFav ? `
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
+                내 도서관
+              </span>
+            ` : ''}
             ${distanceText ? `
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                 <span class="material-symbols-outlined text-xs">near_me</span>
@@ -767,15 +776,84 @@ function renderLibraryCard(lib: any, distanceText?: string): string {
             </p>
           ` : ''}
         </div>
-        ${lib.homepage ? `
-          <a href="${lib.homepage}" target="_blank" rel="noopener noreferrer"
-             class="flex-shrink-0 px-3 py-1 text-sm bg-primary text-charcoal rounded-lg hover:bg-primary/90 transition-colors">
-            홈페이지
-          </a>
-        ` : ''}
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          ${isLoggedIn ? `
+            <button class="fav-lib-btn flex items-center justify-center w-8 h-8 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors" data-libcode="${lib.libCode}" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기'}">
+              <span class="material-symbols-outlined text-lg ${isFav ? 'text-amber-500' : 'text-charcoal/30 dark:text-white/30'}" style="font-variation-settings: 'FILL' ${isFav ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24;">
+                star
+              </span>
+            </button>
+          ` : ''}
+          ${lib.homepage ? `
+            <a href="${lib.homepage}" target="_blank" rel="noopener noreferrer"
+               class="px-3 py-1 text-sm bg-primary text-charcoal rounded-lg hover:bg-primary/90 transition-colors">
+              홈페이지
+            </a>
+          ` : ''}
+        </div>
       </div>
     </div>
   `;
+}
+
+function attachFavLibraryListeners(): void {
+  const libraryList = getEl('library-list');
+  if (!libraryList) return;
+
+  libraryList.querySelectorAll('.fav-lib-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const libCode = (btn as HTMLElement).dataset.libcode;
+      if (!libCode) return;
+
+      const card = libraryList.querySelector(`[data-libcode="${libCode}"]`);
+      if (!card) return;
+
+      // Find the lib info from the card
+      const libName = card.querySelector('h4')?.textContent || '';
+      const addressEl = card.querySelector('p');
+      const address = addressEl?.textContent?.trim() || '';
+      const telEl = card.querySelectorAll('p')[1];
+      const tel = telEl?.textContent?.trim() || '';
+      const homepageLink = card.querySelector('a[href]') as HTMLAnchorElement | null;
+      const homepage = homepageLink?.href || '';
+
+      const isFav = await toggleFavoriteLibrary({
+        libCode,
+        libName,
+        address,
+        tel,
+        homepage,
+      });
+
+      // Update button appearance
+      const icon = btn.querySelector('.material-symbols-outlined');
+      if (icon) {
+        icon.className = `material-symbols-outlined text-lg ${isFav ? 'text-amber-500' : 'text-charcoal/30 dark:text-white/30'}`;
+        (icon as HTMLElement).style.fontVariationSettings = `'FILL' ${isFav ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' 24`;
+      }
+      (btn as HTMLElement).title = isFav ? '즐겨찾기 해제' : '즐겨찾기';
+
+      // Toggle "내 도서관" badge
+      const nameRow = card.querySelector('.flex.items-center.gap-2.mb-1');
+      if (nameRow) {
+        const existingBadge = nameRow.querySelector('.bg-amber-100, .dark\\:bg-amber-900\\/30');
+        if (isFav && !existingBadge) {
+          const h4 = nameRow.querySelector('h4');
+          if (h4) {
+            h4.insertAdjacentHTML('afterend', `
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
+                내 도서관
+              </span>
+            `);
+          }
+        } else if (!isFav && existingBadge) {
+          existingBadge.remove();
+        }
+      }
+    });
+  });
 }
 
 // ========================================
@@ -881,13 +959,36 @@ async function searchLibrariesByGPS(): Promise<void> {
       libsWithDistance = allWithDistance.filter(r => r.distance <= radiusKm);
     }
 
+    // 즐겨찾기 도서관 중 검색 결과에 없는 것을 주입
+    const favLibs = getFavoriteLibraries();
+    const seenCodes = new Set(libsWithDistance.map(r => r.lib.libCode));
+    for (const fav of favLibs) {
+      if (!seenCodes.has(fav.lib_code)) {
+        libsWithDistance.push({
+          lib: {
+            libCode: fav.lib_code,
+            libName: fav.lib_name,
+            address: fav.address,
+            tel: fav.tel,
+            latitude: fav.latitude,
+            longitude: fav.longitude,
+            homepage: fav.homepage,
+          },
+          distance: Infinity,
+        });
+      }
+    }
+
     if (libsWithDistance.length === 0) {
       getEl('library-empty')?.classList.remove('hidden');
       return;
     }
 
+    const favCodesCount = favLibs.filter(f => !seenCodes.has(f.lib_code)).length;
     if (libraryCount) {
-      libraryCount.textContent = `반경 ${radiusKm}km 이내 ${libsWithDistance.length}개 소장 도서관 (가까운 순)`;
+      let countText = `반경 ${radiusKm}km 이내 ${libsWithDistance.length - favCodesCount}개 소장 도서관 (가까운 순)`;
+      if (favCodesCount > 0) countText += ` + 즐겨찾기 ${favCodesCount}곳`;
+      libraryCount.textContent = countText;
       libraryCount.classList.remove('hidden');
     }
 
@@ -896,11 +997,21 @@ async function searchLibrariesByGPS(): Promise<void> {
       modeDescGps.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">my_location</span> GPS 위치 기반 결과 · 지역을 변경하여 재검색할 수 있습니다.';
     }
 
+    // 즐겨찾기 도서관 우선 표시
+    const favCodes = new Set(favLibs.map(f => f.lib_code));
+    libsWithDistance.sort((a, b) => {
+      const aFav = favCodes.has(a.lib.libCode) ? 0 : 1;
+      const bFav = favCodes.has(b.lib.libCode) ? 0 : 1;
+      if (aFav !== bFav) return aFav - bFav;
+      return (a.distance ?? Infinity) - (b.distance ?? Infinity);
+    });
+
     if (libraryList) {
       libraryList.innerHTML = libsWithDistance.map(({ lib, distance }) => {
         const distanceText = distance !== Infinity ? formatDistance(distance) : '';
         return renderLibraryCard(lib, distanceText);
       }).join('');
+      attachFavLibraryListeners();
     }
 
     checkLoanAvailability(isbn, libsWithDistance);
@@ -963,7 +1074,28 @@ async function searchLibrariesByRegion(): Promise<void> {
     libraryLoading?.classList.add('hidden');
 
     const libs = data.response?.libs || [];
-    if (libs.length === 0) {
+
+    // 즐겨찾기 도서관 중 검색 결과에 없는 것을 주입
+    const favLibsRegion = getFavoriteLibraries();
+    const seenCodesRegion = new Set(libs.map((item: any) => item.lib.libCode));
+    const injectedLibs = [...libs];
+    for (const fav of favLibsRegion) {
+      if (!seenCodesRegion.has(fav.lib_code)) {
+        injectedLibs.push({
+          lib: {
+            libCode: fav.lib_code,
+            libName: fav.lib_name,
+            address: fav.address,
+            tel: fav.tel,
+            latitude: fav.latitude,
+            longitude: fav.longitude,
+            homepage: fav.homepage,
+          },
+        });
+      }
+    }
+
+    if (injectedLibs.length === 0) {
       getEl('library-empty')?.classList.remove('hidden');
       return;
     }
@@ -978,11 +1110,20 @@ async function searchLibrariesByRegion(): Promise<void> {
       modeDescRegion.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">location_on</span> 선택 지역 기반 결과입니다.';
     }
 
+    // 즐겨찾기 도서관 우선 표시
+    const favCodesRegion = new Set(favLibsRegion.map(f => f.lib_code));
+    const sortedLibs = [...injectedLibs].sort((a: any, b: any) => {
+      const aFav = favCodesRegion.has(a.lib.libCode) ? 0 : 1;
+      const bFav = favCodesRegion.has(b.lib.libCode) ? 0 : 1;
+      return aFav - bFav;
+    });
+
     if (libraryList) {
-      libraryList.innerHTML = libs.map((item: any) => renderLibraryCard(item.lib)).join('');
+      libraryList.innerHTML = sortedLibs.map((item: any) => renderLibraryCard(item.lib)).join('');
+      attachFavLibraryListeners();
     }
 
-    checkLoanAvailability(isbn, libs.map((item: any) => ({ lib: item.lib })));
+    checkLoanAvailability(isbn, sortedLibs.map((item: any) => ({ lib: item.lib })));
 
   } catch (error) {
     getEl('library-loading')?.classList.add('hidden');
@@ -1032,6 +1173,36 @@ function switchToRegionMode(): void {
 }
 
 // ========================================
+// Favorite Libraries availability check
+// ========================================
+
+async function showFavoriteLibrariesForBook(isbn: string): Promise<void> {
+  const favLibs = getFavoriteLibraries();
+  if (favLibs.length === 0) return;
+
+  const libraryList = getEl('library-list');
+  if (!libraryList) return;
+
+  // 즐겨찾기 도서관들을 먼저 렌더링
+  const favCardsHtml = favLibs.map(fav => renderLibraryCard({
+    libCode: fav.lib_code,
+    libName: fav.lib_name,
+    address: fav.address,
+    tel: fav.tel,
+    latitude: fav.latitude,
+    longitude: fav.longitude,
+    homepage: fav.homepage,
+  })).join('');
+
+  // 기존 카드 앞에 즐겨찾기 도서관 추가
+  libraryList.insertAdjacentHTML('afterbegin', favCardsHtml);
+  attachFavLibraryListeners();
+
+  // 즐겨찾기 도서관의 대출 가능 여부 확인
+  checkLoanAvailability(isbn, favLibs.map(fav => ({ lib: { libCode: fav.lib_code } })));
+}
+
+// ========================================
 // Auto Location Detection & Search
 // ========================================
 
@@ -1059,10 +1230,40 @@ async function startLibrarySearch(): Promise<void> {
     searchLibrariesByGPS();
   } catch {
     getEl('library-loading')?.classList.add('hidden');
-    getEl('library-location-error')?.classList.remove('hidden');
-    const modeDesc = getEl('library-mode-desc');
-    if (modeDesc) {
-      modeDesc.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">location_off</span> GPS를 사용할 수 없습니다. 지역을 선택하여 검색하세요.';
+
+    // GPS 실패해도 즐겨찾기 도서관이 있으면 표시
+    const isbn = _currentBook?.isbn13 || _currentBook?.isbn;
+    const favLibs = getFavoriteLibraries();
+    if (isbn && favLibs.length > 0) {
+      const libraryList = getEl('library-list');
+      const libraryCount = getEl('library-count');
+      if (libraryList) {
+        libraryList.innerHTML = favLibs.map(fav => renderLibraryCard({
+          libCode: fav.lib_code,
+          libName: fav.lib_name,
+          address: fav.address,
+          tel: fav.tel,
+          latitude: fav.latitude,
+          longitude: fav.longitude,
+          homepage: fav.homepage,
+        })).join('');
+        attachFavLibraryListeners();
+      }
+      if (libraryCount) {
+        libraryCount.textContent = `즐겨찾기 도서관 ${favLibs.length}곳의 소장 여부`;
+        libraryCount.classList.remove('hidden');
+      }
+      checkLoanAvailability(isbn, favLibs.map(fav => ({ lib: { libCode: fav.lib_code } })));
+      const modeDesc = getEl('library-mode-desc');
+      if (modeDesc) {
+        modeDesc.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">location_off</span> GPS를 사용할 수 없습니다. 즐겨찾기 도서관만 표시합니다. 지역을 선택하여 더 검색할 수 있습니다.';
+      }
+    } else {
+      getEl('library-location-error')?.classList.remove('hidden');
+      const modeDesc = getEl('library-mode-desc');
+      if (modeDesc) {
+        modeDesc.innerHTML = '<span class="material-symbols-outlined text-xs sm:text-sm">location_off</span> GPS를 사용할 수 없습니다. 지역을 선택하여 검색하세요.';
+      }
     }
   }
 }
@@ -1123,6 +1324,9 @@ async function handleShareClick(): Promise<void> {
 
 export function initBookModal(callbacks?: BookModalCallbacks): void {
   _callbacks = callbacks || {};
+
+  // 즐겨찾기 도서관 초기화
+  initFavoriteLibraries();
 
   const modal = getEl('book-modal');
   const closeBtn = getEl('close-modal');

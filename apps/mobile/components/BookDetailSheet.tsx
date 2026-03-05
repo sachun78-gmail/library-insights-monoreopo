@@ -20,7 +20,7 @@ import * as Location from "expo-location";
 import { useAuth } from "../lib/auth-context";
 import { api } from "../lib/api";
 import { regions as REGIONS_DATA } from "../lib/regions-data.js";
-import type { Book, Library, Bookmark, BookReview } from "../lib/types";
+import type { Book, Library, Bookmark, BookReview, FavoriteLibrary } from "../lib/types";
 
 interface Props {
   book: Book | null;
@@ -247,7 +247,12 @@ const pickerStyles = StyleSheet.create({
 });
 
 // ── LibraryItem ───────────────────────────────────────────────
-function LibraryItem({ lib, isbn }: { lib: LibraryWithDist; isbn: string }) {
+function LibraryItem({ lib, isbn, isFavorite, onToggleFavorite }: {
+  lib: LibraryWithDist;
+  isbn: string;
+  isFavorite: boolean;
+  onToggleFavorite?: (lib: LibraryWithDist) => void;
+}) {
   const { data, isLoading } = useQuery<{ hasBook: boolean; loanAvailable: boolean }>({
     queryKey: ["book-exist", isbn, lib.libCode],
     queryFn: () => api.bookExist(isbn, lib.libCode),
@@ -261,23 +266,43 @@ function LibraryItem({ lib, isbn }: { lib: LibraryWithDist; isbn: string }) {
 
   return (
     <View style={libStyles.card}>
-      {/* 1행: 도서관명 + 홈페이지 버튼 */}
+      {/* 1행: 도서관명 + 즐겨찾기 + 홈페이지 버튼 */}
       <View style={libStyles.nameRow}>
         <Text style={libStyles.name} numberOfLines={1}>
           {lib.libName}
         </Text>
-        {lib.homepage ? (
-          <TouchableOpacity
-            style={libStyles.homeBtn}
-            onPress={() => lib.homepage && Linking.openURL(lib.homepage)}
-          >
-            <Text style={libStyles.homeBtnText}>홈페이지</Text>
-          </TouchableOpacity>
-        ) : null}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          {onToggleFavorite && (
+            <TouchableOpacity
+              onPress={() => onToggleFavorite(lib)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={isFavorite ? "star" : "star-outline"}
+                size={20}
+                color={isFavorite ? "#F59E0B" : "#6B7280"}
+              />
+            </TouchableOpacity>
+          )}
+          {lib.homepage ? (
+            <TouchableOpacity
+              style={libStyles.homeBtn}
+              onPress={() => lib.homepage && Linking.openURL(lib.homepage)}
+            >
+              <Text style={libStyles.homeBtnText}>홈페이지</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
-      {/* 2행: 거리 + 대출 상태 */}
+      {/* 2행: 즐겨찾기 뱃지 + 거리 + 대출 상태 */}
       <View style={libStyles.badgeRow}>
+        {isFavorite && (
+          <View style={libStyles.favBadge}>
+            <Ionicons name="star" size={11} color="#D97706" />
+            <Text style={libStyles.favText}>내 도서관</Text>
+          </View>
+        )}
         {distKm !== null && (
           <View style={libStyles.distBadge}>
             <Ionicons name="navigate" size={11} color="#4F46E5" />
@@ -382,6 +407,17 @@ const libStyles = StyleSheet.create({
   loanText: { fontSize: 12, fontWeight: "600" },
   loanTextAvail: { color: "#34D399" },
   loanTextUnavail: { color: "#F87171" },
+  // 즐겨찾기 뱃지
+  favBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(245,158,11,0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  favText: { fontSize: 12, fontWeight: "600", color: "#FBBF24" },
   // 3-4행: 주소/전화
   infoRow: { flexDirection: "row", alignItems: "flex-start", gap: 4, marginTop: 2 },
   infoText: { fontSize: 11, color: "#64748B", flex: 1 },
@@ -407,6 +443,43 @@ export function BookDetailSheet({ book, onClose }: Props) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "ok" | "denied">("idle");
   const [gpsRegionCode, setGpsRegionCode] = useState<string | null>(null);
+
+  // 즐겨찾기 도서관
+  const { data: favoriteLibs = [] } = useQuery<FavoriteLibrary[]>({
+    queryKey: ["favorite-libraries"],
+    queryFn: () => api.favoriteLibraries(),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+  const favLibCodes = useMemo(() => new Set(favoriteLibs.map(f => f.lib_code)), [favoriteLibs]);
+
+  const addFavMutation = useMutation({
+    mutationFn: (lib: LibraryWithDist) => api.addFavoriteLibrary({
+      lib_code: lib.libCode,
+      lib_name: lib.libName,
+      address: lib.address,
+      tel: lib.tel,
+      latitude: lib.latitude,
+      longitude: lib.longitude,
+      homepage: lib.homepage,
+    }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["favorite-libraries"] }),
+    onError: (err: Error) => Alert.alert("오류", err.message),
+  });
+
+  const removeFavMutation = useMutation({
+    mutationFn: (libCode: string) => api.removeFavoriteLibrary(libCode),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["favorite-libraries"] }),
+  });
+
+  const handleToggleFavorite = (lib: LibraryWithDist) => {
+    if (!user) return;
+    if (favLibCodes.has(lib.libCode)) {
+      removeFavMutation.mutate(lib.libCode);
+    } else {
+      addFavMutation.mutate(lib);
+    }
+  };
 
   // 지역 선택
   const [selectedRegion, setSelectedRegion] = useState("11");
@@ -605,25 +678,44 @@ export function BookDetailSheet({ book, onClose }: Props) {
   // 유효한 한국 내 GPS 좌표를 얻은 경우 3km 필터 적용 (지역 코드 일치 불필요)
   const isGpsRegion = locationStatus === "ok" && userLocation !== null;
 
-  // 표시할 라이브러리 목록: 거리순 정렬 → 3km 필터(GPS 지역만)
+  // 표시할 라이브러리 목록: 즐겨찾기 주입 → 거리순 정렬 → 3km 필터(GPS 지역만)
   // 세부지역 필터링은 API(dtl_region)에서 처리
   const displayedLibraries = useMemo<LibraryWithDist[]>(() => {
     let libs = [...librariesWithDist];
 
-    // 거리 있는 항목은 거리순, 없는 항목은 뒤로
+    // 검색 결과에 없는 즐겨찾기 도서관을 주입
+    const seenCodes = new Set(libs.map(l => l.libCode));
+    for (const fav of favoriteLibs) {
+      if (!seenCodes.has(fav.lib_code)) {
+        libs.push({
+          libCode: fav.lib_code,
+          libName: fav.lib_name,
+          address: fav.address,
+          tel: fav.tel,
+          latitude: fav.latitude,
+          longitude: fav.longitude,
+          homepage: fav.homepage,
+        } as LibraryWithDist);
+      }
+    }
+
+    // 즐겨찾기 도서관 우선 → 거리순
     libs.sort((a, b) => {
+      const aFav = favLibCodes.has(a.libCode) ? 0 : 1;
+      const bFav = favLibCodes.has(b.libCode) ? 0 : 1;
+      if (aFav !== bFav) return aFav - bFav;
       const da = a.distance ?? Infinity;
       const db = b.distance ?? Infinity;
       return da - db;
     });
 
-    // GPS 감지 지역일 때 3km 이내만 표시
+    // GPS 감지 지역일 때 3km 이내만 표시 (즐겨찾기는 항상 표시)
     if (isGpsRegion) {
-      libs = libs.filter((l) => l.distance !== undefined && l.distance <= 3);
+      libs = libs.filter((l) => favLibCodes.has(l.libCode) || (l.distance !== undefined && l.distance <= 3));
     }
 
     return libs;
-  }, [librariesWithDist, isGpsRegion]);
+  }, [librariesWithDist, isGpsRegion, favLibCodes, favoriteLibs]);
 
   const within3kmCount = useMemo(() => {
     return librariesWithDist.filter(
@@ -1118,7 +1210,13 @@ export function BookDetailSheet({ book, onClose }: Props) {
                     ) : (
                       <>
                         {displayedLibraries.slice(0, 15).map((lib) => (
-                          <LibraryItem key={lib.libCode} lib={lib} isbn={book.isbn13} />
+                          <LibraryItem
+                            key={lib.libCode}
+                            lib={lib}
+                            isbn={book.isbn13}
+                            isFavorite={favLibCodes.has(lib.libCode)}
+                            onToggleFavorite={user ? handleToggleFavorite : undefined}
+                          />
                         ))}
                         {displayedLibraries.length > 15 && (
                           <Text style={styles.moreLibText}>

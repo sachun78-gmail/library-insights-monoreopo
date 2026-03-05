@@ -70,7 +70,7 @@ const API_BASE = "https://data4library.kr/api";
 app.get("/healthz", { config: { rateLimit: false } }, async () => ({ ok: true }));
 
 const AI_RECOMMEND_PROMPT = `You are a Korean publishing curation expert.
-Return exactly 12 Korean-language recommended books for the user's keyword.
+Return exactly 10 Korean-language recommended books for the user's keyword.
 Output must be strict JSON array only:
 [
   { "title": "Book title", "author": "Author" }

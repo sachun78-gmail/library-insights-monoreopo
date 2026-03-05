@@ -146,6 +146,43 @@ CREATE POLICY "push_tokens_delete_own"
 -- 참고: 서비스 롤은 RLS를 우회하므로 별도 정책 불필요
 
 
+-- ── favorite_libraries ────────────────────────────────────────
+-- 사용자가 즐겨찾기한 도서관 (최대 3개)
+CREATE TABLE IF NOT EXISTS favorite_libraries (
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  lib_code   TEXT NOT NULL,
+  lib_name   TEXT NOT NULL,
+  address    TEXT,
+  tel        TEXT,
+  latitude   TEXT,
+  longitude  TEXT,
+  homepage   TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, lib_code)
+);
+
+ALTER TABLE favorite_libraries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "fav_libs_select_own" ON favorite_libraries;
+DROP POLICY IF EXISTS "fav_libs_insert_own" ON favorite_libraries;
+DROP POLICY IF EXISTS "fav_libs_delete_own" ON favorite_libraries;
+
+-- 본인 즐겨찾기만 조회
+CREATE POLICY "fav_libs_select_own"
+  ON favorite_libraries FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- 본인 즐겨찾기만 추가
+CREATE POLICY "fav_libs_insert_own"
+  ON favorite_libraries FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- 본인 즐겨찾기만 삭제
+CREATE POLICY "fav_libs_delete_own"
+  ON favorite_libraries FOR DELETE
+  USING (auth.uid() = user_id);
+
+
 -- ── 추천 알림 pg_cron 스케줄 ────────────────────────────────
 -- Supabase Dashboard > SQL Editor 에서 실행
 -- 사전 조건: pg_cron 확장 활성화 필요

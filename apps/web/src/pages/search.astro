@@ -437,6 +437,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
   <script>
     import { initBookModal, openBookModal as sharedOpenModal } from '../scripts/book-modal';
     import { initBookmarks, isBookmarked, toggleBookmark, getUserId } from '../scripts/bookmarks';
+    import { initFavoriteLibraries, getFavoriteLibraries } from '../scripts/favorite-libraries';
 
     // Get search keyword from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -832,6 +833,42 @@ import BookDetailModal from '../components/BookDetailModal.astro';
         searchResults.classList.remove('hidden');
         const renderToken = ++aiCardsRenderToken;
         hydrateMissingAICardImages(renderToken);
+        checkFavLibraryAvailability(recommendations);
+      }
+    }
+
+    async function checkFavLibraryAvailability(recommendations: any[]) {
+      const favLibs = getFavoriteLibraries();
+      if (favLibs.length === 0) return;
+
+      for (let i = 0; i < recommendations.length; i++) {
+        const book = recommendations[i]?.book;
+        const isbn = book?.isbn13 || book?.isbn;
+        if (!isbn) continue;
+
+        const card = document.querySelector(`[data-ai-card-index="${i}"]`);
+        if (!card) continue;
+
+        // 각 즐겨찾기 도서관에 대해 소장 여부 확인
+        for (const fav of favLibs) {
+          try {
+            const res = await fetch(`/api/book-exist?isbn=${isbn}&libCode=${fav.lib_code}`);
+            const result = await res.json();
+            if (result.hasBook) {
+              const badgeContainer = card.querySelector('.mt-auto.flex');
+              if (badgeContainer) {
+                badgeContainer.insertAdjacentHTML('beforeend', `
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                    <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
+                    ${fav.lib_name} ${result.loanAvailable ? '대출가능' : '소장'}
+                  </span>
+                `);
+              }
+            }
+          } catch {
+            // ignore
+          }
+        }
       }
     }
 
@@ -1106,7 +1143,7 @@ import BookDetailModal from '../components/BookDetailModal.astro';
     });
 
     // Init bookmarks then perform search
-    initBookmarks().then(() => {
+    Promise.all([initBookmarks(), initFavoriteLibraries()]).then(() => {
       if (isAIMode) {
         performAISearch();
       } else {

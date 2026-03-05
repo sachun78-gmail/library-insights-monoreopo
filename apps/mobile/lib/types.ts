@@ -37,6 +37,16 @@ export interface Bookmark {
   created_at?: string;
 }
 
+export interface FavoriteLibrary {
+  lib_code: string;
+  lib_name: string;
+  address: string;
+  tel?: string;
+  latitude: string;
+  longitude: string;
+  homepage?: string;
+}
+
 export interface AIInsight {
   summary: string;
   keyMessage: string;
