@@ -246,6 +246,91 @@ import Analytics from '../components/Analytics.astro';
 </div>
 </div>
 
+<!-- Admin Section -->
+<div id="admin-section" class="hidden mt-8">
+<div class="bg-white dark:bg-charcoal-800 rounded-2xl shadow-lg overflow-hidden">
+<div class="bg-gradient-to-r from-red-500 to-red-600 p-4 sm:p-6">
+  <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+    <span class="material-symbols-outlined">admin_panel_settings</span>
+    관리자 패널
+  </h2>
+</div>
+<div class="p-4 sm:p-6 space-y-4">
+
+<!-- Reviews Management -->
+<details class="group">
+  <summary class="flex items-center justify-between cursor-pointer py-3 px-4 bg-charcoal/5 dark:bg-white/5 rounded-lg hover:bg-charcoal/10 dark:hover:bg-white/10 transition-colors">
+    <span class="flex items-center gap-2 font-bold text-charcoal dark:text-white">
+      <span class="material-symbols-outlined">rate_review</span>
+      한줄평 관리
+    </span>
+    <span class="material-symbols-outlined text-charcoal/50 dark:text-white/50 transition-transform group-open:rotate-180">expand_more</span>
+  </summary>
+  <div class="mt-3 space-y-3">
+    <div class="flex gap-2">
+      <input id="admin-review-search" type="text" placeholder="책 제목, 내용, 작성자 검색..." class="flex-1 px-3 py-2 text-sm border border-charcoal/20 dark:border-white/20 rounded-lg bg-white dark:bg-charcoal-900 text-charcoal dark:text-white" />
+      <button id="admin-review-search-btn" class="px-4 py-2 text-sm bg-primary text-charcoal font-bold rounded-lg hover:bg-primary/90 transition-colors">검색</button>
+    </div>
+    <div id="admin-reviews-table" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-charcoal/10 dark:border-white/10 text-left">
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">ISBN</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">책</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">작성자</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">내용</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">별점</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">날짜</th>
+            <th class="py-2 px-2"></th>
+          </tr>
+        </thead>
+        <tbody id="admin-reviews-body"></tbody>
+      </table>
+    </div>
+    <div id="admin-reviews-pagination" class="flex items-center justify-between text-sm text-charcoal/60 dark:text-white/60">
+      <span id="admin-reviews-info"></span>
+      <div class="flex gap-2">
+        <button id="admin-reviews-prev" class="px-3 py-1 border border-charcoal/20 dark:border-white/20 rounded hover:bg-charcoal/5 dark:hover:bg-white/5 disabled:opacity-30" disabled>이전</button>
+        <button id="admin-reviews-next" class="px-3 py-1 border border-charcoal/20 dark:border-white/20 rounded hover:bg-charcoal/5 dark:hover:bg-white/5 disabled:opacity-30" disabled>다음</button>
+      </div>
+    </div>
+  </div>
+</details>
+
+<!-- Users Management -->
+<details class="group">
+  <summary class="flex items-center justify-between cursor-pointer py-3 px-4 bg-charcoal/5 dark:bg-white/5 rounded-lg hover:bg-charcoal/10 dark:hover:bg-white/10 transition-colors">
+    <span class="flex items-center gap-2 font-bold text-charcoal dark:text-white">
+      <span class="material-symbols-outlined">group</span>
+      사용자 관리
+    </span>
+    <span class="material-symbols-outlined text-charcoal/50 dark:text-white/50 transition-transform group-open:rotate-180">expand_more</span>
+  </summary>
+  <div class="mt-3 space-y-3">
+    <div id="admin-users-table" class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-charcoal/10 dark:border-white/10 text-left">
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">이름</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">이메일</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">가입일</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">최근 로그인</th>
+            <th class="py-2 px-2 text-charcoal/60 dark:text-white/60 font-medium">북마크</th>
+          </tr>
+        </thead>
+        <tbody id="admin-users-body"></tbody>
+      </table>
+    </div>
+    <div id="admin-users-loading" class="text-center py-4">
+      <span class="material-symbols-outlined animate-spin text-charcoal/30 dark:text-white/30">progress_activity</span>
+    </div>
+  </div>
+</details>
+
+</div>
+</div>
+</div>
+
 <!-- Not logged in message -->
 <div id="mypage-login-required" class="text-center py-16">
 <span class="material-symbols-outlined text-6xl text-charcoal/30 dark:text-white/30 mb-4">account_circle</span>
@@ -398,9 +483,13 @@ import Analytics from '../components/Analytics.astro';
       if (infoName) infoName.textContent = name;
       if (infoEmail) infoEmail.textContent = email;
       if (infoCreated) infoCreated.textContent = createdAt;
+
+      // Admin check — dispatch event so admin script can pick up the token
+      window.dispatchEvent(new CustomEvent('mypage:session', { detail: { token: session.access_token } }));
     } else {
       mypageLoginRequired?.classList.remove('hidden');
       mypageContent?.classList.add('hidden');
+      document.getElementById('admin-section')?.classList.add('hidden');
     }
   }
 
@@ -596,6 +685,160 @@ import Analytics from '../components/Analytics.astro';
 </script>
 <script>
   import '../scripts/theme';
+</script>
+<script>
+  // Admin panel — no separate onAuthStateChange, called from loadMyPage()
+  let adminReviewPage = 1;
+  const adminReviewLimit = 10;
+  let adminToken = '';
+
+  async function checkAdminSection(token: string) {
+    adminToken = token;
+    try {
+      const res = await fetch('/api/admin/check', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.isAdmin) {
+        document.getElementById('admin-section')?.classList.remove('hidden');
+        loadAdminReviews();
+        loadAdminUsers();
+      } else {
+        document.getElementById('admin-section')?.classList.add('hidden');
+      }
+    } catch {
+      document.getElementById('admin-section')?.classList.add('hidden');
+    }
+  }
+
+  async function loadAdminReviews() {
+    const search = (document.getElementById('admin-review-search') as HTMLInputElement)?.value || '';
+    const params = new URLSearchParams({ page: String(adminReviewPage), limit: String(adminReviewLimit) });
+    if (search) params.set('search', search);
+
+    try {
+      const res = await fetch(`/api/admin/reviews?${params}`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      const data = await res.json();
+      const tbody = document.getElementById('admin-reviews-body');
+      if (!tbody) return;
+
+      if (!data.reviews || data.reviews.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-charcoal/50 dark:text-white/50">한줄평이 없습니다</td></tr>';
+      } else {
+        tbody.innerHTML = data.reviews.map((r: any) => `
+          <tr class="border-b border-charcoal/5 dark:border-white/5 hover:bg-charcoal/5 dark:hover:bg-white/5">
+            <td class="py-2 px-2 text-xs font-mono">${(r.isbn13 || '').slice(-4)}</td>
+            <td class="py-2 px-2 max-w-[120px] truncate">${r.bookname || '-'}</td>
+            <td class="py-2 px-2">${r.display_name || '-'}</td>
+            <td class="py-2 px-2 max-w-[200px] truncate">${r.review_text || ''}</td>
+            <td class="py-2 px-2">${'★'.repeat(r.rating || 0)}</td>
+            <td class="py-2 px-2 text-xs">${r.created_at ? new Date(r.created_at).toLocaleDateString('ko-KR') : '-'}</td>
+            <td class="py-2 px-2">
+              <button class="admin-delete-review px-2 py-1 text-xs text-red-500 border border-red-500 rounded hover:bg-red-50 dark:hover:bg-red-500/10" data-id="${r.id}">삭제</button>
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('.admin-delete-review').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const reviewId = (btn as HTMLElement).dataset.id;
+            if (!reviewId || !confirm('이 한줄평을 삭제하시겠습니까?')) return;
+            try {
+              await fetch('/api/admin/reviews', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                body: JSON.stringify({ review_id: reviewId }),
+              });
+              loadAdminReviews();
+            } catch (err) { console.error('Delete review failed:', err); }
+          });
+        });
+      }
+
+      const total = data.total || 0;
+      const totalPages = Math.ceil(total / adminReviewLimit);
+      const infoEl = document.getElementById('admin-reviews-info');
+      if (infoEl) infoEl.textContent = `총 ${total}건 (${adminReviewPage}/${totalPages || 1} 페이지)`;
+
+      const prevBtn = document.getElementById('admin-reviews-prev') as HTMLButtonElement;
+      const nextBtn = document.getElementById('admin-reviews-next') as HTMLButtonElement;
+      if (prevBtn) prevBtn.disabled = adminReviewPage <= 1;
+      if (nextBtn) nextBtn.disabled = adminReviewPage >= totalPages;
+    } catch (err) { console.error('Load admin reviews failed:', err); }
+  }
+
+  async function loadAdminUsers() {
+    const loadingEl = document.getElementById('admin-users-loading');
+    try {
+      const res = await fetch('/api/admin/users', {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      const data = await res.json();
+      loadingEl?.classList.add('hidden');
+
+      const tbody = document.getElementById('admin-users-body');
+      if (!tbody) return;
+
+      if (!data.users || data.users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-charcoal/50 dark:text-white/50">사용자가 없습니다</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.users.map((u: any) => `
+        <tr class="border-b border-charcoal/5 dark:border-white/5 hover:bg-charcoal/5 dark:hover:bg-white/5">
+          <td class="py-2 px-2">${u.display_name || '-'}</td>
+          <td class="py-2 px-2 text-xs">${u.email || '-'}</td>
+          <td class="py-2 px-2 text-xs">${u.created_at ? new Date(u.created_at).toLocaleDateString('ko-KR') : '-'}</td>
+          <td class="py-2 px-2 text-xs">${u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString('ko-KR') : '-'}</td>
+          <td class="py-2 px-2">
+            <button class="admin-view-bookmarks px-2 py-1 text-xs text-primary border border-primary rounded hover:bg-primary/10" data-uid="${u.id}">조회</button>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('.admin-view-bookmarks').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const uid = (btn as HTMLElement).dataset.uid;
+          if (!uid) return;
+          try {
+            const res = await fetch(`/api/admin/bookmarks?user_id=${uid}`, {
+              headers: { Authorization: `Bearer ${adminToken}` },
+            });
+            const data = await res.json();
+            const count = data.bookmarks?.length || 0;
+            const titles = data.bookmarks?.slice(0, 5).map((b: any) => b.bookname || b.isbn13).join(', ') || '없음';
+            alert(`북마크 ${count}건\n${titles}${count > 5 ? ' ...' : ''}`);
+          } catch (err) { console.error('Load bookmarks failed:', err); }
+        });
+      });
+    } catch (err) {
+      console.error('Load admin users failed:', err);
+      loadingEl?.classList.add('hidden');
+    }
+  }
+
+  // Listen for session event from loadMyPage script
+  window.addEventListener('mypage:session', ((e: CustomEvent) => {
+    checkAdminSection(e.detail.token);
+  }) as EventListener);
+
+  // Event listeners
+  document.getElementById('admin-review-search-btn')?.addEventListener('click', () => {
+    adminReviewPage = 1;
+    loadAdminReviews();
+  });
+  document.getElementById('admin-review-search')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { adminReviewPage = 1; loadAdminReviews(); }
+  });
+  document.getElementById('admin-reviews-prev')?.addEventListener('click', () => {
+    if (adminReviewPage > 1) { adminReviewPage--; loadAdminReviews(); }
+  });
+  document.getElementById('admin-reviews-next')?.addEventListener('click', () => {
+    adminReviewPage++;
+    loadAdminReviews();
+  });
 </script>
 </body>
 </html>

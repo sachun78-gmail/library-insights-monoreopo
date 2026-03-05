@@ -36,6 +36,12 @@ export function safeErrorResponse(error: unknown, publicMessage = 'Internal serv
   });
 }
 
+export function isAdmin(userId: string, locals: any): boolean {
+  const runtime = locals?.runtime;
+  const adminIds = (runtime?.env?.ADMIN_USER_IDS || import.meta.env.ADMIN_USER_IDS || '');
+  return adminIds.split(',').map((id: string) => id.trim()).filter(Boolean).includes(userId);
+}
+
 /**
  * Verifies the Bearer token in the Authorization header.
  * Returns { userId: string } on success, or a 401/500 Response on failure.
