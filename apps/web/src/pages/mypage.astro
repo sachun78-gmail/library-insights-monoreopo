@@ -2,6 +2,7 @@
 import Auth from '../components/Auth.astro';
 import Analytics from '../components/Analytics.astro';
 import Footer from '../components/Footer.astro';
+import LegalModals from '../components/LegalModals.astro';
 ---
 <html lang="ko" class="">
 <head>
@@ -357,6 +358,8 @@ import Footer from '../components/Footer.astro';
 </div>
 
 <Auth />
+
+<LegalModals />
 
 <script>
   import { supabase, isAuthEnabled } from '../lib/supabase';
