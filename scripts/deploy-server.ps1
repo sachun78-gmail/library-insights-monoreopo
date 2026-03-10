@@ -1,5 +1,5 @@
 param(
-  [string]$Remote = "sachun78@163.245.214.222",
+  [string]$Remote = "sachun78@api.library-insights.work",
   [string]$RemotePath = "/opt/library-insights",
   [string]$ProcessManager = "systemd",
   [string]$CopyMode = "auto",
