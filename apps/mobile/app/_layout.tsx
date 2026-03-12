@@ -26,11 +26,11 @@ function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen
               name="login"
-              options={{ presentation: "modal", animation: "slide_from_bottom" }}
+              options={{ presentation: "modal", animation: "none" }}
             />
             <Stack.Screen
               name="book/[isbn13]"
-              options={{ presentation: "modal", animation: "slide_from_bottom", headerShown: false }}
+              options={{ presentation: "modal", animation: "none", headerShown: false }}
             />
           </Stack>
         </SafeAreaProvider>

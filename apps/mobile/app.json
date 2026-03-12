@@ -18,6 +18,7 @@
     },
     "android": {
       "package": "work.libraryinsights",
+      "versionCode": 19,
       "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
@@ -29,6 +30,9 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.CAMERA"
       ],
       "intentFilters": [
         {

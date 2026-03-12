@@ -1,12 +1,15 @@
 {
   "cli": {
     "version": ">= 13.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "base": {
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://library-insights.work"
+        "EXPO_PUBLIC_API_BASE_URL": "https://library-insights.work",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://vkdqqbortwdfuraqcrka.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_-VbeafD6VUAKzY4KKe_JZg_0GtGcBWG",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://ff186f8c5f71b1dd02f3fa5cfc40d358@o4510991587213312.ingest.us.sentry.io/4510991695085568"
       }
     },
     "preview": {
