@@ -38,6 +38,7 @@ npm-debug.log*
 
 # Working/reference files
 *.png
+!apps/mobile/android/app/src/main/res/**/*.png
 analytics_guide/
 librarybigdata_llms.txt
 r2_llm.txt
