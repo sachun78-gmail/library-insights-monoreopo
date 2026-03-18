@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { t } from "../../lib/i18n";
 import { useAuth } from "../../lib/auth-context";
 import { usePushNotifications } from "../../lib/usePushNotifications";
@@ -31,13 +32,14 @@ function FloatingTabBarBackground() {
       locations={[0, 0.45, 1]}
       start={{ x: 0.1, y: 0 }}
       end={{ x: 0.95, y: 1 }}
-      style={StyleSheet.absoluteFillObject}
+      style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]}
     />
   );
 }
 
 export default function TabLayout() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   usePushNotifications(!!user);
 
   return (
@@ -60,9 +62,10 @@ export default function TabLayout() {
         },
         tabBarStyle: {
           position: "absolute",
-          bottom: 18,
-          left: 10,
-          right: 10,
+          bottom: insets.bottom + 8,
+          left: 0,
+          right: 0,
+          marginHorizontal: 10,
           borderRadius: 24,
           borderTopWidth: 0,
           height: 56,
