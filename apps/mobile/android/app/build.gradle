@@ -81,7 +81,8 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
-apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
+// Sentry 소스맵 업로드 비활성화 (org/project 미설정 상태)
+// apply from: new File(["node", "--print", "require('path').dirname(require.resolve('@sentry/react-native/package.json'))"].execute().text.trim(), "sentry.gradle")
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -105,10 +106,10 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file(findProperty('RELEASE_STORE_FILE') ?: 'release.keystore')
-            storePassword findProperty('RELEASE_STORE_PASSWORD') ?: ''
+            storeFile file('release.keystore')
+            storePassword System.getenv('RELEASE_STORE_PASSWORD') ?: findProperty('RELEASE_STORE_PASSWORD') ?: ''
             keyAlias findProperty('RELEASE_KEY_ALIAS') ?: 'release'
-            keyPassword findProperty('RELEASE_KEY_PASSWORD') ?: ''
+            keyPassword System.getenv('RELEASE_KEY_PASSWORD') ?: findProperty('RELEASE_KEY_PASSWORD') ?: ''
         }
     }
     buildTypes {
