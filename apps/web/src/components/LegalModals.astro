@@ -104,6 +104,40 @@
       <li><a class="hover:text-primary" href="/reviews">리뷰</a></li>
       <li><a class="hover:text-primary" href="/search">검색</a></li>
       <li><a class="hover:text-primary" href="/mypage">마이페이지</a></li>
+      <li><a class="hover:text-primary" href="/about">서비스 소개</a></li>
+      <li><a class="hover:text-primary" href="/contact">문의하기</a></li>
     </ul>
   </div>
 </div>
+
+<script>
+  // 이용약관 모달
+  const termsBtn = document.getElementById('terms-btn');
+  const termsModal = document.getElementById('terms-modal');
+  const closeTermsModal = document.getElementById('close-terms-modal');
+  termsBtn?.addEventListener('click', () => termsModal?.classList.remove('hidden'));
+  closeTermsModal?.addEventListener('click', () => termsModal?.classList.add('hidden'));
+  termsModal?.addEventListener('click', (e) => {
+    if (e.target === termsModal) termsModal.classList.add('hidden');
+  });
+
+  // 개인정보처리방침 모달
+  const privacyBtn = document.getElementById('privacy-btn');
+  const privacyModal = document.getElementById('privacy-modal');
+  const closePrivacyModal = document.getElementById('close-privacy-modal');
+  privacyBtn?.addEventListener('click', () => privacyModal?.classList.remove('hidden'));
+  closePrivacyModal?.addEventListener('click', () => privacyModal?.classList.add('hidden'));
+  privacyModal?.addEventListener('click', (e) => {
+    if (e.target === privacyModal) privacyModal.classList.add('hidden');
+  });
+
+  // 사이트맵 모달
+  const sitemapBtn = document.getElementById('sitemap-btn');
+  const sitemapModal = document.getElementById('sitemap-modal');
+  const closeSitemapModal = document.getElementById('close-sitemap-modal');
+  sitemapBtn?.addEventListener('click', () => sitemapModal?.classList.remove('hidden'));
+  closeSitemapModal?.addEventListener('click', () => sitemapModal?.classList.add('hidden'));
+  sitemapModal?.addEventListener('click', (e) => {
+    if (e.target === sitemapModal) sitemapModal.classList.add('hidden');
+  });
+</script>
