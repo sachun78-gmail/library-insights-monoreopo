@@ -1,0 +1,139 @@
+---
+export const prerender = true;
+
+import { getCollection, getEntry } from 'astro:content';
+import Analytics from '../../components/Analytics.astro';
+import Footer from '../../components/Footer.astro';
+import LegalModals from '../../components/LegalModals.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('insights');
+  return posts.map((post) => ({ params: { slug: post.slug } }));
+}
+
+const { slug } = Astro.params;
+const post = await getEntry('insights', slug as string);
+
+if (!post) {
+  return Astro.redirect('/insights');
+}
+
+const { Content } = await post.render();
+
+const categoryColors: Record<string, string> = {
+  '분석': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  '트렌드': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  '활용팁': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  '운영이야기': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+};
+
+const canonicalUrl = `https://library-insights.work/insights/${slug}`;
+---
+<html lang="ko" class=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script is:inline>
+  (function(){
+    var t = localStorage.getItem('theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  })();
+</script>
+<title>{post.data.title} - LibraryInsights</title>
+<meta name="description" content={post.data.description}/>
+<link rel="canonical" href={canonicalUrl}/>
+<meta property="og:site_name" content="LibraryInsights"/>
+<meta property="og:type" content="article"/>
+<meta property="og:title" content={post.data.title}/>
+<meta property="og:description" content={post.data.description}/>
+<meta property="og:url" content={canonicalUrl}/>
+{post.data.thumbnail && <meta property="og:image" content={post.data.thumbnail}/>}
+<meta property="og:locale" content="ko_KR"/>
+<meta property="article:published_time" content={post.data.pubDate.toISOString()}/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content={post.data.title}/>
+<meta name="twitter:description" content={post.data.description}/>
+{post.data.thumbnail && <meta name="twitter:image" content={post.data.thumbnail}/>}
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<Analytics />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
+  .prose h2 { font-size: 1.25rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; }
+  .prose h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .prose p { margin-bottom: 1rem; line-height: 1.8; }
+  .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+  .prose li { margin-bottom: 0.4rem; line-height: 1.7; }
+  .prose strong { font-weight: 600; }
+</style>
+</head>
+<body class="bg-white text-charcoal dark:bg-charcoal-900 dark:text-white">
+
+<header class="border-b border-charcoal/10 dark:border-white/10 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md sticky top-0 z-50">
+  <div class="max-w-3xl mx-auto px-5 sm:px-8 py-3 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 text-charcoal dark:text-white font-bold text-lg">
+      <span class="material-symbols-outlined text-primary text-xl leading-none">auto_stories</span>
+      LibraryInsights
+    </a>
+    <nav class="flex items-center gap-4 text-sm text-charcoal/70 dark:text-white/70">
+      <a href="/bestsellers" class="hover:text-primary transition-colors">베스트셀러</a>
+      <a href="/insights" class="hover:text-primary transition-colors">인사이트</a>
+    </nav>
+  </div>
+</header>
+
+<main class="mx-auto max-w-3xl px-5 py-12 sm:px-8">
+  <a href="/insights" class="mb-8 inline-flex items-center gap-1 text-sm text-charcoal/60 hover:text-charcoal dark:text-white/60 dark:hover:text-white">
+    <span class="material-symbols-outlined text-base">arrow_back</span>
+    인사이트 목록
+  </a>
+
+  <div class="mb-6 flex items-center gap-3">
+    <span class={`text-xs font-medium px-2.5 py-1 rounded-full ${categoryColors[post.data.category] ?? ''}`}>
+      {post.data.category}
+    </span>
+    <time class="text-sm text-charcoal/50 dark:text-white/40" datetime={post.data.pubDate.toISOString()}>
+      {post.data.pubDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+    </time>
+  </div>
+
+  <h1 class="text-2xl sm:text-3xl font-bold text-charcoal dark:text-white mb-4 leading-tight">
+    {post.data.title}
+  </h1>
+  <p class="text-base text-charcoal/60 dark:text-white/50 mb-8 leading-7">
+    {post.data.description}
+  </p>
+
+  {post.data.thumbnail && (
+    <div class="mb-10 rounded-2xl overflow-hidden aspect-video">
+      <img
+        src={post.data.thumbnail}
+        alt={post.data.thumbnailAlt ?? post.data.title}
+        class="w-full h-full object-cover"
+      />
+    </div>
+  )}
+
+  <article class="prose text-sm text-charcoal/80 dark:text-white/80">
+    <Content />
+  </article>
+
+  <div class="mt-12 pt-8 border-t border-charcoal/10 dark:border-white/10">
+    <p class="text-sm text-charcoal/60 dark:text-white/50 mb-4">다른 인사이트도 읽어보세요</p>
+    <a href="/insights" class="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+      <span class="material-symbols-outlined text-base">arrow_back</span>
+      인사이트 전체 목록 보기
+    </a>
+  </div>
+</main>
+
+<Footer />
+<LegalModals />
+
+<script>
+  import '../../scripts/theme';
+</script>
+</body></html>

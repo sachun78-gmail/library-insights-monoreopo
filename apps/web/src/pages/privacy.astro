@@ -1,5 +1,7 @@
 ---
 import Analytics from '../components/Analytics.astro';
+import Footer from '../components/Footer.astro';
+import LegalModals from '../components/LegalModals.astro';
 ---
 <html lang="ko" class=""><head>
 <meta charset="utf-8"/>
@@ -20,64 +22,220 @@ import Analytics from '../components/Analytics.astro';
 <meta property="og:site_name" content="LibraryInsights"/>
 <meta property="og:type" content="website"/>
 <meta property="og:title" content="개인정보처리방침 - LibraryInsights"/>
-<meta property="og:description" content="LibraryInsights의 개인정보 수집·이용·보관 방침을 안내합니다. 이용자의 권리와 개인정보 보호 조치를 확인하세요."/>
+<meta property="og:description" content="LibraryInsights의 개인정보 수집·이용·보관 방침을 안내합니다."/>
 <meta property="og:url" content="https://library-insights.work/privacy"/>
-<meta property="og:image" content="https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&h=630&q=80"/>
-<meta property="og:locale" content="ko_KR"/>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
 <Analytics />
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
-  .dark body { background: #0f172a; color: #e2e8f0; }
 </style>
 </head>
 <body class="bg-white text-charcoal dark:bg-charcoal-900 dark:text-white">
-  <main class="mx-auto max-w-3xl px-5 py-12 sm:px-8">
-    <a href="/" class="mb-8 inline-flex items-center gap-1 text-sm text-charcoal/60 hover:text-charcoal dark:text-white/60 dark:hover:text-white">
-      <span class="material-symbols-outlined text-base">arrow_back</span>
-      홈으로 돌아가기
+
+<header class="border-b border-charcoal/10 dark:border-white/10 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md sticky top-0 z-50">
+  <div class="max-w-3xl mx-auto px-5 sm:px-8 py-3 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 text-charcoal dark:text-white font-bold text-lg">
+      <span class="material-symbols-outlined text-primary text-xl leading-none">auto_stories</span>
+      LibraryInsights
     </a>
-    <h1 class="mb-8 text-2xl font-bold">개인정보처리방침</h1>
-    <div class="space-y-6 text-sm leading-7 text-charcoal/80 dark:text-white/80">
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">1. 총칙</h2>
-        <p>LibraryInsights는 「개인정보 보호법」 등 관련 법령을 준수하며, 이용자의 개인정보를 안전하게 처리하고 권리를 보장합니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">2. 수집 항목 및 방법</h2>
-        <p>서비스는 소셜 로그인 과정에서 제공되는 식별자, 닉네임, 프로필 이미지 등 최소 정보와 서비스 이용 과정에서 생성되는 접속기록, 기기정보, 관심도서(내서재) 정보를 수집할 수 있습니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">3. 이용 목적</h2>
-        <p>회원 식별 및 인증, 맞춤형 도서 추천, 서비스 개선, 부정 이용 방지, 고객 문의 대응을 위해 개인정보를 이용합니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">4. 보유 및 이용기간</h2>
-        <p>개인정보는 수집·이용 목적 달성 시 지체 없이 파기합니다. 관계 법령에 따라 보존이 필요한 정보는 법정 기간 동안 별도 보관 후 파기합니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">5. 제3자 제공 및 처리위탁</h2>
-        <p>법령에 근거가 있거나 이용자의 동의가 있는 경우를 제외하고 개인정보를 제3자에게 제공하지 않습니다. 안정적 서비스 제공을 위해 필요한 범위에서 일부 업무를 위탁할 수 있으며, 위탁 시 수탁자 관리·감독 의무를 이행합니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">6. 이용자 권리</h2>
-        <p>이용자는 개인정보 열람, 정정, 삭제, 처리정지 및 동의 철회를 요청할 수 있습니다. 요청은 운영자 문의 채널을 통해 접수되며, 법령에 따라 지체 없이 처리합니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">7. 안전성 확보 조치</h2>
-        <p>접근권한 관리, 저장 데이터 보호, 전송구간 보호, 로그 모니터링 등 기술적·관리적 보호조치를 시행합니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">8. 쿠키 및 유사기술</h2>
-        <p>서비스 품질 개선 및 맞춤형 기능 제공을 위해 쿠키/로컬스토리지를 사용할 수 있습니다. 이용자는 브라우저 설정을 통해 저장을 거부하거나 삭제할 수 있습니다.</p>
-      </section>
-      <section>
-        <h2 class="mb-2 text-base font-semibold text-charcoal dark:text-white">9. 문의처</h2>
-        <p>개인정보 관련 문의 및 권리행사는 <a href="mailto:sachun78@gmail.com" class="text-primary underline hover:no-underline">sachun78@gmail.com</a> 또는 <a href="/contact" class="text-primary underline hover:no-underline">문의하기 페이지</a>를 통해 접수해 주세요.</p>
-      </section>
-      <p class="pt-4 text-xs text-charcoal/60 dark:text-white/60">시행일: 2026년 3월 6일</p>
+  </div>
+</header>
+
+<main class="mx-auto max-w-3xl px-5 py-12 sm:px-8">
+  <a href="/" class="mb-8 inline-flex items-center gap-1 text-sm text-charcoal/60 hover:text-charcoal dark:text-white/60 dark:hover:text-white">
+    <span class="material-symbols-outlined text-base">arrow_back</span>
+    홈으로 돌아가기
+  </a>
+
+  <h1 class="mb-2 text-2xl font-bold">개인정보처리방침</h1>
+  <p class="mb-8 text-xs text-charcoal/50 dark:text-white/40">시행일: 2026년 3월 6일 &nbsp;|&nbsp; 최종 수정: 2026년 4월 27일</p>
+
+  <div class="space-y-8 text-sm leading-7 text-charcoal/80 dark:text-white/80">
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제1조 (총칙)</h2>
+      <p>LibraryInsights(이하 "서비스")는 「개인정보 보호법」, 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 등 관련 법령을 준수하며, 이용자의 개인정보를 안전하게 처리합니다. 본 방침은 서비스가 어떤 개인정보를 왜, 어떻게 수집·이용·보관·파기하는지를 안내합니다.</p>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제2조 (개인정보의 수집 항목 및 수집 방법)</h2>
+      <p class="mb-3">서비스는 다음의 개인정보를 수집합니다.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="bg-charcoal/5 dark:bg-white/5">
+              <th class="border border-charcoal/10 dark:border-white/10 px-3 py-2 text-left font-semibold">구분</th>
+              <th class="border border-charcoal/10 dark:border-white/10 px-3 py-2 text-left font-semibold">수집 항목</th>
+              <th class="border border-charcoal/10 dark:border-white/10 px-3 py-2 text-left font-semibold">수집 방법</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">소셜 로그인 (Google)</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">고유 식별자(UID), 이메일 주소, 닉네임, 프로필 이미지 URL</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">OAuth 2.0 동의 과정</td>
+            </tr>
+            <tr>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">소셜 로그인 (Kakao)</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">고유 식별자(UID), 닉네임, 프로필 이미지 URL</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">OAuth 2.0 동의 과정</td>
+            </tr>
+            <tr>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">서비스 이용 시 자동 생성</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">접속 IP, 브라우저 종류, 방문 일시, 서비스 이용 기록</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">자동 수집</td>
+            </tr>
+            <tr>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">서비스 기능 이용 시</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">내 서재 도서 목록, 관심 도서, 독서 상태</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">이용자 직접 입력</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-xs text-charcoal/50 dark:text-white/40">※ 서비스는 만 14세 미만 아동의 개인정보를 수집하지 않습니다.</p>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제3조 (개인정보의 이용 목적)</h2>
+      <ul class="list-disc list-inside space-y-1 pl-2">
+        <li>회원 식별 및 인증, 로그인 세션 관리</li>
+        <li>맞춤형 도서 추천 및 개인화 서비스 제공</li>
+        <li>내 서재, 관심 도서 목록 저장 및 관리</li>
+        <li>서비스 이용 통계 분석 및 품질 개선</li>
+        <li>부정 이용 방지 및 서비스 보안 유지</li>
+        <li>이용자 문의 및 불만 처리</li>
+        <li>법령상 의무 이행</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제4조 (개인정보의 보유 및 이용기간)</h2>
+      <p class="mb-3">서비스는 수집·이용 목적이 달성되면 지체 없이 개인정보를 파기합니다. 단, 관련 법령에 따라 보존이 필요한 경우 아래 기간 동안 별도 보관 후 파기합니다.</p>
+      <ul class="list-disc list-inside space-y-1 pl-2">
+        <li>계약 또는 청약 철회 기록: 5년 (전자상거래법)</li>
+        <li>소비자 불만 또는 분쟁 처리 기록: 3년 (전자상거래법)</li>
+        <li>접속 로그 기록: 3개월 (통신비밀보호법)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제5조 (개인정보의 파기 절차 및 방법)</h2>
+      <p>회원 탈퇴 시 또는 보존 기간 만료 시, 수집된 개인정보는 데이터베이스에서 즉시 삭제됩니다. 전자적 파일 형태는 복구 불가능한 방법으로 영구 삭제하며, 종이 문서는 분쇄 또는 소각합니다.</p>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제6조 (개인정보의 제3자 제공)</h2>
+      <p>서비스는 이용자의 개인정보를 원칙적으로 제3자에게 제공하지 않습니다. 다만, 다음의 경우에는 예외입니다.</p>
+      <ul class="list-disc list-inside space-y-1 pl-2 mt-2">
+        <li>이용자가 사전에 동의한 경우</li>
+        <li>법령에 의거하거나 수사 목적으로 법령에 정해진 절차와 방법에 따라 수사기관의 요구가 있는 경우</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제7조 (개인정보 처리의 위탁)</h2>
+      <p class="mb-3">서비스는 안정적인 서비스 제공을 위해 다음 업체에 개인정보 처리를 위탁합니다.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs border-collapse">
+          <thead>
+            <tr class="bg-charcoal/5 dark:bg-white/5">
+              <th class="border border-charcoal/10 dark:border-white/10 px-3 py-2 text-left font-semibold">수탁업체</th>
+              <th class="border border-charcoal/10 dark:border-white/10 px-3 py-2 text-left font-semibold">위탁 업무 내용</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">Supabase, Inc.</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">데이터베이스 및 인증 서버 운영</td>
+            </tr>
+            <tr>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">Cloudflare, Inc.</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">웹 서버 호스팅 및 CDN</td>
+            </tr>
+            <tr>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">Google LLC</td>
+              <td class="border border-charcoal/10 dark:border-white/10 px-3 py-2">소셜 로그인 인증, 웹 분석(Analytics)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제8조 (이용자의 권리 및 행사 방법)</h2>
+      <p class="mb-2">이용자는 언제든지 다음 권리를 행사할 수 있습니다.</p>
+      <ul class="list-disc list-inside space-y-1 pl-2">
+        <li>개인정보 열람 요청</li>
+        <li>오류 정정 요청</li>
+        <li>삭제 요청 (회원 탈퇴 포함)</li>
+        <li>처리 정지 요청</li>
+        <li>동의 철회 (서비스 내 설정 또는 이메일 문의)</li>
+      </ul>
+      <p class="mt-3">권리 행사는 <a href="/contact" class="text-primary underline hover:no-underline">문의하기</a> 또는 <a href="mailto:sachun78@gmail.com" class="text-primary underline hover:no-underline">sachun78@gmail.com</a>으로 요청하시면 지체 없이 처리합니다.</p>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제9조 (쿠키 및 유사 기술)</h2>
+      <p class="mb-3">서비스는 다음 목적으로 쿠키 및 로컬스토리지를 사용합니다.</p>
+      <ul class="list-disc list-inside space-y-1 pl-2">
+        <li>로그인 세션 유지</li>
+        <li>다크/라이트 테마 설정 저장</li>
+        <li>서비스 이용 통계 분석 (Google Analytics)</li>
+        <li>맞춤형 광고 제공 (Google AdSense)</li>
+      </ul>
+      <p class="mt-3">쿠키 수집을 원하지 않으시면 브라우저 설정에서 쿠키 저장을 거부할 수 있습니다. 단, 일부 서비스 기능이 제한될 수 있습니다. 자세한 내용은 <a href="/cookie-policy" class="text-primary underline hover:no-underline">쿠키 정책</a>을 확인하세요.</p>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제10조 (개인정보의 안전성 확보 조치)</h2>
+      <ul class="list-disc list-inside space-y-1 pl-2">
+        <li>전송 구간 암호화 (HTTPS/TLS)</li>
+        <li>데이터베이스 접근 권한 최소화 (RLS 정책 적용)</li>
+        <li>비밀번호 미수집 (소셜 로그인 전용)</li>
+        <li>정기적인 보안 취약점 점검</li>
+        <li>접근 로그 모니터링</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제11조 (개인정보 보호책임자)</h2>
+      <div class="rounded-xl border border-charcoal/10 dark:border-white/10 p-4 text-xs space-y-1">
+        <p><strong>성명:</strong> 배형준</p>
+        <p><strong>직책:</strong> 서비스 운영자</p>
+        <p><strong>이메일:</strong> <a href="mailto:sachun78@gmail.com" class="text-primary underline hover:no-underline">sachun78@gmail.com</a></p>
+        <p><strong>문의:</strong> <a href="/contact" class="text-primary underline hover:no-underline">문의하기 페이지</a></p>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제12조 (권익침해 구제 방법)</h2>
+      <p class="mb-2">개인정보 침해로 인한 피해 구제를 위해 아래 기관에 문의하실 수 있습니다.</p>
+      <ul class="list-disc list-inside space-y-1 pl-2 text-xs">
+        <li>개인정보 침해신고센터 (한국인터넷진흥원): <a href="https://privacy.kisa.or.kr" class="text-primary underline hover:no-underline" rel="noopener noreferrer" target="_blank">privacy.kisa.or.kr</a> / 국번없이 118</li>
+        <li>개인정보 분쟁조정위원회: <a href="https://www.kopico.go.kr" class="text-primary underline hover:no-underline" rel="noopener noreferrer" target="_blank">www.kopico.go.kr</a> / 1833-6972</li>
+        <li>대검찰청 사이버수사과: 국번없이 1301</li>
+        <li>경찰청 사이버안전국: 국번없이 182</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="mb-3 text-base font-bold text-charcoal dark:text-white">제13조 (방침의 변경)</h2>
+      <p>본 방침이 변경될 경우 시행 7일 전부터 서비스 공지사항을 통해 안내합니다. 중요한 변경 사항은 14일 이전에 고지합니다.</p>
+    </section>
+
+    <div class="pt-4 flex flex-wrap gap-4 text-xs text-charcoal/50 dark:text-white/40">
+      <a href="/terms" class="text-primary underline hover:no-underline">이용약관</a>
+      <a href="/cookie-policy" class="text-primary underline hover:no-underline">쿠키 정책</a>
     </div>
-  </main>
-</body>
-</html>
+  </div>
+</main>
+
+<Footer />
+<LegalModals />
+
+<script>
+  import '../scripts/theme';
+</script>
+</body></html>
